@@ -27,8 +27,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * The split is the whole point of this class. An earlier version put "there is
  * no persistent object cache" in with the faults, so the majority of WordPress
- * installations — which have no object cache and are perfectly fine without one
- * — got a warning notice on every report screen telling them something was
+ * installations - which have no object cache and are perfectly fine without one
+ * - got a warning notice on every report screen telling them something was
  * broken when nothing was. A warning that is always on is a warning nobody
  * reads, including the one time it matters.
  *
@@ -116,7 +116,7 @@ final class Health {
 		$loopback = ( new Loopback( $this->settings ) )->result();
 
 		if ( Loopback::SPOOL_PUBLIC === $loopback['spool'] ) {
-			$problems[] = __( 'The write spool can be read over the web. It holds no addresses, but it is not public data. On nginx this needs a rule in the server config — the exact block is in docs/caching.md. On Apache or IIS, check that the .htaccess or web.config in the spool directory has not been removed.', 'honest-analytics' );
+			$problems[] = __( 'The write spool can be read over the web. It holds no addresses, but it is not public data. On nginx this needs a rule in the server config - the exact block is in docs/caching.md. On Apache or IIS, check that the .htaccess or web.config in the spool directory has not been removed.', 'honest-analytics' );
 		}
 
 		if ( ! $loopback['endpoint'] && $this->settings->usesBeacon() ) {
@@ -150,7 +150,7 @@ final class Health {
 		if ( ! StoreFactory::usingObjectCache() ) {
 			$advisories[] = __( 'There is no persistent object cache on this site, so sessions, nonces and rate limits are kept in a database table. That is a supported arrangement and nothing is lost by it; a Redis or Memcached cache would make the capture path a little cheaper.', 'honest-analytics' );
 		} else {
-			$advisories[] = __( 'Sessions and nonces are kept in the object cache. If that cache is per-server — APCu, for instance — and this site runs on more than one web server, set HONEST_ANALYTICS_STORE to "db" so every server agrees.', 'honest-analytics' );
+			$advisories[] = __( 'Sessions and nonces are kept in the object cache. If that cache is per-server - APCu, for instance - and this site runs on more than one web server, set HONEST_ANALYTICS_STORE to "db" so every server agrees.', 'honest-analytics' );
 		}
 
 		if ( ! Cron::wpCronEnabled() ) {
@@ -228,7 +228,7 @@ final class Health {
 	 * How long the drain has been stuck, or null if it has not.
 	 *
 	 * A drain that has not run for an hour on a site with nothing waiting is
-	 * not a fault — it is a quiet site. It only matters when there is something
+	 * not a fault - it is a quiet site. It only matters when there is something
 	 * to count and nothing is counting it.
 	 */
 	public function staleDrainSeconds(): ?int {
@@ -269,17 +269,17 @@ final class Health {
 		$wpdb->suppress_errors( $previous );
 
 		if ( null === $value ) {
-			return __( 'Not created yet — it is minted on the first pageview.', 'honest-analytics' );
+			return __( 'Not created yet - it is minted on the first pageview.', 'honest-analytics' );
 		}
 
 		$next = (int) strtotime( (string) $value . ' UTC' );
 
 		if ( $next <= 0 ) {
-			return __( 'Unknown — the stored rotation time could not be read.', 'honest-analytics' );
+			return __( 'Unknown - the stored rotation time could not be read.', 'honest-analytics' );
 		}
 
 		if ( $next <= time() ) {
-			return __( 'Due now — it is destroyed on the next pageview or scheduled run.', 'honest-analytics' );
+			return __( 'Due now - it is destroyed on the next pageview or scheduled run.', 'honest-analytics' );
 		}
 
 		return sprintf(

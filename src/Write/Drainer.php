@@ -530,7 +530,7 @@ final class Drainer {
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_get_contents
 		// A failure-count file. If it cannot be read or written the drain
-		// carries on regardless — losing the count is not worth an exception,
+		// carries on regardless - losing the count is not worth an exception,
 		// and the quarantine threshold is a heuristic, not a guarantee.
 		// phpcs:disable WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions
 		$current = is_file( $path ) ? (int) @file_get_contents( $path ) : 0;

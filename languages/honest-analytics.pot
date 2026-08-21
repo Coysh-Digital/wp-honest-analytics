@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-21T10:22:48+01:00\n"
+"POT-Creation-Date: 2026-08-21T10:27:11+01:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: honest-analytics\n"
@@ -2161,7 +2161,7 @@ msgid "Country reporting is switched on but no geo database is installed, so not
 msgstr ""
 
 #: src/Scheduling/Health.php:119
-msgid "The write spool can be read over the web. It holds no addresses, but it is not public data. On nginx this needs a rule in the server config — the exact block is in docs/caching.md. On Apache or IIS, check that the .htaccess or web.config in the spool directory has not been removed."
+msgid "The write spool can be read over the web. It holds no addresses, but it is not public data. On nginx this needs a rule in the server config - the exact block is in docs/caching.md. On Apache or IIS, check that the .htaccess or web.config in the spool directory has not been removed."
 msgstr ""
 
 #: src/Scheduling/Health.php:123
@@ -2181,7 +2181,7 @@ msgid "There is no persistent object cache on this site, so sessions, nonces and
 msgstr ""
 
 #: src/Scheduling/Health.php:153
-msgid "Sessions and nonces are kept in the object cache. If that cache is per-server — APCu, for instance — and this site runs on more than one web server, set HONEST_ANALYTICS_STORE to \"db\" so every server agrees."
+msgid "Sessions and nonces are kept in the object cache. If that cache is per-server - APCu, for instance - and this site runs on more than one web server, set HONEST_ANALYTICS_STORE to \"db\" so every server agrees."
 msgstr ""
 
 #. translators: %s: a crontab line.
@@ -2203,15 +2203,15 @@ msgid "The tracking mode expects a beacon but script injection is switched off, 
 msgstr ""
 
 #: src/Scheduling/Health.php:272
-msgid "Not created yet — it is minted on the first pageview."
+msgid "Not created yet - it is minted on the first pageview."
 msgstr ""
 
 #: src/Scheduling/Health.php:278
-msgid "Unknown — the stored rotation time could not be read."
+msgid "Unknown - the stored rotation time could not be read."
 msgstr ""
 
 #: src/Scheduling/Health.php:282
-msgid "Due now — it is destroyed on the next pageview or scheduled run."
+msgid "Due now - it is destroyed on the next pageview or scheduled run."
 msgstr ""
 
 #. translators: 1: formatted date and time, 2: human readable duration.
