@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 0.1.0
+Stable tag: 0.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -132,10 +132,22 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 
 == Changelog ==
 
+= 0.1.1 =
+* Fixed: connecting to Google Analytics went to the dashboard and stopped, because the redirect to Google's sign-in screen was treated as though it were a link back to your own site.
+* Fixed: every outcome of that connection was silent. A cancelled sign-in, a misconfigured Google project and a successful connection now each say what happened.
+* Fixed: on the free edition, the admin could log a PHP warning on every page in the Analytics menu.
+* Added: the paid reports now keep their place in the menu, marked, each explaining what it contains. No figures are shown, invented or otherwise.
+* Added: full setup instructions for Google Analytics, in the plugin and in the documentation.
+* Added: the geo database installs from the Locations screen, and maintenance runs from buttons on Settings, so neither needs a terminal.
+* Added: the offer to import from another analytics plugin now goes away once you have taken it up.
+
 = 0.1.0 =
 * First release.
 
 == Upgrade Notice ==
+
+= 0.1.1 =
+Fixes the Google Analytics connection, which could not complete. Worth taking if you intend to import from GA4.
 
 = 0.1.0 =
 First release.

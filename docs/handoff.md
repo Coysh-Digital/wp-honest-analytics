@@ -1,6 +1,6 @@
 # Handoff
 
-Honest Analytics 0.1.0 - a WordPress port of Craft Analytics, built from the
+Honest Analytics 0.1.1 - a WordPress port of Craft Analytics, built from the
 approved prototype and the reference implementation.
 
 Everything below was run against a real WordPress in ddev with 400 days of
@@ -363,8 +363,8 @@ Both exit non-zero on a finding.
 ### Building a release
 
 ```bash
-bash bin/build-lite.sh      # build/honest-analytics-0.1.0.zip      - wordpress.org
-bash bin/build-pro.sh       # build/honest-analytics-pro-0.1.0.zip  - direct download
+bash bin/build-lite.sh      # build/honest-analytics-0.1.1.zip      - wordpress.org
+bash bin/build-pro.sh       # build/honest-analytics-pro-0.1.1.zip  - direct download
 composer build              # both
 ```
 
