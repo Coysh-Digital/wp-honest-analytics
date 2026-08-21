@@ -1159,6 +1159,24 @@ tr:hover .ha-row-edit,
 	gap: 8px;
 }
 
+/* A value to copy, and the button that copies it. The field takes whatever
+ * room is going; the button never wraps under it, because a Copy button on its
+ * own line reads as belonging to whatever comes next. */
+.ha-copy-row {
+	flex-wrap: nowrap;
+	align-items: center;
+	max-width: 82ch;
+}
+
+.ha-copy-row input {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.ha-copy-row button {
+	flex: 0 0 auto;
+}
+
 .ha-field {
 	display: flex;
 	flex-direction: column;

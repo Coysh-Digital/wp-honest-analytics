@@ -42,42 +42,107 @@ $ha_ready = ! empty( $ha_state['connected'] ) && '' !== (string) ( $ha_state['pr
 		<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Connecting to Google', 'honest-analytics' ); ?></h2></div>
 
 		<div class="ha-card-body">
-			<p class="ha-measure"><?php echo esc_html( (string) ( $ha_state['hint'] ?? '' ) ); ?></p>
-
-			<p class="ha-muted ha-measure">
-				<?php esc_html_e( 'You can also use your own Google Cloud project, which keeps the connection entirely between this site and Google. It takes a few minutes to set up and is described in the documentation.', 'honest-analytics' ); ?>
+			<p class="ha-measure">
+				<?php esc_html_e( 'Google will not let anything read your analytics until you tell Google that this site is allowed to ask. That is what the two values below are: a name and a password that identify this site to Google, and nothing else.', 'honest-analytics' ); ?>
 			</p>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="ha-gap-above">
+			<p class="ha-muted ha-measure">
+				<?php esc_html_e( 'It takes about five minutes and costs nothing. You will not be asked for a card, and you do not need to understand any of it afterwards. Nothing about your visitors is sent to Google at any point; this only reads what Google already has.', 'honest-analytics' ); ?>
+			</p>
+
+			<h3 class="ha-subhead"><?php esc_html_e( 'Step 1. Copy this address', 'honest-analytics' ); ?></h3>
+
+			<p class="ha-muted ha-measure ha-tight-below">
+				<?php esc_html_e( 'Google asks for it in step 4, and matches it exactly, so copy it rather than typing it out.', 'honest-analytics' ); ?>
+			</p>
+
+			<div class="ha-form-row ha-copy-row">
+				<label class="ha-visually-hidden" for="honest-ga4-redirect"><?php esc_html_e( 'Authorised redirect URI', 'honest-analytics' ); ?></label>
+
+				<input
+					type="text"
+					id="honest-ga4-redirect"
+					class="large-text code"
+					readonly
+					onfocus="this.select();"
+					value="<?php echo esc_attr( (string) ( $ha_state['redirectUri'] ?? '' ) ); ?>"
+				/>
+
+				<button
+					type="button"
+					class="button"
+					hidden
+					data-ha-copy="honest-ga4-redirect"
+					data-ha-copied="<?php esc_attr_e( 'Copied', 'honest-analytics' ); ?>"
+				><?php esc_html_e( 'Copy', 'honest-analytics' ); ?></button>
+			</div>
+
+			<h3 class="ha-subhead"><?php esc_html_e( 'Step 2. Make a Google project', 'honest-analytics' ); ?></h3>
+
+			<ol class="ha-plain-list ha-measure">
+				<li>
+					<?php
+					printf(
+						/* translators: %s: a link, reading "the Google Cloud console". */
+						esc_html__( 'Open %s and sign in with the Google account that can already see the analytics you want to bring across.', 'honest-analytics' ),
+						'<a href="https://console.cloud.google.com/projectcreate" rel="noopener noreferrer" target="_blank">'
+							. esc_html__( 'the Google Cloud console', 'honest-analytics' )
+							. '</a>'
+					);
+					?>
+				</li>
+				<li><?php esc_html_e( 'Create a project. The name is only for you, and no billing is involved.', 'honest-analytics' ); ?></li>
+			</ol>
+
+			<h3 class="ha-subhead"><?php esc_html_e( 'Step 3. Switch on the two things it needs to read', 'honest-analytics' ); ?></h3>
+
+			<p class="ha-muted ha-measure ha-tight-below">
+				<?php esc_html_e( 'In the console, go to APIs and services, then Library, and enable both of these by name. Miss the first and your property list comes back empty; miss the second and the import stops as soon as it starts.', 'honest-analytics' ); ?>
+			</p>
+
+			<ul class="ha-plain-list ha-measure">
+				<li><code>Google Analytics Admin API</code></li>
+				<li><code>Google Analytics Data API</code></li>
+			</ul>
+
+			<h3 class="ha-subhead"><?php esc_html_e( 'Step 4. Create the sign-in details', 'honest-analytics' ); ?></h3>
+
+			<ol class="ha-plain-list ha-measure">
+				<li><?php esc_html_e( 'Fill in the consent screen when the console asks: an app name, and your own email address twice. If your Google account belongs to a Workspace, choose Internal; otherwise choose External and add your own address as a test user.', 'honest-analytics' ); ?></li>
+				<li><?php esc_html_e( 'Go to Credentials, then Create credentials, then OAuth client ID.', 'honest-analytics' ); ?></li>
+				<li><?php esc_html_e( 'Choose Web application, not Desktop.', 'honest-analytics' ); ?></li>
+				<li><?php esc_html_e( 'Under Authorised redirect URIs, paste the address you copied in step 1.', 'honest-analytics' ); ?></li>
+				<li><?php esc_html_e( 'Create it, and keep the two values it shows you.', 'honest-analytics' ); ?></li>
+			</ol>
+
+			<h3 class="ha-subhead"><?php esc_html_e( 'Step 5. Paste them here', 'honest-analytics' ); ?></h3>
+
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="honest_analytics_ga4_credentials" />
 				<?php wp_nonce_field( 'honest-analytics-ga4-credentials' ); ?>
 
 				<div class="ha-form-row">
 					<label class="ha-field" for="honest-ga4-client-id">
 						<?php esc_html_e( 'Client ID', 'honest-analytics' ); ?>
-						<input type="text" id="honest-ga4-client-id" name="honest_ga4_client_id" class="regular-text" autocomplete="off" spellcheck="false" />
+						<input type="text" id="honest-ga4-client-id" name="honest_ga4_client_id" class="regular-text" autocomplete="off" spellcheck="false" placeholder="000000000000-xxxxxxxx.apps.googleusercontent.com" />
 					</label>
 
 					<label class="ha-field" for="honest-ga4-client-secret">
 						<?php esc_html_e( 'Client secret', 'honest-analytics' ); ?>
-						<input type="password" id="honest-ga4-client-secret" name="honest_ga4_client_secret" class="regular-text" autocomplete="off" />
+						<input type="password" id="honest-ga4-client-secret" name="honest_ga4_client_secret" class="regular-text" autocomplete="off" placeholder="GOCSPX-..." />
 					</label>
 
-					<button type="submit" class="button button-primary"><?php esc_html_e( 'Save', 'honest-analytics' ); ?></button>
+					<button type="submit" class="button button-primary"><?php esc_html_e( 'Save and continue', 'honest-analytics' ); ?></button>
 				</div>
 
-				<p class="ha-muted ha-fine">
-					<?php
-					echo esc_html(
-						sprintf(
-							/* translators: %s: the redirect URI to paste into Google Cloud. */
-							__( 'Add this as an authorised redirect URI in your Google Cloud project: %s', 'honest-analytics' ),
-							(string) ( $ha_state['redirectUri'] ?? '' )
-						)
-					);
-					?>
+				<p class="ha-muted ha-fine ha-measure">
+					<?php esc_html_e( 'Both are stored on this site only. The secret is never sent to a browser, never appears in a report, and is deleted when you disconnect.', 'honest-analytics' ); ?>
 				</p>
 			</form>
+
+			<p class="ha-muted ha-fine ha-measure ha-gap-above">
+				<?php esc_html_e( 'Stuck, or something above not matching what you are seeing? The full version of these instructions, including what to do when Google says it has not verified this app, is in the Importing documentation that came with the plugin.', 'honest-analytics' ); ?>
+			</p>
 		</div>
 	</div>
 

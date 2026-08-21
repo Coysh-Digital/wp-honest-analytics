@@ -417,7 +417,7 @@ title, heading and console errors.
 
 ## Where to start reading
 
-1. [`architecture.md`](architecture.md) - fifty-six decisions and why.
+1. [`architecture.md`](architecture.md) - fifty-seven decisions and why.
 2. `src/Bootstrap.php` - every hook in one file.
 3. `src/Capture/` → `src/Write/` → `src/Rollup/` - the pipeline, in order.
 4. [`editions.md`](editions.md) - Lite, Pro and Agency, and the open decisions.

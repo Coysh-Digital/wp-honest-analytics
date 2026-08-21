@@ -106,8 +106,26 @@ Two decisions worth recording, because both went the other way at some point:
 
 No nag screens. No countdowns. No expiry warnings. No "most popular" or "best
 value". No artificial limits - not on rows, not on retention, not on date
-ranges. The Pro placeholders on the Dashboard say what the section would contain,
-once, quietly, and ask for nothing.
+ranges.
+
+The paid reports do keep their rows in the Analytics menu, marked `Pro`, each
+leading to a page describing what that report contains. That is discovery, not
+a sales pitch, and the difference is defended by three rules:
+
+- **No figures on those pages, real or invented.** A mocked-up table with
+  plausible numbers would be read as the site's own data.
+- **One link, no button, no price.** The page says what the report answers,
+  lists what it holds, and links once.
+- **Nothing that returns.** There is nothing to dismiss, because nothing
+  interrupts. The pages sit where they sit and wait to be visited.
+
+The pages also say plainly that the free build does not contain the report at
+all - it is removed when the plugin is packaged, not hidden behind a check -
+which is both true and the reason the arrangement is permitted at all. See
+[ADR 57](architecture.md#adr-57--the-paid-reports-are-named-in-the-free-menu-and-described).
+
+The Pro placeholder cards on the Dashboard say what the section would contain,
+once, quietly, and link to the same pages.
 
 The same standard binds the rest of the admin UI. See
 [Copy constraints](#copy-constraints).

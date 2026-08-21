@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-21T10:27:11+01:00\n"
+"POT-Creation-Date: 2026-08-21T16:23:04+01:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: honest-analytics\n"
@@ -164,8 +164,8 @@ msgstr ""
 msgid "Tidy-up finished. %1$s days compacted to daily totals, %2$s rows past their retention deleted."
 msgstr ""
 
-#: src/Admin/Menu.php:113
-#: src/Admin/Menu.php:114
+#: src/Admin/Menu.php:137
+#: src/Admin/Menu.php:138
 #: src/Admin/Screens/DashboardScreen.php:44
 #: src/Admin/Screens/Screen.php:127
 #: src/Admin/Widgets/OverviewWidget.php:55
@@ -212,8 +212,9 @@ msgid "No views recorded"
 msgstr ""
 
 #: src/Admin/Screens/CampaignsScreen.php:36
-#: templates/admin/dashboard.php:341
-#: templates/admin/dashboard.php:431
+#: src/Admin/Screens/LockedScreen.php:166
+#: templates/admin/dashboard.php:342
+#: templates/admin/dashboard.php:432
 msgid "Campaigns"
 msgstr ""
 
@@ -265,8 +266,9 @@ msgid "Post type"
 msgstr ""
 
 #: src/Admin/Screens/CrawlersScreen.php:38
-#: templates/admin/dashboard.php:451
-#: templates/admin/dashboard.php:459
+#: src/Admin/Screens/LockedScreen.php:217
+#: templates/admin/dashboard.php:454
+#: templates/admin/dashboard.php:463
 #: templates/admin/settings.php:568
 msgid "Crawlers"
 msgstr ""
@@ -322,8 +324,8 @@ msgstr ""
 #: src/Import/Sources/WPStatisticsImporter.php:180
 #: templates/admin/campaigns.php:91
 #: templates/admin/dashboard.php:194
-#: templates/admin/dashboard.php:370
-#: templates/admin/dashboard.php:413
+#: templates/admin/dashboard.php:371
+#: templates/admin/dashboard.php:414
 #: templates/admin/devices.php:51
 #: templates/admin/devices.php:116
 #: templates/admin/events.php:65
@@ -406,14 +408,17 @@ msgid "Devices"
 msgstr ""
 
 #: src/Admin/Screens/EventsScreen.php:35
+#: src/Admin/Screens/LockedScreen.php:186
 msgid "Events"
 msgstr ""
 
 #: src/Admin/Screens/FunnelsScreen.php:36
+#: src/Admin/Screens/LockedScreen.php:207
 msgid "Funnels"
 msgstr ""
 
 #: src/Admin/Screens/GoalsScreen.php:50
+#: src/Admin/Screens/LockedScreen.php:197
 #: templates/admin/dashboard.php:283
 #: templates/admin/dashboard.php:331
 #: templates/admin/goal-edit.php:20
@@ -450,41 +455,41 @@ msgid "Import from %s"
 msgstr ""
 
 #. translators: %s: a number of records, already formatted.
-#: src/Admin/Screens/ImportScreen.php:225
+#: src/Admin/Screens/ImportScreen.php:253
 #: templates/admin/import/progress.php:89
 #, php-format
 msgid "%s records processed"
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:226
+#: src/Admin/Screens/ImportScreen.php:254
 msgid "Getting started…"
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:227
+#: src/Admin/Screens/ImportScreen.php:255
 msgid "Paused for a moment, then carrying on automatically."
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:228
+#: src/Admin/Screens/ImportScreen.php:256
 msgid "This is taking longer than expected. Your progress is saved, and the import will carry on in the background - you can safely leave this page."
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:606
+#: src/Admin/Screens/ImportScreen.php:634
 msgid "Importing is not available on this installation."
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:619
+#: src/Admin/Screens/ImportScreen.php:647
 msgid "The import could not be started. Nothing has been changed."
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:628
+#: src/Admin/Screens/ImportScreen.php:656
 msgid "The import could not be started. Nothing has been changed, and nothing in your other analytics tool has been touched."
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:669
+#: src/Admin/Screens/ImportScreen.php:697
 msgid "The import could not be stopped just now."
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:675
+#: src/Admin/Screens/ImportScreen.php:703
 msgid "The import has been stopped. Everything it had already brought across is still there."
 msgstr ""
 
@@ -506,11 +511,134 @@ msgid "Activated."
 msgstr ""
 
 #: src/Admin/Screens/LocationsScreen.php:40
+#: src/Admin/Screens/LockedScreen.php:176
 #: src/Import/Sources/IndependentAnalyticsImporter.php:196
 #: src/Import/Sources/WPStatisticsImporter.php:192
-#: templates/admin/dashboard.php:382
-#: templates/admin/dashboard.php:439
+#: templates/admin/dashboard.php:383
+#: templates/admin/dashboard.php:441
 msgid "Locations"
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:91
+#: templates/admin/locked.php:27
+#: templates/admin/partials/pro-placeholder.php:40
+msgid "Pro"
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:93
+msgid "(part of Pro)"
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:167
+msgid "Which tagged links brought people to the site, and what they did once they arrived."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:169
+msgid "Sessions, bounce rate and conversions for each campaign."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:170
+msgid "Source, medium and campaign name read from utm_ tags and ad click IDs."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:171
+msgid "A choice of last non-direct click, first click or linear attribution."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:173
+msgid "Campaign parameters are stripped from stored paths in both editions, so this does not change what the Pages report says."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:177
+msgid "Which countries visits came from, resolved on your own server."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:179
+msgid "Sessions and share of traffic for each country."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:180
+msgid "Lookup against a local database you install yourself, so no geolocation service is ever called."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:181
+msgid "Country and nothing finer. No city, no region."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:183
+msgid "The address is resolved in memory during the request that discards it, in this edition and in the paid one alike."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:187
+msgid "What people did besides look at pages."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:189
+msgid "Custom events, with a count and the number of sessions they happened in."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:190
+msgid "Clicks on outbound links and on downloadable files."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:191
+msgid "How far down each page people actually read."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:192
+msgid "Form submissions from Contact Form 7, Gravity Forms, WPForms and Ninja Forms, and completed WooCommerce orders."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:194
+msgid "Events ride the pageview beacon rather than adding requests of their own."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:198
+msgid "Whether the things you care about are actually happening."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:200
+msgid "Conversions and conversion rate for each goal you define."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:201
+msgid "Goals matched on a path, an event or a form submission."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:202
+msgid "Which pages and which channels the conversions came from."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:208
+msgid "Where people give up on their way through the site."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:210
+msgid "Entered, completed and completion rate for each funnel."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:211
+msgid "Every step with its own drop-off, as a chart and as a table."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:212
+msgid "Any ordered path you care to define between two points on the site."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:218
+msgid "What is hitting the site that is not a person."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:220
+msgid "Requests per crawler, and which of them ask most often."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:221
+msgid "Search engines, monitoring services, scrapers and AI crawlers, named individually."
+msgstr ""
+
+#: src/Admin/Screens/LockedScreen.php:223
+msgid "Crawler traffic is already excluded from every visitor figure in this edition. Only the breakdown of who they were is part of Pro."
 msgstr ""
 
 #: src/Admin/Screens/PagesScreen.php:42
@@ -614,7 +742,7 @@ msgstr ""
 #: src/Channels/Channel.php:40
 #: src/Dimensions/DimensionType.php:60
 #: templates/admin/campaigns.php:82
-#: templates/admin/dashboard.php:366
+#: templates/admin/dashboard.php:367
 msgid "Campaign"
 msgstr ""
 
@@ -1016,7 +1144,7 @@ msgstr ""
 
 #: src/Dimensions/DimensionType.php:67
 #: templates/admin/crawlers.php:83
-#: templates/admin/dashboard.php:496
+#: templates/admin/dashboard.php:500
 msgid "Crawler"
 msgstr ""
 
@@ -1393,16 +1521,60 @@ msgstr ""
 #: src/Import/Ga4/Connection.php:164
 #: src/Import/ImportSource.php:55
 #: src/Import/Sources/Ga4Importer.php:91
-#: templates/admin/import/connect.php:92
+#: templates/admin/import/connect.php:157
 msgid "Google Analytics"
 msgstr ""
 
-#: src/Import/Ga4/Connection.php:303
+#: src/Import/Ga4/Connection.php:340
 msgid "You do not have permission to connect an analytics account."
 msgstr ""
 
-#: src/Import/Ga4/Connection.php:418
+#: src/Import/Ga4/Connection.php:455
 msgid "You do not have permission to change the analytics connection."
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:502
+msgid "Connected to Google. Choose which property to bring across."
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:508
+msgid "Disconnected from Google. Anything already imported stays exactly where it is."
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:514
+msgid "Saved. You can connect to Google now."
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:520
+msgid "Those details have been removed from this site."
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:526
+msgid "Property selected. You can choose your dates next."
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:532
+msgid "Sign-in was cancelled, so nothing has changed. You can try again whenever you like."
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:538
+msgid "There are no Google sign-in details saved on this site yet, so there is nothing to connect with. Fill in the two boxes below first."
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:544
+msgid "The reply from Google did not match the request that started it, so it was ignored. That usually means the attempt was left for a while, or was finished in a different browser or tab. Press Connect and go straight through."
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:550
+msgid "Google refused the connection. The two usual causes are a redirect address in your Google project that does not match the one on this screen character for character, and the two Analytics APIs not being switched on there yet. Nothing on this site has been changed."
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:556
+msgid "That is not a property this account can see. Choose one from the list."
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:562
+msgid "The property list could not be fetched from Google. If this keeps happening, check that the Google Analytics Admin API is switched on in your Google project."
 msgstr ""
 
 #: src/Import/Ga4/Ga4Exception.php:58
@@ -2476,13 +2648,13 @@ msgid "No crawler traffic recorded for this period."
 msgstr ""
 
 #: templates/admin/crawlers.php:87
-#: templates/admin/dashboard.php:500
+#: templates/admin/dashboard.php:504
 msgid "Requests"
 msgstr ""
 
 #: templates/admin/crawlers.php:92
 #: templates/admin/dashboard.php:199
-#: templates/admin/dashboard.php:418
+#: templates/admin/dashboard.php:419
 #: templates/admin/devices.php:52
 #: templates/admin/devices.php:121
 #: templates/admin/locations.php:105
@@ -2527,9 +2699,9 @@ msgstr ""
 #: templates/admin/dashboard.php:211
 #: templates/admin/dashboard.php:238
 #: templates/admin/dashboard.php:284
-#: templates/admin/dashboard.php:342
-#: templates/admin/dashboard.php:383
-#: templates/admin/dashboard.php:460
+#: templates/admin/dashboard.php:343
+#: templates/admin/dashboard.php:384
+#: templates/admin/dashboard.php:464
 msgid "View all"
 msgstr ""
 
@@ -2569,42 +2741,42 @@ msgstr ""
 msgid "Rate"
 msgstr ""
 
-#: templates/admin/dashboard.php:332
+#: templates/admin/dashboard.php:333
 msgid "Would tell you how many sessions completed a form submission, a download or a page visit you care about."
 msgstr ""
 
-#: templates/admin/dashboard.php:362
+#: templates/admin/dashboard.php:363
 msgid "No tagged links have brought anybody here in this period."
 msgstr ""
 
-#: templates/admin/dashboard.php:405
+#: templates/admin/dashboard.php:406
 msgid "Nothing yet. Country reporting needs a local database, which you can install on the Locations screen."
 msgstr ""
 
-#: templates/admin/dashboard.php:409
+#: templates/admin/dashboard.php:410
 #: templates/admin/locations.php:96
 msgid "Country"
 msgstr ""
 
-#: templates/admin/dashboard.php:432
+#: templates/admin/dashboard.php:434
 msgid "Would show which tagged links brought people here, and what those visits did next."
 msgstr ""
 
-#: templates/admin/dashboard.php:440
+#: templates/admin/dashboard.php:443
 msgid "Would show which countries visitors came from, resolved locally and never stored against anybody."
 msgstr ""
 
-#: templates/admin/dashboard.php:452
+#: templates/admin/dashboard.php:456
 msgid "Would name the bots that were kept out of every figure above, which is usually the answer to why your server log counts more than this does."
 msgstr ""
 
 #. translators: %s: number of requests.
-#: templates/admin/dashboard.php:469
+#: templates/admin/dashboard.php:473
 #, php-format
 msgid "%s crawler requests, excluded from every figure above."
 msgstr ""
 
-#: templates/admin/dashboard.php:492
+#: templates/admin/dashboard.php:496
 msgid "No crawler traffic recorded."
 msgstr ""
 
@@ -2827,7 +2999,7 @@ msgid "Save goal"
 msgstr ""
 
 #: templates/admin/goal-edit.php:123
-#: templates/admin/import/connect.php:105
+#: templates/admin/import/connect.php:170
 #: templates/admin/import/overlap.php:103
 #: templates/admin/import/preview.php:157
 msgid "Cancel"
@@ -2972,92 +3144,172 @@ msgstr ""
 msgid "Connecting to Google"
 msgstr ""
 
-#: templates/admin/import/connect.php:48
-msgid "You can also use your own Google Cloud project, which keeps the connection entirely between this site and Google. It takes a few minutes to set up and is described in the documentation."
+#: templates/admin/import/connect.php:46
+msgid "Google will not let anything read your analytics until you tell Google that this site is allowed to ask. That is what the two values below are: a name and a password that identify this site to Google, and nothing else."
 msgstr ""
 
-#: templates/admin/import/connect.php:57
+#: templates/admin/import/connect.php:50
+msgid "It takes about five minutes and costs nothing. You will not be asked for a card, and you do not need to understand any of it afterwards. Nothing about your visitors is sent to Google at any point; this only reads what Google already has."
+msgstr ""
+
+#: templates/admin/import/connect.php:53
+msgid "Step 1. Copy this address"
+msgstr ""
+
+#: templates/admin/import/connect.php:56
+msgid "Google asks for it in step 4, and matches it exactly, so copy it rather than typing it out."
+msgstr ""
+
+#: templates/admin/import/connect.php:60
+msgid "Authorised redirect URI"
+msgstr ""
+
+#: templates/admin/import/connect.php:76
+msgid "Copied"
+msgstr ""
+
+#: templates/admin/import/connect.php:77
+msgid "Copy"
+msgstr ""
+
+#: templates/admin/import/connect.php:80
+msgid "Step 2. Make a Google project"
+msgstr ""
+
+#. translators: %s: a link, reading "the Google Cloud console".
+#: templates/admin/import/connect.php:87
+#, php-format
+msgid "Open %s and sign in with the Google account that can already see the analytics you want to bring across."
+msgstr ""
+
+#: templates/admin/import/connect.php:89
+msgid "the Google Cloud console"
+msgstr ""
+
+#: templates/admin/import/connect.php:94
+msgid "Create a project. The name is only for you, and no billing is involved."
+msgstr ""
+
+#: templates/admin/import/connect.php:97
+msgid "Step 3. Switch on the two things it needs to read"
+msgstr ""
+
+#: templates/admin/import/connect.php:100
+msgid "In the console, go to APIs and services, then Library, and enable both of these by name. Miss the first and your property list comes back empty; miss the second and the import stops as soon as it starts."
+msgstr ""
+
+#: templates/admin/import/connect.php:108
+msgid "Step 4. Create the sign-in details"
+msgstr ""
+
+#: templates/admin/import/connect.php:111
+msgid "Fill in the consent screen when the console asks: an app name, and your own email address twice. If your Google account belongs to a Workspace, choose Internal; otherwise choose External and add your own address as a test user."
+msgstr ""
+
+#: templates/admin/import/connect.php:112
+msgid "Go to Credentials, then Create credentials, then OAuth client ID."
+msgstr ""
+
+#: templates/admin/import/connect.php:113
+msgid "Choose Web application, not Desktop."
+msgstr ""
+
+#: templates/admin/import/connect.php:114
+msgid "Under Authorised redirect URIs, paste the address you copied in step 1."
+msgstr ""
+
+#: templates/admin/import/connect.php:115
+msgid "Create it, and keep the two values it shows you."
+msgstr ""
+
+#: templates/admin/import/connect.php:118
+msgid "Step 5. Paste them here"
+msgstr ""
+
+#: templates/admin/import/connect.php:126
 msgid "Client ID"
 msgstr ""
 
-#: templates/admin/import/connect.php:62
+#: templates/admin/import/connect.php:131
 msgid "Client secret"
 msgstr ""
 
-#: templates/admin/import/connect.php:66
-msgid "Save"
+#: templates/admin/import/connect.php:135
+msgid "Save and continue"
 msgstr ""
 
-#. translators: %s: the redirect URI to paste into Google Cloud.
-#: templates/admin/import/connect.php:74
-#, php-format
-msgid "Add this as an authorised redirect URI in your Google Cloud project: %s"
+#: templates/admin/import/connect.php:139
+msgid "Both are stored on this site only. The secret is never sent to a browser, never appears in a report, and is deleted when you disconnect."
 msgstr ""
 
-#: templates/admin/import/connect.php:93
+#: templates/admin/import/connect.php:144
+msgid "Stuck, or something above not matching what you are seeing? The full version of these instructions, including what to do when Google says it has not verified this app, is in the Importing documentation that came with the plugin."
+msgstr ""
+
+#: templates/admin/import/connect.php:158
 #: templates/admin/import/sources.php:98
 msgid "Not connected yet"
 msgstr ""
 
-#: templates/admin/import/connect.php:95
+#: templates/admin/import/connect.php:160
 msgid "Sign in with the Google account that can see the property you want to bring across. Only permission to read your analytics is requested - nothing is ever written back to Google, and you can disconnect at any time."
 msgstr ""
 
-#: templates/admin/import/connect.php:102
+#: templates/admin/import/connect.php:167
 #: templates/admin/import/sources.php:127
 #: templates/admin/import/sources.php:131
 msgid "Connect Google Analytics"
 msgstr ""
 
-#: templates/admin/import/connect.php:119
+#: templates/admin/import/connect.php:184
 msgid "Choose a property"
 msgstr ""
 
-#: templates/admin/import/connect.php:125
+#: templates/admin/import/connect.php:190
 msgid "This Google account cannot see any Analytics properties. Try connecting with a different account."
 msgstr ""
 
-#: templates/admin/import/connect.php:127
+#: templates/admin/import/connect.php:192
 msgid "Pick the property that measures this website."
 msgstr ""
 
 #. translators: %s: a Google Analytics account name.
-#: templates/admin/import/connect.php:146
+#: templates/admin/import/connect.php:211
 #, php-format
 msgid "Properties in %s"
 msgstr ""
 
 #. translators: %s: a numeric Google Analytics property id.
-#: templates/admin/import/connect.php:158
+#: templates/admin/import/connect.php:223
 #, php-format
 msgid "Property %s"
 msgstr ""
 
-#: templates/admin/import/connect.php:183
-#: templates/admin/import/connect.php:225
+#: templates/admin/import/connect.php:248
+#: templates/admin/import/connect.php:290
 #: templates/admin/import/notes.php:73
 #: templates/admin/import/overlap.php:100
 #: templates/admin/import/range.php:129
 msgid "Continue"
 msgstr ""
 
-#: templates/admin/import/connect.php:189
+#: templates/admin/import/connect.php:254
 msgid "This account has a lot of properties, so their website addresses are not listed here - fetching each one would mean a great many requests to Google. The address of whichever you choose is shown on the next step."
 msgstr ""
 
-#: templates/admin/import/connect.php:195
+#: templates/admin/import/connect.php:260
 msgid "Use a different Google account"
 msgstr ""
 
-#: templates/admin/import/connect.php:208
+#: templates/admin/import/connect.php:273
 msgid "Connected"
 msgstr ""
 
-#: templates/admin/import/connect.php:217
+#: templates/admin/import/connect.php:282
 msgid "Ready to bring your history across."
 msgstr ""
 
-#: templates/admin/import/connect.php:226
+#: templates/admin/import/connect.php:291
 msgid "Disconnect"
 msgstr ""
 
@@ -3695,6 +3947,32 @@ msgstr ""
 msgid "on an unknown date"
 msgstr ""
 
+#: templates/admin/locked.php:39
+msgid "What this report shows"
+msgstr ""
+
+#: templates/admin/locked.php:56
+msgid "Nothing on this page is switched off."
+msgstr ""
+
+#: templates/admin/locked.php:57
+msgid "The free edition does not contain this report at all - it is removed when the plugin is packaged, rather than hidden behind a check. That is why there is no key to enter here and nothing to unlock."
+msgstr ""
+
+#. translators: %s: a link, reading "Honest Analytics Pro".
+#: templates/admin/locked.php:64
+#, php-format
+msgid "The paid edition is a separate download that reads and writes the same tables as this one, so moving between them migrates nothing and loses nothing. %s."
+msgstr ""
+
+#: templates/admin/locked.php:66
+msgid "Honest Analytics Pro"
+msgstr ""
+
+#: templates/admin/locked.php:75
+msgid "Everything the free edition does measure keeps working exactly as it does now, whatever you decide. There is no trial, nothing expires, and this page will not ask you again."
+msgstr ""
+
 #: templates/admin/page.php:33
 #: templates/admin/pages.php:124
 #: templates/email/summary-html.php:185
@@ -3988,10 +4266,6 @@ msgstr ""
 #: templates/admin/partials/heatmap.php:117
 #, php-format
 msgid "Peak: %1$s %2$02d:00, %3$s views"
-msgstr ""
-
-#: templates/admin/partials/pro-placeholder.php:24
-msgid "Pro"
 msgstr ""
 
 #. translators: %s: number of visitors, already formatted.

@@ -97,7 +97,7 @@ Full instructions: [`docs/installation.md`](docs/installation.md).
 | [Importing](docs/importing.md) | Bringing history across from WP Statistics, Independent Analytics or GA4 |
 | [Retention](docs/retention.md) | Compaction, caps, growth, garbage collection |
 | [Uninstalling](docs/uninstall.md) | What deleting removes, and how to keep it |
-| [Architecture](docs/architecture.md) | Fifty-six numbered decisions and why |
+| [Architecture](docs/architecture.md) | Fifty-seven numbered decisions and why |
 | [Craft → WordPress](docs/craft-to-wordpress-mapping.md) | What became what |
 | [Import internals](docs/import-architecture.md) | How the importers work, and what was decided |
 | [Development](docs/development.md) | Harness, tests, standards, releasing |

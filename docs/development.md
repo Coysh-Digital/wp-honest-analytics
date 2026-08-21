@@ -26,7 +26,7 @@ assets/                shipped as written; there is no build step
 bin/                   tooling
 tests/                 Unit (no WordPress) and Integration (real WordPress)
 docs/                  this
-dev/                   the ddev harness; dev/app is gitignored
+dev/                   the integration runner and the importer fixtures
 ```
 
 `src/` reading order, if you are new to it:
@@ -45,9 +45,11 @@ composer stan               # PHPStan level 6
 composer budgets            # tracker size and vendor checksums
 ```
 
-Integration tests need a real WordPress and a real MySQL. Inside the harness,
-one command does all of it - it installs the WordPress test library if the
-container's `/tmp` has been emptied by a restart, which it will have been:
+Integration tests need a real WordPress and a real MySQL. Both come from the
+demo site's ddev project, which is the development harness; `dev/README.md`
+says how to build it. One command does the rest, including installing the
+WordPress test library if the container's `/tmp` has been emptied by a restart,
+which it will have been:
 
 ```bash
 cd dev

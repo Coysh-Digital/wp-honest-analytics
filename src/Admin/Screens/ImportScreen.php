@@ -159,6 +159,8 @@ final class ImportScreen extends Screen {
 	public function load(): void {
 		parent::load();
 
+		$this->readConnectionOutcome();
+
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing
 		$action = isset( $_POST['honest_import_action'] )
 			// phpcs:ignore WordPress.Security.NonceVerification.Missing
@@ -180,6 +182,32 @@ final class ImportScreen extends Screen {
 		if ( 'cancel' === $action ) {
 			$this->cancelImport();
 		}
+	}
+
+	/**
+	 * Turn the `ga4` query value into something a person can read.
+	 *
+	 * The Google connection leaves its result in the URL rather than in the
+	 * session, because the round trip goes through somebody else's server and
+	 * comes back as a plain redirect. Reading it here is what stops every
+	 * outcome, good and bad, from being a silent return to this screen.
+	 */
+	private function readConnectionOutcome(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- A word to display, not an instruction to act on; it is matched against a fixed list before anything is shown.
+		$result = isset( $_GET['ga4'] ) ? sanitize_key( wp_unslash( (string) $_GET['ga4'] ) ) : '';
+
+		if ( '' === $result || ! class_exists( Ga4Connection::class ) ) {
+			return;
+		}
+
+		$outcome = Ga4Connection::outcome( $result );
+
+		if ( null === $outcome ) {
+			return;
+		}
+
+		$this->notice          = $outcome['message'];
+		$this->noticeIsProblem = $outcome['problem'];
 	}
 
 	/**

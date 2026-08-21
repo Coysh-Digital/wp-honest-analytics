@@ -105,7 +105,116 @@ line up closely.
 ## Importing from Google Analytics
 
 GA4 keeps your data on Google's servers, so this one needs a connection rather
-than a database read.
+than a database read. That takes a one-off setup on Google's side first, which
+is the fiddliest part of this whole plugin and is written out step by step
+below.
+
+### First, tell Google that this site may ask
+
+Google will not let anything read your analytics until you have registered the
+thing doing the asking. You do this once, it is free, and no card is involved.
+Allow about five minutes.
+
+Everything below is also printed on the Import screen itself, with your site's
+own values filled in, so you can work from there and use this page when
+something does not match.
+
+**1. Copy the redirect address from your own site.**
+
+Open **Analytics → Import data → Google Analytics**. Near the top of the setup
+there is a read-only box with a Copy button beside it. It looks like this:
+
+```
+https://example.com/wp-admin/admin-post.php?action=honest_analytics_ga4_callback
+```
+
+Copy it rather than typing it. Google matches this character for character
+later, including `www` or its absence, `http` against `https`, and the whole
+`?action=` part.
+
+**2. Make a Google Cloud project.**
+
+Go to <https://console.cloud.google.com/projectcreate> and sign in with the
+Google account that can already see the analytics you want. Create a project;
+the name is only for you.
+
+**3. Switch on the two APIs it reads through.**
+
+In the console, **APIs and services → Library**, search for and enable both:
+
+| API | What it is for |
+|---|---|
+| Google Analytics Admin API | Listing your accounts and properties |
+| Google Analytics Data API | Reading the actual figures |
+
+Miss the first and your property list comes back empty. Miss the second and the
+import fails as soon as it starts.
+
+**4. Fill in the consent screen.**
+
+Under **Google Auth Platform**, or **APIs and services → OAuth consent screen**
+on older consoles. You need an app name and your own email address twice.
+
+- **User type.** Choose **Internal** if your Google account belongs to a
+  Workspace. It is simpler and avoids the seven-day limit below.
+- Otherwise choose **External**, and add your own Google address under **Test
+  users**. An External app that has not been published only works for accounts
+  listed there.
+- **Scope.** Add `https://www.googleapis.com/auth/analytics.readonly`. It is the
+  only one this plugin asks for, and it is read-only.
+
+**5. Create the sign-in details.**
+
+**Credentials → Create credentials → OAuth client ID**.
+
+- **Application type: Web application.** Not Desktop. The sign-in is a browser
+  redirect back into wp-admin.
+- Under **Authorised redirect URIs**, choose **Add URI** and paste the address
+  from step 1.
+- Create it. Google shows you a **Client ID** and a **Client secret**.
+
+**6. Paste them into WordPress.**
+
+Back on **Analytics → Import data → Google Analytics**, put both in and save.
+They are stored on this site with autoloading off. The secret is never sent to
+a browser, never appears on a REST route, and is never written to a log.
+
+**7. Connect.**
+
+Choose **Connect Google Analytics**. Google will warn you that it *has not
+verified this app*. That is expected and is not a fault: read-only analytics
+access counts as a sensitive scope, and the "app" is the project you made five
+minutes ago for your own site. Choose **Advanced**, then **Go to (unsafe)**, and
+approve.
+
+### When it does not work
+
+The screen now tells you which of these happened, in words. The three common
+ones:
+
+| What you see | What it means |
+|---|---|
+| Google refused the connection | The redirect address in your Google project does not match the one on the Import screen, or the two APIs are not switched on yet |
+| There are no Google sign-in details saved | The Client ID and secret have not been saved on this site |
+| The reply from Google did not match | The attempt sat around too long, or was finished in a different browser or tab. Press Connect and go straight through |
+
+Some other things worth knowing before you start:
+
+- **Plain `http://` will not work.** Google rejects a redirect address that is
+  not HTTPS unless the host is `localhost` or `127.0.0.1`. A local site at
+  `http://example.test` cannot complete the sign-in; use `localhost` with a port,
+  or put an HTTPS tunnel in front of it.
+- **External plus Testing expires after seven days.** Fine for a one-off import.
+  Annoying if you are testing over weeks. Internal, or publishing the app,
+  removes the limit.
+- **The Google account needs at least Viewer** on the property, and it must be a
+  GA4 property. There is no Universal Analytics path; that data is gone from
+  Google's side.
+- **You need the "manage analytics" capability** on this site, which
+  administrators have by default.
+- **There is no WP-CLI command for imports.** This one is the admin screen only.
+
+### Then the import itself
 
 1. Open **Analytics → Import data**.
 2. Choose **Google Analytics**.

@@ -681,11 +681,10 @@ asks the question.
 **Why.** Edition checks scattered through templates rot. One gate can be
 tested, and can be flipped in development with a single constant.
 
-**Consequence.** Lite navigation does not register the Pro screens at all, so
-they are absent rather than teasing, and a direct URL is a 403 rather than an
-advertisement. The check sits in front of the query, not in front of the
+**Consequence.** The check sits in front of the query, not in front of the
 markup, so a downgraded site does not quietly keep computing figures it will
-not show.
+not show. Lite keeps the Pro rows in the menu, marked, leading to a page that
+describes the report rather than a 403 (ADR 57).
 
 ### ADR 45 - Three editions, two behaviours
 
@@ -861,3 +860,35 @@ values, calendar dates in the site's timezone, aggregates only and never an
 identifier - are enforced in one place and documented in
 [`import-architecture.md`](import-architecture.md).
 
+### ADR 57 - The paid reports are named in the free menu, and described
+
+**Decision.** Lite keeps Campaigns, Locations, Events, Goals, Funnels and
+Crawlers in the Analytics menu, each marked with a small `Pro` badge, each
+leading to a page that says what the report contains. `LockedScreen` is an
+ordinary Lite screen, not a Pro one: `isPro()` returns false, so it renders
+rather than answering 403. The slugs are the ones the real screens use, so a
+bookmark survives the upgrade.
+
+**Why.** This reverses the first arrangement, where the rows were absent
+altogether. That was defensible - a menu item leading to an advertisement is
+worse than no menu item - but it had a cost nobody had measured: people could
+not find out the reports existed. A free edition that conceals the existence of
+the paid one is not restraint, it is poor information.
+
+The plugin directory's rule is about **locked code**, not about mentioning that
+a paid edition exists. Lite genuinely does not contain these reports; they are
+removed by the build (ADR 48). The page is therefore a description of software
+somebody does not have, rather than a gate in front of software they do, and it
+says exactly that in as many words.
+
+**Consequence.** The pages carry **no figures, real or invented**. A skeleton
+with plausible numbers in it would be read as the site's own data, which would
+be a lie about the one thing this plugin sells. What they carry is one sentence
+on what the report answers, a list of what it actually contains, and a single
+link. No price, no button, no countdown, and nothing that returns after being
+dismissed, because there is nothing to dismiss. The Dashboard placeholder cards
+link to the same pages rather than repeating them.
+
+A build that has the Pro code but no active licence gets the same pages instead
+of 403s, which is a better answer for somebody whose licence has lapsed than a
+locked door.

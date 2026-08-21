@@ -290,7 +290,44 @@ final class Connection {
 
 		set_transient( self::STATE_TRANSIENT . get_current_user_id(), $state, self::STATE_TTL );
 
-		wp_safe_redirect( $provider->authorizationUrl( $state, self::redirectUri() ), 302, 'Honest Analytics' );
+		self::leaveForProvider( $provider->authorizationUrl( $state, self::redirectUri() ) );
+	}
+
+	/**
+	 * Hand the browser to the provider's consent screen.
+	 *
+	 * `wp_safe_redirect()` refuses any host but this site's, which is exactly
+	 * right for every other redirect in this file and exactly wrong for this
+	 * one: the whole point of the step is to leave. Sending it through
+	 * unmodified is what made Connect land back on the dashboard with nothing
+	 * to show for it.
+	 *
+	 * So the guard stays and the destination is allowed for this one response.
+	 * Anything that is not an HTTPS URL, or that turns out to point somewhere
+	 * other than where the provider said, still bounces rather than redirecting
+	 * a person somewhere unexpected.
+	 *
+	 * @param string $url Absolute HTTPS URL at the provider.
+	 */
+	private static function leaveForProvider( string $url ): void {
+		$host = (string) wp_parse_url( $url, PHP_URL_HOST );
+
+		if ( 'https' !== wp_parse_url( $url, PHP_URL_SCHEME ) || '' === $host ) {
+			Log::error( 'The Google Analytics provider returned an authorisation URL that was not an HTTPS address.' );
+
+			self::back( 'failed' );
+		}
+
+		add_filter(
+			'allowed_redirect_hosts',
+			static function ( array $hosts ) use ( $host ): array {
+				$hosts[] = $host;
+
+				return $hosts;
+			}
+		);
+
+		wp_safe_redirect( $url, 302, 'Honest Analytics' );
 
 		exit;
 	}
@@ -424,19 +461,109 @@ final class Connection {
 	/**
 	 * Back to the import screen, with a word about what happened.
 	 *
+	 * Back to the Google step of it, not the front of the wizard: somebody who
+	 * has just been bounced out of a connection attempt wants to see the thing
+	 * they were doing, with the reason written next to it.
+	 *
 	 * @param string $result A short slug the screen turns into a sentence.
 	 */
 	private static function back( string $result ): void {
 		wp_safe_redirect(
 			add_query_arg(
 				[
-					'page' => self::SCREEN,
-					'ga4'  => $result,
+					'page'   => self::SCREEN,
+					'step'   => 'connect',
+					'source' => 'ga4',
+					'ga4'    => $result,
 				],
 				admin_url( 'admin.php' )
 			)
 		);
 
 		exit;
+	}
+
+	/**
+	 * What one of those slugs means, in a sentence.
+	 *
+	 * Every one of these used to be a silent redirect. A person who pressed
+	 * Connect and landed back where they started with nothing written anywhere
+	 * has no way to tell a cancelled sign-in from a broken configuration, and
+	 * will reasonably conclude the plugin is broken.
+	 *
+	 * @param string $result The `ga4` query value.
+	 *
+	 * @return array{message:string,problem:bool}|null
+	 */
+	public static function outcome( string $result ): ?array {
+		switch ( $result ) {
+			case 'connected':
+				return [
+					'message' => __( 'Connected to Google. Choose which property to bring across.', 'honest-analytics' ),
+					'problem' => false,
+				];
+
+			case 'disconnected':
+				return [
+					'message' => __( 'Disconnected from Google. Anything already imported stays exactly where it is.', 'honest-analytics' ),
+					'problem' => false,
+				];
+
+			case 'credentials-saved':
+				return [
+					'message' => __( 'Saved. You can connect to Google now.', 'honest-analytics' ),
+					'problem' => false,
+				];
+
+			case 'credentials-cleared':
+				return [
+					'message' => __( 'Those details have been removed from this site.', 'honest-analytics' ),
+					'problem' => false,
+				];
+
+			case 'property-chosen':
+				return [
+					'message' => __( 'Property selected. You can choose your dates next.', 'honest-analytics' ),
+					'problem' => false,
+				];
+
+			case 'cancelled':
+				return [
+					'message' => __( 'Sign-in was cancelled, so nothing has changed. You can try again whenever you like.', 'honest-analytics' ),
+					'problem' => false,
+				];
+
+			case 'not-configured':
+				return [
+					'message' => __( 'There are no Google sign-in details saved on this site yet, so there is nothing to connect with. Fill in the two boxes below first.', 'honest-analytics' ),
+					'problem' => true,
+				];
+
+			case 'state':
+				return [
+					'message' => __( 'The reply from Google did not match the request that started it, so it was ignored. That usually means the attempt was left for a while, or was finished in a different browser or tab. Press Connect and go straight through.', 'honest-analytics' ),
+					'problem' => true,
+				];
+
+			case 'failed':
+				return [
+					'message' => __( 'Google refused the connection. The two usual causes are a redirect address in your Google project that does not match the one on this screen character for character, and the two Analytics APIs not being switched on there yet. Nothing on this site has been changed.', 'honest-analytics' ),
+					'problem' => true,
+				];
+
+			case 'property-invalid':
+				return [
+					'message' => __( 'That is not a property this account can see. Choose one from the list.', 'honest-analytics' ),
+					'problem' => true,
+				];
+
+			case 'property-failed':
+				return [
+					'message' => __( 'The property list could not be fetched from Google. If this keeps happening, check that the Google Analytics Admin API is switched on in your Google project.', 'honest-analytics' ),
+					'problem' => true,
+				];
+		}
+
+		return null;
 	}
 }

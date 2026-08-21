@@ -154,6 +154,38 @@
 		} );
 	};
 
+	/**
+	 * Copy a value somebody has to reproduce exactly somewhere else.
+	 *
+	 * The Google redirect address is matched character for character at the
+	 * other end, so a mistyped one fails with an error message that does not
+	 * say which character was wrong. The field is readable and selectable
+	 * without this; the button just removes a way to get it wrong.
+	 */
+	Array.prototype.forEach.call( document.querySelectorAll( '[data-ha-copy]' ), function ( button ) {
+		var target = document.getElementById( button.getAttribute( 'data-ha-copy' ) );
+
+		if ( ! target || ! navigator.clipboard ) {
+			return;
+		}
+
+		button.hidden = false;
+
+		button.addEventListener( 'click', function () {
+			navigator.clipboard.writeText( target.value ).then( function () {
+				var was = button.textContent;
+
+				button.textContent = button.getAttribute( 'data-ha-copied' ) || was;
+
+				window.setTimeout( function () {
+					button.textContent = was;
+				}, 2000 );
+			}, function () {
+				target.select();
+			} );
+		} );
+	} );
+
 	syncScrollables();
 
 	if ( window.ResizeObserver ) {
