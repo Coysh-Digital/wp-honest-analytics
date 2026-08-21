@@ -65,6 +65,17 @@ package a free build that still reaches for something it removed.
    free zip to a public release and - once the plugin directory credentials are
    in place - deploys to wordpress.org.
 
+   Leave `--tag` off to push a rebuild of a version that is already out: the
+   commit subject then says "rebuilt", the tag stays where it is, and the
+   release keeps the zip it was published with. Use it when something outside
+   the plugin changed - a workflow file, a document - and the code did not.
+
+## Where things stand
+
+Both repositories exist and 0.1.0 is released on each: the paid zip on the
+private one, the free zip on the public one. The plugin directory submission
+has not been made yet, which is the next step below.
+
 ## The plugin directory
 
 The first submission is by hand, at
