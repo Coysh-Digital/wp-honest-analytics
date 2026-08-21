@@ -1,0 +1,1598 @@
+/**
+ * Honest Analytics - admin styles.
+ *
+ * Everything is scoped under .ha-wrap so nothing here can leak into another
+ * plugin's screen. Colours are declared once as custom properties: the primary
+ * follows the user's chosen admin colour scheme, and the categorical ramp is
+ * fixed because WordPress exposes no palette for it and the five values below
+ * were chosen to stay distinguishable under the common colour-vision
+ * deficiencies. Charts never receive a colour from PHP - they resolve these
+ * tokens themselves, which is why the palette lives here and only here.
+ */
+
+.ha-wrap {
+	/* The one colour that follows the admin scheme. */
+	--ha-primary: var(--wp-admin-theme-color, #2271b1);
+	--ha-primary-dark: var(--wp-admin-theme-color-darker-10, #135e96);
+
+	--ha-views: var(--ha-primary);
+	--ha-uniques: #0f766e;
+
+	--ha-series-1: var(--ha-primary);
+	--ha-series-2: #0f766e;
+	--ha-series-3: #b26800;
+	--ha-series-4: #b32d2e;
+	--ha-series-5: #646970; /* Reserved for "Other". The only neutral. */
+
+	--ha-up: #007017;
+	--ha-down: #b32d2e;
+
+	--ha-ink: #1d2327;
+	--ha-muted: #646970;
+	--ha-border: #dcdcde;
+	--ha-hairline: #f0f0f1;
+	--ha-surface: #fff;
+	--ha-well: #f6f7f7;
+
+	--ha-bar: rgba(34, 113, 177, 0.12);
+	--ha-bar-strong: rgba(34, 113, 177, 0.22);
+
+	--ha-heat-0: #f0f0f1;
+	--ha-heat-1: #d7e8f4;
+	--ha-heat-2: #b8d7ec;
+	--ha-heat-3: #8fbfdf;
+	--ha-heat-4: #5f9fcb;
+	--ha-heat-5: #2271b1;
+	--ha-heat-6: #135e96;
+
+	--ha-tooltip-bg: #1d2327;
+	--ha-tooltip-fg: #fff;
+
+	--ha-radius: 6px;
+
+	max-width: 1180px;
+	color: var(--ha-ink);
+	font-size: 13px;
+	line-height: 1.4;
+
+	/* clip, not hidden: hidden would break position:sticky and
+	   scrollIntoView on anything inside. */
+	overflow-x: clip;
+}
+
+.ha-wrap.is-narrow {
+	max-width: 900px;
+}
+
+.ha-wrap * {
+	box-sizing: border-box;
+}
+
+/* ---------------------------------------------------------------- headings */
+
+.ha-header {
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+	flex-wrap: wrap;
+	padding: 9px 0 12px;
+}
+
+.ha-header h1 {
+	font-size: 23px;
+	font-weight: 400;
+	margin: 0;
+	padding: 0;
+	line-height: 1.3;
+}
+
+.ha-header .ha-path {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	word-break: break-all;
+}
+
+.ha-back {
+	display: block;
+	padding: 14px 0 4px;
+	font-size: 13px;
+}
+
+/* ----------------------------------------------------------------- toolbar */
+
+.ha-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin-bottom: 16px;
+}
+
+.ha-ranges {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 2px;
+	padding: 2px;
+	background: var(--ha-well);
+	border: 1px solid var(--ha-border);
+	border-radius: var(--ha-radius);
+}
+
+.ha-range {
+	padding: 5px 11px;
+	border-radius: 4px;
+	font-size: 13px;
+	line-height: 1.4;
+	text-decoration: none;
+	white-space: nowrap;
+	color: var(--ha-muted);
+	transition: background-color 0.15s, color 0.15s;
+}
+
+.ha-range:hover,
+.ha-range:focus {
+	color: var(--ha-ink);
+	background: rgba(255, 255, 255, 0.6);
+}
+
+.ha-range.is-selected {
+	background: var(--ha-surface);
+	color: var(--ha-ink);
+	font-weight: 500;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.09);
+}
+
+.ha-range-custom {
+	position: relative;
+}
+
+.ha-range-custom > summary {
+	list-style: none;
+	cursor: pointer;
+}
+
+.ha-range-custom > summary::-webkit-details-marker {
+	display: none;
+}
+
+.ha-range-form {
+	position: absolute;
+	z-index: 10;
+	top: calc(100% + 6px);
+	left: 0;
+	min-width: 210px;
+	padding: 12px;
+	background: var(--ha-surface);
+	border: 1px solid var(--ha-border);
+	border-radius: var(--ha-radius);
+	box-shadow: 0 3px 12px rgba(0, 0, 0, 0.12);
+}
+
+.ha-range-form label {
+	display: block;
+	margin-bottom: 8px;
+	font-size: 12px;
+	color: var(--ha-muted);
+}
+
+.ha-range-form input[type="date"] {
+	display: block;
+	width: 100%;
+	margin-top: 3px;
+}
+
+.ha-range-note {
+	margin-left: auto;
+	font-size: 12px;
+	color: var(--ha-muted);
+}
+
+/* ------------------------------------------------------------- KPI strip */
+
+.ha-kpis {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	background: var(--ha-surface);
+	border: 1px solid var(--ha-border);
+	border-radius: var(--ha-radius);
+	overflow: hidden;
+	margin-bottom: 24px;
+}
+
+/* The dividers are each tile's own borders pulled one pixel into its
+   neighbour. A grid gap would leave a grey block wherever the last row is
+   short, at some viewport width, for every tile count. */
+.ha-kpi {
+	background: var(--ha-surface);
+	padding: 16px 18px 18px;
+	min-width: 0;
+	border-left: 1px solid var(--ha-border);
+	border-top: 1px solid var(--ha-border);
+	margin: -1px 0 0 -1px;
+}
+
+.ha-kpi-label {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	color: var(--ha-muted);
+	margin-bottom: 6px;
+}
+
+.ha-kpi-value {
+	font-size: 28px;
+	line-height: 1.15;
+	font-weight: 600;
+	color: var(--ha-ink);
+	font-variant-numeric: tabular-nums;
+	letter-spacing: -0.02em;
+}
+
+.ha-kpi-sub {
+	margin-top: 4px;
+	font-size: 12px;
+	color: var(--ha-muted);
+	font-variant-numeric: tabular-nums;
+}
+
+.ha-hero {
+	font-size: 44px;
+	font-weight: 600;
+	line-height: 1;
+	letter-spacing: -0.03em;
+	font-variant-numeric: tabular-nums;
+}
+
+.ha-delta {
+	font-weight: 500;
+	font-variant-numeric: tabular-nums;
+}
+
+.ha-delta.is-up {
+	color: var(--ha-up);
+}
+
+.ha-delta.is-down {
+	color: var(--ha-down);
+}
+
+.ha-delta.is-flat {
+	color: var(--ha-muted);
+}
+
+/* -------------------------------------------------------------------- card */
+
+.ha-card {
+	background: var(--ha-surface);
+	border: 1px solid var(--ha-border);
+	border-radius: var(--ha-radius);
+	margin-bottom: 24px;
+	min-width: 0;
+}
+
+.ha-card-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+	padding: 14px 18px;
+	border-bottom: 1px solid var(--ha-border);
+}
+
+.ha-card-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--ha-ink);
+	margin: 0;
+}
+
+.ha-card-note {
+	font-size: 12px;
+	color: var(--ha-muted);
+}
+
+.ha-card-body {
+	padding: 18px;
+}
+
+.ha-grid-2 {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+	gap: 16px;
+	align-items: start;
+	margin-bottom: 24px;
+}
+
+.ha-grid-2 .ha-card {
+	margin-bottom: 0;
+}
+
+/* ------------------------------------------------------------------ tables */
+
+.ha-scroll {
+	overflow-x: auto;
+	max-width: 100%;
+	position: relative;
+}
+
+.ha-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-variant-numeric: tabular-nums;
+}
+
+.ha-table th {
+	text-align: left;
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	color: var(--ha-muted);
+	padding: 0 12px 8px;
+	border-bottom: 1px solid var(--ha-border);
+	white-space: nowrap;
+}
+
+.ha-table td {
+	padding: 9px 12px;
+	border-bottom: 1px solid var(--ha-hairline);
+	font-size: 13px;
+}
+
+.ha-table tbody tr:last-child td {
+	border-bottom: 0;
+}
+
+.ha-table tbody tr:hover {
+	background: var(--ha-well);
+}
+
+.ha-num {
+	text-align: right;
+	white-space: nowrap;
+}
+
+.ha-num-muted {
+	text-align: right;
+	white-space: nowrap;
+	color: var(--ha-muted);
+}
+
+/* A wash behind the label, with the number always spelled out beside it, so
+   nothing is encoded by length or colour alone. */
+.ha-bar-cell {
+	position: relative;
+	min-width: 0;
+}
+
+.ha-bar-fill {
+	position: absolute;
+	inset: 0 auto 0 0;
+	background: var(--ha-bar);
+	border-radius: 0 3px 3px 0;
+	pointer-events: none;
+}
+
+.ha-bar-label {
+	position: relative;
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: 46ch;
+}
+
+.ha-path-cell {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	word-break: break-all;
+}
+
+.ha-row-edit {
+	font-size: 11px;
+	flex: none;
+	opacity: 0;
+	transition: opacity 0.1s;
+}
+
+tr:hover .ha-row-edit,
+.ha-row-edit:focus {
+	opacity: 1;
+}
+
+/* ------------------------------------------------------------------ charts */
+
+.ha-chart {
+	position: relative;
+	height: 260px;
+	margin: 0;
+}
+
+/* An explicit height is load-bearing: with maintainAspectRatio off and no
+   height, the canvas and the layout engine size each other in a loop and the
+   chart grows without bound. */
+.ha-chart-sm {
+	height: 200px;
+}
+
+.ha-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 14px;
+	font-size: 12px;
+	color: var(--ha-muted);
+}
+
+.ha-legend-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.ha-swatch {
+	width: 9px;
+	height: 9px;
+	border-radius: 2px;
+	flex: none;
+}
+
+/*
+ * The doughnut's legend is a table, because it is the chart's data rather than
+ * a decoration beside it. Laid out with grid so it still reads as a legend.
+ */
+.ha-legend-table {
+	width: 100%;
+	border-collapse: collapse;
+	display: grid;
+	gap: 9px;
+}
+
+.ha-legend-table tbody {
+	display: contents;
+}
+
+.ha-legend-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+}
+
+.ha-legend-row th {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 0;
+	font-weight: 400;
+	text-align: left;
+	text-transform: none;
+	letter-spacing: 0;
+	font-size: 13px;
+	color: inherit;
+	border: 0;
+}
+
+.ha-legend-row td {
+	padding: 0;
+	border: 0;
+}
+
+.ha-legend-row b {
+	margin-left: auto;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.ha-legend-row .ha-num {
+	margin-left: auto;
+}
+
+.ha-legend-row .ha-share {
+	color: var(--ha-muted);
+	font-variant-numeric: tabular-nums;
+	width: 52px;
+	text-align: right;
+}
+
+.ha-split {
+	display: flex;
+	gap: 28px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.ha-split-chart {
+	flex: 0 0 180px;
+	max-width: 100%;
+}
+
+.ha-split-legend {
+	flex: 1 1 260px;
+	display: grid;
+	gap: 9px;
+	min-width: 0;
+}
+
+.ha-axis {
+	display: flex;
+	justify-content: space-between;
+	font-size: 11px;
+	color: var(--ha-muted);
+	font-variant-numeric: tabular-nums;
+	padding-top: 8px;
+}
+
+/* ----------------------------------------------------------------- heatmap */
+
+.ha-heatmap {
+	border-collapse: separate;
+	border-spacing: 2px;
+	table-layout: fixed;
+	width: 100%;
+	min-width: 560px;
+}
+
+.ha-heatmap caption {
+	text-align: left;
+	font-size: 12px;
+	color: var(--ha-muted);
+	padding-bottom: 8px;
+}
+
+/* position:relative on the cells keeps the screen-reader labels clipped
+   inside them, rather than dragging the document width out to 560px. */
+.ha-heatmap th,
+.ha-heatmap td {
+	position: relative;
+	padding: 0;
+}
+
+.ha-heatmap th {
+	font-size: 10px;
+	font-weight: 500;
+	color: var(--ha-muted);
+	font-variant-numeric: tabular-nums;
+	text-align: center;
+	border: 0;
+}
+
+.ha-heatmap th[scope="row"] {
+	width: 34px;
+	text-align: right;
+	padding-right: 6px;
+}
+
+.ha-heatmap td {
+	height: 20px;
+	border-radius: 2px;
+	background: var(--ha-heat-0);
+}
+
+.ha-heatmap td[data-bucket="1"], .ha-heat-chip[data-bucket="1"] { background: var(--ha-heat-1); }
+.ha-heatmap td[data-bucket="2"], .ha-heat-chip[data-bucket="2"] { background: var(--ha-heat-2); }
+.ha-heatmap td[data-bucket="3"], .ha-heat-chip[data-bucket="3"] { background: var(--ha-heat-3); }
+.ha-heatmap td[data-bucket="4"], .ha-heat-chip[data-bucket="4"] { background: var(--ha-heat-4); }
+.ha-heatmap td[data-bucket="5"], .ha-heat-chip[data-bucket="5"] { background: var(--ha-heat-5); }
+.ha-heatmap td[data-bucket="6"], .ha-heat-chip[data-bucket="6"] { background: var(--ha-heat-6); }
+
+.ha-heat-key {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 5px;
+	margin-top: 12px;
+	font-size: 12px;
+	color: var(--ha-muted);
+}
+
+.ha-heat-chip {
+	width: 14px;
+	height: 12px;
+	border-radius: 2px;
+	background: var(--ha-heat-0);
+	display: inline-block;
+}
+
+.ha-heat-peak {
+	margin-left: auto;
+	font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------- real-time */
+
+.ha-live-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: var(--ha-up);
+	flex: none;
+	display: inline-block;
+	animation: ha-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ha-pulse {
+	0%, 100% { opacity: 1; transform: scale(1); }
+	50% { opacity: 0.45; transform: scale(0.85); }
+}
+
+.ha-realtime-banner {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 9px 14px;
+	margin-bottom: 16px;
+	border: 1px solid var(--ha-border);
+	border-radius: var(--ha-radius);
+	background: var(--ha-surface);
+	color: var(--ha-ink);
+	text-decoration: none;
+}
+
+.ha-realtime-banner:hover {
+	border-color: #c3c4c7;
+	color: var(--ha-ink);
+}
+
+.ha-realtime-banner strong {
+	font-variant-numeric: tabular-nums;
+}
+
+.ha-realtime-go {
+	margin-left: auto;
+	font-size: 12px;
+	color: var(--ha-primary);
+}
+
+/* ------------------------------------------------------------------ funnel */
+
+.ha-funnel {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.ha-funnel-step + .ha-funnel-step {
+	margin-top: 6px;
+}
+
+.ha-funnel-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 12px;
+	margin-bottom: 5px;
+}
+
+.ha-funnel-num {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	background: var(--ha-bar);
+	color: var(--ha-primary);
+	font-size: 11px;
+	font-weight: 600;
+	flex: none;
+}
+
+.ha-funnel-track {
+	height: 28px;
+	background: var(--ha-hairline);
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.ha-funnel-fill {
+	height: 100%;
+	background: var(--ha-primary);
+	border-radius: 4px;
+	min-width: 2px; /* A step at 0% must still read as a step. */
+}
+
+.ha-funnel-drop {
+	font-size: 12px;
+	color: var(--ha-muted);
+	padding: 7px 0 1px 28px;
+	position: relative;
+}
+
+.ha-funnel-drop::before {
+	content: "\21B3";
+	position: absolute;
+	left: 10px;
+	color: #a7aaad;
+}
+
+/* -------------------------------------------------------------- scroll bars */
+
+.ha-meter {
+	height: 10px;
+	background: var(--ha-hairline);
+	border-radius: 3px;
+	overflow: hidden;
+}
+
+.ha-meter-fill {
+	height: 100%;
+	background: var(--ha-primary);
+	border-radius: 3px;
+}
+
+.ha-meter-row {
+	display: flex;
+	justify-content: space-between;
+	font-size: 13px;
+	margin-bottom: 5px;
+}
+
+/* ----------------------------------------------------------------- privacy */
+
+.ha-posture {
+	display: flex;
+	gap: 14px;
+	align-items: flex-start;
+}
+
+.ha-posture-icon {
+	flex: none;
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	display: grid;
+	place-items: center;
+	font-weight: 700;
+	font-size: 15px;
+}
+
+.ha-posture.is-clean .ha-posture-icon {
+	background: #d5efdc;
+	color: var(--ha-up);
+}
+
+.ha-posture.is-consent .ha-posture-icon {
+	background: #fcf0d3;
+	color: #8a6300;
+}
+
+.ha-posture-label {
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--ha-muted);
+	margin-bottom: 4px;
+}
+
+.ha-posture-title {
+	font-size: 15px;
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+.ha-posture-body {
+	color: var(--ha-muted);
+	max-width: 68ch;
+	margin: 0;
+}
+
+.ha-warning {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+	padding: 10px 0;
+	border-bottom: 1px solid var(--ha-hairline);
+}
+
+.ha-warning:last-child {
+	border-bottom: 0;
+	padding-bottom: 0;
+}
+
+.ha-warning:first-child {
+	padding-top: 0;
+}
+
+.ha-badge {
+	flex: none;
+	background: #fcf0d3;
+	color: #8a6300;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	padding: 2px 7px;
+	border-radius: 3px;
+	margin-top: 1px;
+}
+
+.ha-badge.is-pro {
+	background: #e5effa;
+	color: var(--ha-primary);
+}
+
+.ha-danger {
+	border: 1px solid var(--ha-border);
+	border-left: 4px solid var(--ha-down);
+	background: var(--ha-surface);
+	border-radius: 0 var(--ha-radius) var(--ha-radius) 0;
+	padding: 14px 18px;
+	margin-bottom: 16px;
+}
+
+.ha-info {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+	border: 1px solid var(--ha-border);
+	border-left: 4px solid #72aee6;
+	background: var(--ha-surface);
+	border-radius: 0 var(--ha-radius) var(--ha-radius) 0;
+	padding: 12px 16px;
+	margin-bottom: 24px;
+}
+
+.ha-info.is-warning {
+	border-left-color: #dba617;
+}
+
+.ha-info p {
+	margin: 0;
+}
+
+.ha-info p + p {
+	margin-top: 6px;
+}
+
+.ha-code {
+	background: var(--ha-well);
+	border: 1px solid var(--ha-border);
+	border-radius: 5px;
+	padding: 12px 14px;
+	font-size: 12px;
+	line-height: 1.7;
+	overflow-x: auto;
+	margin: 8px 0 0;
+}
+
+/* ---------------------------------------------------------------- settings */
+
+.ha-setting {
+	display: grid;
+	grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+	gap: 16px;
+	padding: 16px 0;
+	border-bottom: 1px solid var(--ha-hairline);
+	align-items: start;
+}
+
+.ha-setting:last-child {
+	border-bottom: 0;
+}
+
+.ha-setting > label,
+.ha-setting > .ha-setting-label {
+	font-weight: 600;
+	font-size: 13px;
+	padding-top: 6px;
+}
+
+.ha-setting-control {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	flex-wrap: wrap;
+	margin-bottom: 6px;
+}
+
+.ha-setting-help {
+	margin: 0;
+	color: var(--ha-muted);
+	font-size: 13px;
+	max-width: 64ch;
+}
+
+.ha-consequence {
+	margin: 6px 0 0;
+	font-size: 12px;
+	color: #8a6300;
+	max-width: 64ch;
+}
+
+.ha-overridden {
+	margin: 6px 0 0;
+	font-size: 12px;
+	color: var(--ha-muted);
+}
+
+.ha-settings-body {
+	padding: 4px 18px 8px;
+}
+
+.ha-save {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	padding-bottom: 20px;
+}
+
+/* -------------------------------------------------------------------- tabs */
+
+.ha-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	border-bottom: 1px solid var(--ha-border);
+	margin-bottom: 20px;
+}
+
+.ha-tab {
+	padding: 8px 12px 9px;
+	font-size: 13px;
+	text-decoration: none;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -1px;
+	color: var(--ha-muted);
+	transition: color 0.15s, border-color 0.15s;
+}
+
+.ha-tab.is-selected {
+	color: var(--ha-primary);
+	border-bottom-color: var(--ha-primary);
+	font-weight: 500;
+}
+
+/* ------------------------------------------------------------- placeholder */
+
+.ha-placeholder-bars {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 4px 0 8px;
+}
+
+.ha-placeholder-row {
+	height: 12px;
+	background: var(--ha-well);
+	border-radius: 3px;
+	overflow: hidden;
+}
+
+.ha-placeholder-bar {
+	height: 100%;
+	background: var(--ha-hairline);
+	border-radius: 3px;
+}
+
+/* -------------------------------------------------------------- misc, notes */
+
+.ha-empty {
+	text-align: center;
+	padding: 44px 20px;
+}
+
+.ha-empty-title {
+	font-size: 15px;
+	font-weight: 500;
+	margin-bottom: 6px;
+}
+
+.ha-footnote {
+	font-size: 12px;
+	color: var(--ha-muted);
+	max-width: 82ch;
+	margin: -12px 0 24px;
+}
+
+.ha-footnote + .ha-footnote {
+	margin-top: -18px;
+}
+
+.ha-muted {
+	color: var(--ha-muted);
+}
+
+.ha-filters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: flex-end;
+}
+
+.ha-filters label {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	font-size: 12px;
+	color: var(--ha-muted);
+}
+
+.ha-compare-bar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding-top: 14px;
+	font-size: 12px;
+	flex-wrap: wrap;
+}
+
+/* A visually hidden block, on a wrapper rather than on the table itself: a
+   table's height is a minimum, so height:1px does not clamp one, and an
+   absolutely positioned 366-row table stays twelve thousand pixels tall. */
+.ha-visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+.ha-fallback {
+	margin: 0;
+	padding: 12px;
+	background: var(--ha-well);
+	border: 1px solid var(--ha-border);
+	border-radius: 5px;
+	color: var(--ha-muted);
+	font-size: 13px;
+}
+
+/* --------------------------------------------------------------- responsive */
+
+/* ---------------------------------------------------------------------------
+ * Layout and text helpers.
+ *
+ * These exist so that no template carries a style attribute. There is exactly
+ * one exception in the whole plugin, and it is deliberate: the width of a
+ * proportional bar. That is a datum, not a style, and it cannot be expressed
+ * in a stylesheet.
+ * ------------------------------------------------------------------------ */
+
+/* A footnote pulled up under the card it belongs to. */
+.ha-footnote.is-tight {
+	margin-top: -18px;
+}
+
+.ha-footnote.is-flush {
+	margin-top: 0;
+}
+
+/* Measured prose. A 1180px line of text is unreadable. */
+.ha-prose {
+	max-width: 62ch;
+	margin: 0 auto;
+}
+
+.ha-prose.is-spaced {
+	margin-bottom: 12px;
+}
+
+.ha-measure {
+	max-width: 72ch;
+	margin: 0;
+}
+
+/* A sentence introducing a screen, sitting under the heading. */
+.ha-lede {
+	margin: -8px 0 16px;
+}
+
+.ha-lede.is-inline {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.ha-tight {
+	margin: 0;
+}
+
+.ha-tight-below {
+	margin: 0 0 12px;
+}
+
+.ha-gap-above {
+	margin-top: 12px;
+}
+
+.ha-gap-below {
+	margin-bottom: 12px;
+}
+
+.ha-fine {
+	margin: 12px 0 0;
+	font-size: 12px;
+}
+
+.ha-fine.is-snug {
+	margin: 4px 0 0;
+}
+
+.ha-inline {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.ha-inline.is-min0 {
+	min-width: 0;
+}
+
+.ha-nowrap-num {
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+.ha-nowrap-num strong {
+	color: var(--ha-ink);
+}
+
+/* Term and description pairs on the Privacy screen. */
+.ha-stack {
+	display: grid;
+	gap: 12px;
+	margin: 0;
+}
+
+.ha-stack dt {
+	font-weight: 600;
+}
+
+.ha-stack dd {
+	margin: 2px 0 0;
+}
+
+/* The privacy export form. */
+.ha-form-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 8px;
+}
+
+.ha-field {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	font-size: 12px;
+	color: var(--ha-muted);
+}
+
+.ha-json {
+	margin: 0;
+	white-space: pre-wrap;
+}
+
+.ha-code.is-block {
+	max-width: 60ch;
+	margin: 0 auto;
+	text-align: left;
+}
+
+.ha-header.is-flush {
+	padding-top: 0;
+}
+
+/*
+ * Tables that must not squash. They scroll inside .ha-scroll rather than
+ * compressing a column of numbers into two characters.
+ */
+.ha-table.is-wide {
+	min-width: 520px;
+}
+
+.ha-table.is-wider {
+	min-width: 640px;
+}
+
+.ha-table.is-widest {
+	min-width: 760px;
+}
+
+.ha-table th.is-check {
+	width: 28px;
+}
+
+.ha-table td.is-left {
+	text-align: left;
+}
+
+.ha-table td.is-centre {
+	text-align: center;
+}
+
+/* A row header carrying a label rather than a column name. */
+.ha-table th.ha-rowhead {
+	width: 38%;
+	padding: 9px 12px;
+	border-bottom: 1px solid var(--ha-hairline);
+	font-size: 13px;
+	font-weight: 400;
+	text-transform: none;
+	white-space: normal;
+}
+
+/* Legend swatches, one class per series token. */
+.ha-swatch.is-views {
+	background: var(--ha-views);
+}
+
+.ha-swatch.is-uniques {
+	background: var(--ha-uniques);
+}
+
+.ha-swatch.is-series-1 {
+	background: var(--ha-series-1);
+}
+
+.ha-swatch.is-series-2 {
+	background: var(--ha-series-2);
+}
+
+.ha-swatch.is-series-3 {
+	background: var(--ha-series-3);
+}
+
+.ha-swatch.is-series-4 {
+	background: var(--ha-series-4);
+}
+
+.ha-swatch.is-series-5 {
+	background: var(--ha-series-5);
+}
+
+/*
+ * The three bars in a Pro placeholder card. Decoration, aria-hidden, and
+ * therefore expressed here rather than in the markup.
+ */
+.ha-placeholder-row:nth-child(1) .ha-placeholder-bar {
+	width: 72%;
+}
+
+.ha-placeholder-row:nth-child(2) .ha-placeholder-bar {
+	width: 48%;
+}
+
+.ha-placeholder-row:nth-child(3) .ha-placeholder-bar {
+	width: 26%;
+}
+
+@media (max-width: 782px) {
+	.ha-setting {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 6px;
+	}
+
+	.ha-setting > label,
+	.ha-setting > .ha-setting-label {
+		padding-top: 0;
+	}
+}
+
+@media (max-width: 600px) {
+	.ha-kpi-value {
+		font-size: 22px;
+	}
+
+	.ha-hero {
+		font-size: 34px;
+	}
+
+	.ha-chart {
+		height: 200px;
+	}
+
+	.ha-chart-sm {
+		height: 160px;
+	}
+
+	.ha-range-form {
+		right: 0;
+		left: auto;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ha-wrap *,
+	.ha-wrap *::before {
+		animation: none !important;
+		transition: none !important;
+	}
+}
+
+/* ---------------------------------------------------------------------------
+ * Importing.
+ *
+ * A wizard rather than a settings screen, so the vocabulary here is about
+ * choices and outcomes: a source card, a radio with room to explain itself, a
+ * bar, and a tick list. Everything reuses the card, table and field styles
+ * above; only the shapes that had no equivalent are new.
+ * ------------------------------------------------------------------------ */
+
+.ha-sources {
+	display: grid;
+	gap: 1px;
+	background: var(--ha-hairline);
+	border-top: 1px solid var(--ha-hairline);
+	border-bottom: 1px solid var(--ha-hairline);
+	margin: 4px 0 0;
+}
+
+.ha-source {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 20px;
+	flex-wrap: wrap;
+	background: var(--ha-surface);
+	padding: 16px 0;
+}
+
+.ha-source-main {
+	flex: 1 1 320px;
+	min-width: 0;
+}
+
+.ha-source-name {
+	margin: 0 0 4px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--ha-ink);
+}
+
+.ha-source-state {
+	margin: 0 0 2px;
+	font-size: 13px;
+	color: var(--ha-muted);
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.ha-source-state.is-found,
+.ha-source-state.is-done {
+	color: var(--ha-up);
+	font-weight: 600;
+}
+
+.ha-source-state.is-running {
+	color: var(--ha-primary);
+	font-weight: 600;
+}
+
+.ha-source-action {
+	flex: none;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding-top: 2px;
+}
+
+.ha-source-again {
+	font-size: 12px;
+}
+
+/* A card that opens. The summary carries the card head's own styling. */
+.ha-more-sources summary,
+.ha-more-detail summary {
+	cursor: pointer;
+	list-style: none;
+}
+
+.ha-more-sources summary::-webkit-details-marker,
+.ha-more-detail summary::-webkit-details-marker {
+	display: none;
+}
+
+.ha-more-sources summary::after,
+.ha-more-detail summary::after {
+	content: "";
+	width: 7px;
+	height: 7px;
+	margin-left: auto;
+	border-right: 1.5px solid var(--ha-muted);
+	border-bottom: 1.5px solid var(--ha-muted);
+	transform: rotate(45deg) translate(-2px, -2px);
+}
+
+.ha-more-sources[open] summary::after,
+.ha-more-detail[open] summary::after {
+	transform: rotate(-135deg) translate(-2px, -2px);
+}
+
+/* One question, a few answers, each with room to say what it means. */
+.ha-choices {
+	display: grid;
+	gap: 10px;
+}
+
+.ha-choice {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	border: 1px solid var(--ha-border);
+	border-radius: var(--ha-radius);
+	padding: 12px 14px;
+	cursor: pointer;
+}
+
+.ha-choice:hover {
+	border-color: var(--ha-primary);
+}
+
+.ha-choice input {
+	margin: 2px 0 0;
+	flex: none;
+}
+
+.ha-choice-title {
+	display: block;
+	font-weight: 600;
+	color: var(--ha-ink);
+}
+
+.ha-choice-note {
+	display: block;
+	margin-top: 2px;
+	font-size: 12px;
+	color: var(--ha-muted);
+}
+
+.ha-choice-dates {
+	padding-left: 26px;
+}
+
+.ha-wizard-actions {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	flex-wrap: wrap;
+	margin-top: 20px;
+}
+
+.ha-wizard-cancel {
+	font-size: 13px;
+	color: var(--ha-muted);
+}
+
+.ha-subhead {
+	margin: 20px 0 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--ha-ink);
+}
+
+.ha-ticks {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: grid;
+	gap: 6px;
+}
+
+.ha-ticks li {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	margin: 0;
+}
+
+.ha-ticks.is-muted li {
+	color: var(--ha-muted);
+}
+
+.ha-tick {
+	flex: none;
+	color: var(--ha-up);
+	font-weight: 600;
+}
+
+.ha-ticks.is-muted .ha-tick {
+	color: var(--ha-muted);
+}
+
+.ha-plain-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: grid;
+	gap: 4px;
+}
+
+.ha-progress {
+	height: 14px;
+	background: var(--ha-hairline);
+	border-radius: 7px;
+	overflow: hidden;
+}
+
+.ha-progress-fill {
+	height: 100%;
+	background: var(--ha-primary);
+	border-radius: 7px;
+	transition: width 400ms ease;
+}
+
+.ha-progress-figures {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	margin: 10px 0 4px;
+	font-variant-numeric: tabular-nums;
+}
+
+.ha-progress-figures strong {
+	font-size: 20px;
+	color: var(--ha-ink);
+}
+
+.ha-outcome {
+	gap: 10px;
+}
+
+.ha-outcome-figure {
+	display: block;
+	font-size: 22px;
+	font-variant-numeric: tabular-nums;
+	color: var(--ha-ink);
+}
+
+/* Approximate is not a warning, so it does not borrow the warning colour. */
+.ha-badge.is-approximate {
+	background: var(--ha-hairline);
+	color: var(--ha-muted);
+}
+
+/* Where imported history gives way to what this plugin measured itself. */
+.ha-boundary {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	margin: 10px 0 0;
+	padding-top: 10px;
+	border-top: 1px dashed var(--ha-border);
+	font-size: 12px;
+	color: var(--ha-muted);
+}
+
+.ha-boundary-mark {
+	flex: none;
+	font-weight: 600;
+	color: var(--ha-ink);
+}
+
+@media (max-width: 782px) {
+	.ha-source-action {
+		width: 100%;
+	}
+
+	.ha-choice-dates {
+		padding-left: 0;
+	}
+}
+
+/* Prose that follows a tick list needs to stop looking like another item. */
+.ha-notes {
+	margin-top: 16px;
+	padding-top: 14px;
+	border-top: 1px solid var(--ha-hairline);
+}
+
+.ha-notes p:last-child {
+	margin-bottom: 0;
+}
+
+/* .ha-measure sets margin:0 for the single-paragraph case it was written for.
+   Consecutive paragraphs of prose need to breathe. */
+.ha-measure + .ha-measure {
+	margin-top: 10px;
+}

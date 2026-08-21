@@ -1,0 +1,5018 @@
+# Copyright (C) 2026 Coysh Digital
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Honest Analytics 0.1.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/honest-analytics\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-08-21T10:22:48+01:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: honest-analytics\n"
+
+#. Plugin Name of the plugin
+#: honest-analytics.php
+#: src/Import/Ga4/BrokerProvider.php:38
+#: src/Import/ImportSource.php:58
+#: src/Privacy/PersonalData.php:35
+#: src/Privacy/PersonalData.php:51
+#: src/Privacy/PolicyContent.php:36
+#: templates/email/summary-html.php:97
+msgid "Honest Analytics"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: honest-analytics.php
+msgid "https://coysh.digital/plugins/honest-analytics"
+msgstr ""
+
+#. Description of the plugin
+#: honest-analytics.php
+msgid "Privacy-first, cookieless analytics that live inside WordPress. No third-party service, no IP addresses, no per-visitor rows - just aggregate counters you own."
+msgstr ""
+
+#. Author of the plugin
+#: honest-analytics.php
+msgid "Coysh Digital"
+msgstr ""
+
+#. Author URI of the plugin
+#: honest-analytics.php
+msgid "https://coysh.digital"
+msgstr ""
+
+#. translators: %s: current PHP version.
+#: honest-analytics.php:65
+#, php-format
+msgid "Honest Analytics needs PHP 8.1 or newer. This site runs PHP %s, so the plugin has not loaded."
+msgstr ""
+
+#: src/Admin/Assets.php:91
+#: src/Scheduling/Health.php:305
+#: templates/admin/realtime.php:76
+msgid "just now"
+msgstr ""
+
+#. translators: %d: a number of seconds.
+#: src/Admin/Assets.php:93
+#, php-format
+msgid "%ds ago"
+msgstr ""
+
+#. translators: %d: a number of minutes.
+#: src/Admin/Assets.php:95
+#, php-format
+msgid "%dm ago"
+msgstr ""
+
+#. translators: %s: how long ago the figures were refreshed, already formatted.
+#: src/Admin/Assets.php:97
+#, php-format
+msgid "Updated %s"
+msgstr ""
+
+#: src/Admin/Assets.php:98
+#: templates/admin/realtime.php:70
+msgid "just arrived"
+msgstr ""
+
+#: src/Admin/Assets.php:99
+#: templates/admin/realtime.php:61
+#: templates/widgets/live.php:33
+msgid "Nobody is on the site right now."
+msgstr ""
+
+#. translators: %d: the number of rows beyond those listed.
+#: src/Admin/Assets.php:101
+#, php-format
+msgid "%d more not shown"
+msgstr ""
+
+#: src/Admin/MaintenanceHandler.php:93
+msgid "You do not have permission to run maintenance for this site."
+msgstr ""
+
+#: src/Admin/MaintenanceHandler.php:94
+#: src/Admin/Screens/GoalsScreen.php:83
+#: src/Admin/Screens/PrivacyScreen.php:86
+#: src/Admin/Screens/Screen.php:162
+#: src/Export/ExportHandler.php:79
+#: src/Geo/GeoHandler.php:84
+msgid "Not allowed"
+msgstr ""
+
+#: src/Admin/MaintenanceHandler.php:119
+#: src/Geo/GeoHandler.php:116
+msgid "That is not something this form does."
+msgstr ""
+
+#. translators: %s: an error message.
+#: src/Admin/MaintenanceHandler.php:128
+#, php-format
+msgid "That did not finish: %s"
+msgstr ""
+
+#. translators: %d: number of batches.
+#: src/Admin/MaintenanceHandler.php:158
+#, php-format
+msgid "%d set-aside batch put back."
+msgid_plural "%d set-aside batches put back."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: a number of hits, for example "4 hits". 2: a number of batches, for example "1 batch".
+#: src/Admin/MaintenanceHandler.php:167
+#, php-format
+msgid "%1$s folded in, from %2$s."
+msgstr ""
+
+#. translators: %s: a number.
+#: src/Admin/MaintenanceHandler.php:170
+#, php-format
+msgid "%s hit"
+msgid_plural "%s hits"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: a number.
+#: src/Admin/MaintenanceHandler.php:175
+#, php-format
+msgid "%s batch"
+msgid_plural "%s batches"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of batches.
+#: src/Admin/MaintenanceHandler.php:183
+#, php-format
+msgid "%d batch was set aside after repeated failures and is not counted."
+msgid_plural "%d batches were set aside after repeated failures and are not counted."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Admin/MaintenanceHandler.php:194
+msgid "Nothing was waiting. The reports are already up to date."
+msgstr ""
+
+#. translators: 1: number of days, 2: number of rows.
+#: src/Admin/MaintenanceHandler.php:227
+#, php-format
+msgid "Tidy-up finished. %1$s days compacted to daily totals, %2$s rows past their retention deleted."
+msgstr ""
+
+#: src/Admin/Menu.php:113
+#: src/Admin/Menu.php:114
+#: src/Admin/Screens/DashboardScreen.php:44
+#: src/Admin/Screens/Screen.php:127
+#: src/Admin/Widgets/OverviewWidget.php:55
+#: src/Privacy/PersonalData.php:107
+msgid "Analytics"
+msgstr ""
+
+#: src/Admin/Notices.php:98
+msgid "Honest Analytics:"
+msgstr ""
+
+#: src/Admin/Notices.php:149
+msgid "Keep your analytics history."
+msgstr ""
+
+#. translators: %s: a list of analytics tool names.
+#: src/Admin/Notices.php:153
+#, php-format
+msgid "We found analytics from %s on this site. Would you like to bring that history across, so your charts do not start from zero?"
+msgstr ""
+
+#: src/Admin/Notices.php:158
+msgid "Import analytics"
+msgstr ""
+
+#: src/Admin/Notices.php:160
+msgid "I’ll do this later"
+msgstr ""
+
+#: src/Admin/Posts/StatsMetaBox.php:62
+msgid "Analytics, last 30 days"
+msgstr ""
+
+#: src/Admin/Posts/StatsMetaBox.php:110
+msgid "Analytics are not available right now."
+msgstr ""
+
+#: src/Admin/Posts/ViewsColumn.php:72
+msgid "Views (30d)"
+msgstr ""
+
+#: src/Admin/Posts/ViewsColumn.php:92
+msgid "No views recorded"
+msgstr ""
+
+#: src/Admin/Screens/CampaignsScreen.php:36
+#: templates/admin/dashboard.php:341
+#: templates/admin/dashboard.php:431
+msgid "Campaigns"
+msgstr ""
+
+#: src/Admin/Screens/ContentScreen.php:35
+#: src/Export/Exporter.php:107
+msgid "Content"
+msgstr ""
+
+#: src/Admin/Screens/ContentScreen.php:62
+#: templates/admin/dashboard.php:237
+msgid "Post types"
+msgstr ""
+
+#: src/Admin/Screens/ContentScreen.php:63
+msgid "Taxonomies"
+msgstr ""
+
+#: src/Admin/Screens/ContentScreen.php:64
+msgid "Authors"
+msgstr ""
+
+#: src/Admin/Screens/ContentScreen.php:84
+msgid "Views by term"
+msgstr ""
+
+#: src/Admin/Screens/ContentScreen.php:85
+msgid "Views by author"
+msgstr ""
+
+#: src/Admin/Screens/ContentScreen.php:86
+msgid "Views by post type"
+msgstr ""
+
+#: src/Admin/Screens/ContentScreen.php:89
+#: src/Export/Exporter.php:276
+#: templates/admin/events.php:179
+msgid "Term"
+msgstr ""
+
+#: src/Admin/Screens/ContentScreen.php:90
+#: src/Export/Exporter.php:277
+msgid "Author"
+msgstr ""
+
+#: src/Admin/Screens/ContentScreen.php:91
+#: src/Export/Exporter.php:275
+#: templates/admin/dashboard.php:262
+msgid "Post type"
+msgstr ""
+
+#: src/Admin/Screens/CrawlersScreen.php:38
+#: templates/admin/dashboard.php:451
+#: templates/admin/dashboard.php:459
+#: templates/admin/settings.php:568
+msgid "Crawlers"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:51
+msgid "Dashboard"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:188
+#: src/Admin/Widgets/OverviewWidget.php:70
+#: src/Charts/ChartData.php:105
+#: templates/admin/dashboard.php:60
+#: templates/email/summary-html.php:63
+#: templates/email/summary-text.php:88
+msgid "Pageviews"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:191
+#: src/Admin/Screens/DashboardScreen.php:207
+#: src/Admin/Screens/DashboardScreen.php:220
+#: templates/admin/page.php:24
+msgid "vs previous period"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:194
+#: src/Charts/ChartData.php:116
+#: src/Import/Sources/Ga4Importer.php:231
+#: src/Import/Sources/IndependentAnalyticsImporter.php:178
+#: src/Import/Sources/WPStatisticsImporter.php:174
+#: templates/admin/dashboard.php:62
+#: templates/admin/page.php:27
+#: templates/admin/page.php:75
+#: templates/email/summary-html.php:69
+#: templates/email/summary-text.php:89
+msgid "Unique visitors"
+msgstr ""
+
+#. translators: %s: accuracy, e.g. "±1.6%".
+#. translators: %s: accuracy.
+#: src/Admin/Screens/DashboardScreen.php:199
+#: templates/admin/page.php:30
+#, php-format
+msgid "daily uniques, %s"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:204
+#: src/Admin/Screens/DevicesScreen.php:76
+#: src/Admin/Widgets/OverviewWidget.php:72
+#: src/Charts/ChartData.php:81
+#: src/Import/Sources/Ga4Importer.php:225
+#: src/Import/Sources/IndependentAnalyticsImporter.php:183
+#: src/Import/Sources/IndependentAnalyticsImporter.php:184
+#: src/Import/Sources/WPStatisticsImporter.php:180
+#: templates/admin/campaigns.php:91
+#: templates/admin/dashboard.php:194
+#: templates/admin/dashboard.php:370
+#: templates/admin/dashboard.php:413
+#: templates/admin/devices.php:51
+#: templates/admin/devices.php:116
+#: templates/admin/events.php:65
+#: templates/admin/funnels.php:120
+#: templates/admin/locations.php:100
+#: templates/admin/sources.php:76
+#: templates/admin/sources.php:119
+#: templates/email/summary-html.php:75
+#: templates/email/summary-html.php:216
+#: templates/email/summary-text.php:90
+msgid "Sessions"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:210
+#: src/Admin/Widgets/OverviewWidget.php:73
+#: templates/admin/page.php:39
+#: templates/admin/pages.php:126
+#: templates/email/summary-html.php:81
+#: templates/email/summary-text.php:91
+msgid "Bounce rate"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:214
+msgid "lower is better"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:217
+#: src/Admin/Widgets/OverviewWidget.php:74
+msgid "Pages / session"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:223
+#: src/Admin/Widgets/OverviewWidget.php:75
+msgid "Avg session"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:226
+msgid "closed sessions only"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:229
+#: src/Admin/Widgets/OverviewWidget.php:76
+#: templates/admin/page.php:48
+msgid "Avg time on page"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:233
+msgid "measured by the tracker"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:234
+#: templates/admin/page.php:51
+msgid "needs hybrid or client mode"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:254
+msgid "Pageviews are waiting to be counted"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:255
+msgid "Traffic is being recorded, but the drain has not folded it into the reports yet. It runs every five minutes, and ordinary traffic drives it when cron is unavailable. If this persists, press “Drain now” in Settings."
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:260
+msgid "Nothing recorded for this period"
+msgstr ""
+
+#: src/Admin/Screens/DashboardScreen.php:261
+msgid "Once somebody visits the site, their pageview is counted within a few minutes. Signed-in editors are left out by default, so opening the site in another tab while logged in will not register."
+msgstr ""
+
+#: src/Admin/Screens/DevicesScreen.php:37
+#: src/Export/Exporter.php:106
+#: src/Import/Ga4/Reports.php:123
+#: src/Import/Sources/Ga4Importer.php:261
+#: src/Import/Sources/IndependentAnalyticsImporter.php:202
+#: src/Import/Sources/WPStatisticsImporter.php:198
+#: templates/admin/dashboard.php:210
+msgid "Devices"
+msgstr ""
+
+#: src/Admin/Screens/EventsScreen.php:35
+msgid "Events"
+msgstr ""
+
+#: src/Admin/Screens/FunnelsScreen.php:36
+msgid "Funnels"
+msgstr ""
+
+#: src/Admin/Screens/GoalsScreen.php:50
+#: templates/admin/dashboard.php:283
+#: templates/admin/dashboard.php:331
+#: templates/admin/goal-edit.php:20
+msgid "Goals"
+msgstr ""
+
+#: src/Admin/Screens/GoalsScreen.php:82
+msgid "You do not have permission to change what this site measures."
+msgstr ""
+
+#: src/Admin/Screens/ImportScreen.php:99
+#: src/Admin/Screens/ImportScreen.php:153
+#: templates/admin/import/details.php:63
+#: templates/admin/import/notes.php:24
+msgid "Import data"
+msgstr ""
+
+#: src/Admin/Screens/ImportScreen.php:137
+msgid "Import details"
+msgstr ""
+
+#: src/Admin/Screens/ImportScreen.php:140
+msgid "Importing"
+msgstr ""
+
+#: src/Admin/Screens/ImportScreen.php:143
+msgid "Import complete"
+msgstr ""
+
+#. translators: %s: the name of the analytics tool being imported from.
+#: src/Admin/Screens/ImportScreen.php:150
+#, php-format
+msgid "Import from %s"
+msgstr ""
+
+#. translators: %s: a number of records, already formatted.
+#: src/Admin/Screens/ImportScreen.php:225
+#: templates/admin/import/progress.php:89
+#, php-format
+msgid "%s records processed"
+msgstr ""
+
+#: src/Admin/Screens/ImportScreen.php:226
+msgid "Getting started…"
+msgstr ""
+
+#: src/Admin/Screens/ImportScreen.php:227
+msgid "Paused for a moment, then carrying on automatically."
+msgstr ""
+
+#: src/Admin/Screens/ImportScreen.php:228
+msgid "This is taking longer than expected. Your progress is saved, and the import will carry on in the background - you can safely leave this page."
+msgstr ""
+
+#: src/Admin/Screens/ImportScreen.php:606
+msgid "Importing is not available on this installation."
+msgstr ""
+
+#: src/Admin/Screens/ImportScreen.php:619
+msgid "The import could not be started. Nothing has been changed."
+msgstr ""
+
+#: src/Admin/Screens/ImportScreen.php:628
+msgid "The import could not be started. Nothing has been changed, and nothing in your other analytics tool has been touched."
+msgstr ""
+
+#: src/Admin/Screens/ImportScreen.php:669
+msgid "The import could not be stopped just now."
+msgstr ""
+
+#: src/Admin/Screens/ImportScreen.php:675
+msgid "The import has been stopped. Everything it had already brought across is still there."
+msgstr ""
+
+#: src/Admin/Screens/LicenceScreen.php:57
+#: templates/admin/settings.php:790
+msgid "Licence"
+msgstr ""
+
+#: src/Admin/Screens/LicenceScreen.php:112
+msgid "Deactivated. The seat is free to use on another site, and every figure this site has collected is untouched."
+msgstr ""
+
+#: src/Admin/Screens/LicenceScreen.php:113
+msgid "Deactivated here. The provider could not be reached to release the seat, so free it from your account portal before using the key elsewhere."
+msgstr ""
+
+#: src/Admin/Screens/LicenceScreen.php:130
+msgid "Activated."
+msgstr ""
+
+#: src/Admin/Screens/LocationsScreen.php:40
+#: src/Import/Sources/IndependentAnalyticsImporter.php:196
+#: src/Import/Sources/WPStatisticsImporter.php:192
+#: templates/admin/dashboard.php:382
+#: templates/admin/dashboard.php:439
+msgid "Locations"
+msgstr ""
+
+#: src/Admin/Screens/PagesScreen.php:42
+#: src/Export/Exporter.php:104
+#: templates/admin/page.php:55
+#: templates/admin/realtime.php:52
+msgid "Pages"
+msgstr ""
+
+#: src/Admin/Screens/PagesScreen.php:125
+msgid "No analytics have been recorded for that page."
+msgstr ""
+
+#: src/Admin/Screens/PagesScreen.php:126
+#: src/Export/ExportHandler.php:91
+msgid "Not found"
+msgstr ""
+
+#: src/Admin/Screens/PrivacyScreen.php:48
+msgid "Privacy"
+msgstr ""
+
+#: src/Admin/Screens/PrivacyScreen.php:85
+msgid "You do not have permission to run subject requests."
+msgstr ""
+
+#: src/Admin/Screens/RealtimeScreen.php:38
+msgid "Real-time"
+msgstr ""
+
+#: src/Admin/Screens/Screen.php:161
+msgid "You do not have permission to view analytics for this site."
+msgstr ""
+
+#: src/Admin/Screens/SettingsScreen.php:48
+#: templates/admin/locations.php:47
+msgid "Settings"
+msgstr ""
+
+#: src/Admin/Screens/SourcesScreen.php:37
+#: src/Export/Exporter.php:105
+msgid "Sources"
+msgstr ""
+
+#: src/Admin/Widgets/LiveWidget.php:46
+msgid "Right now"
+msgstr ""
+
+#: src/Admin/Widgets/OverviewWidget.php:71
+#: src/Import/Sources/IndependentAnalyticsImporter.php:177
+#: src/Import/Sources/WPStatisticsImporter.php:123
+#: src/Import/Sources/WPStatisticsImporter.php:173
+#: templates/metabox/post-stats.php:24
+msgid "Visitors"
+msgstr ""
+
+#: src/Bots/BotFilter.php:141
+#: src/Devices/DeviceType.php:31
+#: src/Export/Exporter.php:256
+#: src/Geo/GeoInstaller.php:146
+#: src/Geo/GeoInstaller.php:148
+msgid "Unknown"
+msgstr ""
+
+#: src/Bots/BotFilter.php:164
+msgid "Unrecognised automation"
+msgstr ""
+
+#: src/Channels/AttributionModel.php:32
+#: templates/admin/settings.php:608
+msgid "Last non-direct click"
+msgstr ""
+
+#: src/Channels/AttributionModel.php:33
+#: templates/admin/settings.php:609
+msgid "First click"
+msgstr ""
+
+#: src/Channels/AttributionModel.php:34
+#: templates/admin/settings.php:610
+msgid "Linear"
+msgstr ""
+
+#: src/Channels/Channel.php:36
+#: templates/admin/settings.php:371
+msgid "Direct"
+msgstr ""
+
+#: src/Channels/Channel.php:37
+msgid "Search"
+msgstr ""
+
+#: src/Channels/Channel.php:38
+msgid "Social"
+msgstr ""
+
+#: src/Channels/Channel.php:39
+msgid "Referral"
+msgstr ""
+
+#: src/Channels/Channel.php:40
+#: src/Dimensions/DimensionType.php:60
+#: templates/admin/campaigns.php:82
+#: templates/admin/dashboard.php:366
+msgid "Campaign"
+msgstr ""
+
+#: src/Channels/Channel.php:41
+msgid "Internal"
+msgstr ""
+
+#. translators: %s: the daily cardinality cap.
+#: src/Charts/ChartData.php:254
+#: src/Charts/ChartData.php:269
+#: templates/admin/pages.php:159
+msgid "Other"
+msgstr ""
+
+#. translators: %d: number of batches.
+#: src/Cli/DrainCommand.php:78
+#, php-format
+msgid "%d quarantined batch requeued."
+msgid_plural "%d quarantined batches requeued."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: failed batches, 2: quarantined batches.
+#: src/Cli/DrainCommand.php:100
+#, php-format
+msgid "%1$d batch(es) failed and %2$d are quarantined. Run with --retry once the cause is fixed."
+msgstr ""
+
+#: src/Cli/DrainCommand.php:120
+msgid "--network needs a multisite install."
+msgstr ""
+
+#. translators: %d: number of sites.
+#: src/Cli/DrainCommand.php:156
+#, php-format
+msgid "Drained %d site."
+msgid_plural "Drained %d sites."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Cli/DrainCommand.php:171
+msgid "Draining every five seconds. Press Ctrl-C to stop."
+msgstr ""
+
+#. translators: 1: number of hits, 2: seconds taken.
+#: src/Cli/DrainCommand.php:213
+#, php-format
+msgid "%1$s hits counted in %2$ss."
+msgstr ""
+
+#. translators: %s: the earliest date that would be kept.
+#: src/Cli/GcCommand.php:76
+#, php-format
+msgid "Nothing was deleted. A real run would keep nothing from before %s."
+msgstr ""
+
+#. translators: %s: the earliest date still held.
+#: src/Cli/GcCommand.php:87
+#, php-format
+msgid "Done. Nothing is now kept from before %s."
+msgstr ""
+
+#: src/Cli/GeoCommand.php:58
+msgid "Give it something to install: --file=<path> or --url=<url>."
+msgstr ""
+
+#: src/Cli/GeoCommand.php:64
+#: src/Geo/GeoHandler.php:177
+msgid "The database could not be installed."
+msgstr ""
+
+#: src/Cli/GeoCommand.php:69
+msgid "Installed. Switch on country reporting in Settings to start using it."
+msgstr ""
+
+#: src/Cli/InfoCommand.php:65
+msgid "Edition"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:66
+msgid "Schema"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:66
+msgid "current"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:66
+msgid "needs upgrading"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:67
+#: templates/admin/settings.php:363
+msgid "Write driver"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:68
+msgid "Session store"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:69
+msgid "Key/value store"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:69
+msgid "object cache"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:69
+msgid "database table"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:70
+msgid "Unique counting"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:71
+msgid "WP-Cron"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:71
+msgid "enabled"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:71
+msgid "disabled (use a real cron job)"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:72
+msgid "Next drain"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:73
+msgid "Next tidy-up"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:74
+msgid "Next salt check"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:75
+msgid "Salt rotates"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:76
+msgid "Backlog"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:77
+msgid "Last drain"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:78
+msgid "Last tidy-up"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:94
+msgid "Note:"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:100
+msgid "Nothing wrong."
+msgstr ""
+
+#: src/Cli/InfoCommand.php:131
+#: src/Scheduling/Health.php:324
+msgid "not scheduled"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:135
+msgid "overdue"
+msgstr ""
+
+#. translators: %s: human readable duration.
+#. translators: %s: a human readable duration, such as "3 mins".
+#: src/Cli/InfoCommand.php:140
+#: src/Scheduling/Health.php:333
+#, php-format
+msgid "in %s"
+msgstr ""
+
+#: src/Cli/InfoCommand.php:152
+#: src/Scheduling/Health.php:301
+msgid "never"
+msgstr ""
+
+#. translators: %s: human readable duration.
+#. translators: %s: a human readable duration, such as "5 mins".
+#. translators: %s: a human readable duration, such as "3 days".
+#. translators: %s: a length of time, e.g. "2 mins".
+#: src/Cli/InfoCommand.php:157
+#: src/Scheduling/Health.php:310
+#: templates/admin/licence.php:193
+#: templates/admin/realtime.php:79
+#, php-format
+msgid "%s ago"
+msgstr ""
+
+#: src/Cli/PrivacyCommand.php:53
+msgid "Lawful basis:"
+msgstr ""
+
+#: src/Cli/PrivacyCommand.php:55
+msgid "Cookie banner needed:"
+msgstr ""
+
+#: src/Cli/PrivacyCommand.php:56
+msgid "yes"
+msgstr ""
+
+#: src/Cli/PrivacyCommand.php:56
+msgid "no"
+msgstr ""
+
+#: src/Cli/PrivacyCommand.php:60
+msgid "Collected:"
+msgstr ""
+
+#: src/Cli/PrivacyCommand.php:155
+msgid "This deletes the subject's journeys permanently. Continue?"
+msgstr ""
+
+#. translators: 1: journey rows removed, 2: consent rows removed.
+#: src/Cli/PrivacyCommand.php:166
+#, php-format
+msgid "%1$d journey row(s) and %2$d consent record(s) deleted."
+msgstr ""
+
+#: src/Cli/PrivacyCommand.php:172
+msgid "Aggregate counters are untouched, and contain nothing about this person to remove."
+msgstr ""
+
+#: src/Cli/PrivacyCommand.php:187
+msgid "Name a subject: --visitor-id=<id> or --user-id=<id>."
+msgstr ""
+
+#. translators: %s: comma separated list of report names.
+#: src/Cli/ReportCommand.php:93
+#, php-format
+msgid "There is no report called that. Try one of: %s"
+msgstr ""
+
+#: src/Cli/ReportCommand.php:107
+msgid "Nothing was recorded in that period."
+msgstr ""
+
+#. translators: %s: accuracy, for instance "±1.6%".
+#: src/Cli/ReportCommand.php:136
+#, php-format
+msgid "Unique visitor figures are per-day estimates, accurate to about %s, and cannot be added across days."
+msgstr ""
+
+#: src/Cli/ReportCommand.php:153
+msgid "Scheduled summaries are part of Honest Analytics Pro."
+msgstr ""
+
+#: src/Cli/ReportCommand.php:159
+msgid "No valid recipients are configured on the Settings screen."
+msgstr ""
+
+#: src/Cli/ReportCommand.php:165
+msgid "The email could not be sent. Check this site can send mail at all."
+msgstr ""
+
+#. translators: %s: comma separated email addresses.
+#: src/Cli/ReportCommand.php:173
+#, php-format
+msgid "Sent to %s."
+msgstr ""
+
+#: src/Cli/SaltCommand.php:52
+msgid "Rotating the salt makes today's visitors unrecognisable and cannot be undone. Continue?"
+msgstr ""
+
+#: src/Cli/SaltCommand.php:61
+msgid "The salt has been replaced. The previous one no longer exists anywhere."
+msgstr ""
+
+#: src/Cli/SeedCommand.php:74
+msgid "Seeding"
+msgstr ""
+
+#. translators: 1: hits, 2: visitors, 3: days, 4: seconds.
+#: src/Cli/SeedCommand.php:99
+#, php-format
+msgid "%1$s hits from %2$s visitors across %3$s days, in %4$ss."
+msgstr ""
+
+#: src/Cli/SeedCommand.php:107
+msgid "Run \"wp honest-analytics gc\" to compact it, which is the state a real site of this age would be in."
+msgstr ""
+
+#: src/Consent/ConsentMethod.php:35
+msgid "JavaScript API"
+msgstr ""
+
+#: src/Consent/ConsentMethod.php:36
+msgid "Consent platform"
+msgstr ""
+
+#: src/Consent/ConsentMethod.php:37
+#: templates/admin/settings.php:719
+msgid "Consent platform cookie"
+msgstr ""
+
+#: src/Consent/ConsentMethod.php:38
+msgid "Server-side"
+msgstr ""
+
+#: src/Consent/ConsentMethod.php:39
+msgid "Browser privacy signal"
+msgstr ""
+
+#: src/Consent/ConsentState.php:33
+msgid "Not given"
+msgstr ""
+
+#: src/Consent/ConsentState.php:34
+msgid "Granted"
+msgstr ""
+
+#: src/Consent/ConsentState.php:35
+msgid "Denied"
+msgstr ""
+
+#: src/Devices/DeviceType.php:32
+msgid "Desktop"
+msgstr ""
+
+#: src/Devices/DeviceType.php:33
+msgid "Mobile"
+msgstr ""
+
+#: src/Devices/DeviceType.php:34
+msgid "Tablet"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:53
+#: src/Privacy/PersonalData.php:93
+#: templates/admin/dashboard.php:141
+#: templates/admin/events.php:126
+#: templates/admin/pages.php:122
+#: templates/email/summary-html.php:183
+msgid "Page"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:54
+msgid "Referring host"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:55
+#: src/Export/Exporter.php:243
+#: templates/admin/devices.php:81
+msgid "Browser"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:56
+#: src/Export/Exporter.php:244
+msgid "Operating system"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:57
+#: templates/admin/events.php:56
+#: templates/admin/page.php:214
+msgid "Event"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:58
+msgid "Campaign source"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:59
+msgid "Campaign medium"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:61
+msgid "Campaign term"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:62
+msgid "Campaign content"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:63
+msgid "Search term"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:64
+msgid "Outbound host"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:65
+msgid "Outbound link"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:66
+msgid "Region"
+msgstr ""
+
+#: src/Dimensions/DimensionType.php:67
+#: templates/admin/crawlers.php:83
+#: templates/admin/dashboard.php:496
+msgid "Crawler"
+msgstr ""
+
+#: src/Distribution/Coexistence.php:107
+msgid "Honest Analytics Pro is running, so the free edition has been deactivated."
+msgstr ""
+
+#: src/Distribution/Coexistence.php:108
+msgid "Nothing was deleted. Both editions use the same tables, so every figure you had before is still there and still counting."
+msgstr ""
+
+#: src/Edition/Edition.php:178
+msgid "This report is part of Honest Analytics Pro."
+msgstr ""
+
+#: src/Edition/Edition.php:179
+msgid "Not available"
+msgstr ""
+
+#: src/Edition/OptionLicenceValidator.php:61
+msgid "No licence key. Every Lite report is available; the Pro screens are hidden rather than teased."
+msgstr ""
+
+#: src/Edition/OptionLicenceValidator.php:71
+msgid "Active. The Pro reports are switched on."
+msgstr ""
+
+#: src/Edition/OptionLicenceValidator.php:72
+msgid "Not activated on this site yet."
+msgstr ""
+
+#. translators: 1: site name, 2: period label.
+#: src/Email/ReportMailer.php:96
+#, php-format
+msgid "%1$s analytics - %2$s"
+msgstr ""
+
+#. translators: 1: site name, 2: period label.
+#. translators: 1: start date, 2: end date.
+#: src/Email/ReportMailer.php:188
+#: templates/admin/layout/header.php:88
+#: templates/email/summary-html.php:117
+#: templates/email/summary-text.php:75
+#, php-format
+msgid "%1$s - %2$s"
+msgstr ""
+
+#. translators: 1: number of views, 2: change against the previous period.
+#: src/Email/ReportMailer.php:196
+#, php-format
+msgid "Page views:       %1$s (%2$s)"
+msgstr ""
+
+#. translators: 1: number of visitors, 2: change against the previous period.
+#: src/Email/ReportMailer.php:203
+#, php-format
+msgid "Visitors:         %1$s (%2$s)"
+msgstr ""
+
+#. translators: 1: number of visits, 2: change against the previous period.
+#: src/Email/ReportMailer.php:210
+#, php-format
+msgid "Visits:           %1$s (%2$s)"
+msgstr ""
+
+#. translators: %s: bounce rate.
+#: src/Email/ReportMailer.php:217
+#, php-format
+msgid "Bounce rate:      %s"
+msgstr ""
+
+#. translators: %s: average visit duration.
+#: src/Email/ReportMailer.php:223
+#, php-format
+msgid "Average visit:    %s"
+msgstr ""
+
+#: src/Email/ReportMailer.php:228
+msgid "Most read pages"
+msgstr ""
+
+#: src/Email/ReportMailer.php:235
+msgid "Where visitors came from"
+msgstr ""
+
+#. translators: %s: accuracy, for instance "±1.6%".
+#: src/Email/ReportMailer.php:248
+#, php-format
+msgid "Visitors are an estimate of distinct visitors per day, accurate to about %s. Daily figures cannot be added together: the identifier behind them is destroyed every time the salt rotates."
+msgstr ""
+
+#: src/Email/ReportMailer.php:252
+msgid "This email contains no images and no tracking of any kind."
+msgstr ""
+
+#: src/Export/Exporter.php:103
+msgid "Overview"
+msgstr ""
+
+#: src/Export/Exporter.php:136
+msgid "Unique visitors are an estimate of distinct visitors within a single day. Because the identifier behind them is destroyed every time the salt rotates, daily figures cannot be added together to give a figure for a longer period."
+msgstr ""
+
+#: src/Export/Exporter.php:245
+#: templates/admin/devices.php:20
+#: templates/admin/devices.php:50
+msgid "Device type"
+msgstr ""
+
+#: src/Export/ExportHandler.php:78
+msgid "You do not have permission to export analytics for this site."
+msgstr ""
+
+#: src/Export/ExportHandler.php:90
+msgid "There is no such report to export."
+msgstr ""
+
+#: src/Geo/GeoHandler.php:83
+msgid "You do not have permission to change the geo database for this site."
+msgstr ""
+
+#: src/Geo/GeoHandler.php:104
+msgid "Paste the address of a .mmdb file first."
+msgstr ""
+
+#: src/Geo/GeoHandler.php:138
+#: src/Geo/GeoHandler.php:144
+msgid "Choose a file first."
+msgstr ""
+
+#. translators: %s: a file size, for example "8 MB".
+#: src/Geo/GeoHandler.php:150
+#, php-format
+msgid "That file is larger than this server accepts as an upload, which is %s. Use the address route below instead, which does not go through PHP's upload limit."
+msgstr ""
+
+#: src/Geo/GeoHandler.php:156
+msgid "The upload did not finish. Try again."
+msgstr ""
+
+#: src/Geo/GeoHandler.php:164
+msgid "That upload could not be verified."
+msgstr ""
+
+#: src/Geo/GeoHandler.php:184
+msgid "Database installed. Turn on Geography in Settings if it is not on already; countries are recorded from the next visit onwards, not backdated."
+msgstr ""
+
+#: src/Geo/GeoHandler.php:195
+msgid "There is no database installed to remove."
+msgstr ""
+
+#: src/Geo/GeoHandler.php:202
+msgid "The file could not be deleted. Check the permissions on the uploads directory."
+msgstr ""
+
+#: src/Geo/GeoHandler.php:209
+msgid "Database removed. Country reporting stops here; the countries already counted stay where they are."
+msgstr ""
+
+#: src/Geo/GeoInstaller.php:41
+msgid "That file does not exist or cannot be read."
+msgstr ""
+
+#: src/Geo/GeoInstaller.php:48
+msgid "That file could not be read."
+msgstr ""
+
+#: src/Geo/GeoInstaller.php:63
+msgid "The download URL must use HTTPS."
+msgstr ""
+
+#. translators: %d: HTTP status code.
+#: src/Geo/GeoInstaller.php:81
+#, php-format
+msgid "The download returned HTTP %d."
+msgstr ""
+
+#: src/Geo/GeoInstaller.php:104
+msgid "That file looked gzipped but could not be decompressed."
+msgstr ""
+
+#: src/Geo/GeoInstaller.php:111
+msgid "That does not look like a MaxMind-format database. DB-IP Lite and GeoLite2 both work; a CSV export does not."
+msgstr ""
+
+#: src/Geo/GeoInstaller.php:120
+msgid "The database could not be written. Check that the uploads directory is writable."
+msgstr ""
+
+#: src/Geo/GeoInstaller.php:138
+msgid "No"
+msgstr ""
+
+#: src/Geo/GeoInstaller.php:144
+msgid "Yes"
+msgstr ""
+
+#: src/Geo/GeoInstaller.php:158
+msgid "The database is installed but geography is switched off in the settings, so nothing is being recorded."
+msgstr ""
+
+#: src/Geo/GeoService.php:158
+msgid "IP geolocation by DB-IP, used under CC BY 4.0."
+msgstr ""
+
+#: src/Geo/GeoService.php:162
+msgid "This product includes GeoLite2 data created by MaxMind."
+msgstr ""
+
+#: src/Goals/Funnel.php:112
+msgid "Give the funnel a name."
+msgstr ""
+
+#: src/Goals/Funnel.php:116
+#: src/Goals/Goal.php:163
+msgid "Handles start with a letter and hold letters, numbers, hyphens and underscores."
+msgstr ""
+
+#: src/Goals/Funnel.php:122
+msgid "A funnel needs at least two steps - with one there is nothing to drop off between."
+msgstr ""
+
+#. translators: %d: maximum number of steps.
+#: src/Goals/Funnel.php:126
+#, php-format
+msgid "A funnel holds at most %d steps."
+msgstr ""
+
+#: src/Goals/Funnel.php:132
+msgid "Each goal appears once - a repeated step could never be reached."
+msgstr ""
+
+#: src/Goals/Funnel.php:136
+msgid "Every step names a goal by its handle."
+msgstr ""
+
+#: src/Goals/FunnelsService.php:123
+msgid "Another funnel already uses that handle."
+msgstr ""
+
+#. translators: %s: goal handle.
+#: src/Goals/FunnelsService.php:136
+#, php-format
+msgid "There is no goal with the handle %s."
+msgstr ""
+
+#: src/Goals/FunnelsService.php:216
+msgid "The funnel could not be saved. The error log has the details."
+msgstr ""
+
+#: src/Goals/Goal.php:153
+msgid "Give the goal a name."
+msgstr ""
+
+#. translators: %d: maximum number of characters.
+#: src/Goals/Goal.php:157
+#, php-format
+msgid "Names are limited to %d characters."
+msgstr ""
+
+#. translators: %d: maximum number of characters.
+#: src/Goals/Goal.php:167
+#, php-format
+msgid "Handles are limited to %d characters."
+msgstr ""
+
+#: src/Goals/Goal.php:173
+msgid "Choose one of the goal types."
+msgstr ""
+
+#: src/Goals/Goal.php:183
+msgid "A goal value is zero or more, and smaller than a trillion."
+msgstr ""
+
+#: src/Goals/Goal.php:196
+msgid "Say what the goal is looking for."
+msgstr ""
+
+#. translators: %d: maximum number of characters.
+#: src/Goals/Goal.php:202
+#, php-format
+msgid "Targets are limited to %d characters."
+msgstr ""
+
+#: src/Goals/Goal.php:210
+msgid "A path starts with a slash, like /thank-you."
+msgstr ""
+
+#: src/Goals/Goal.php:213
+msgid "A post target is the numeric ID of a post or page."
+msgstr ""
+
+#: src/Goals/Goal.php:216
+msgid "A time target is a whole number of seconds."
+msgstr ""
+
+#: src/Goals/Goal.php:219
+msgid "Scroll depth is recorded in quarters, so the target is 25, 50, 75 or 100."
+msgstr ""
+
+#: src/Goals/GoalsService.php:117
+msgid "Another goal already uses that handle."
+msgstr ""
+
+#: src/Goals/GoalType.php:75
+msgid "Page visited"
+msgstr ""
+
+#: src/Goals/GoalType.php:76
+msgid "Event fired"
+msgstr ""
+
+#: src/Goals/GoalType.php:77
+msgid "Post or page read"
+msgstr ""
+
+#: src/Goals/GoalType.php:78
+#: templates/admin/realtime.php:53
+msgid "Time on site"
+msgstr ""
+
+#: src/Goals/GoalType.php:79
+#: templates/admin/page.php:159
+#: templates/admin/page.php:271
+#: templates/admin/settings.php:659
+msgid "Scroll depth"
+msgstr ""
+
+#: src/Goals/GoalType.php:88
+msgid "Path"
+msgstr ""
+
+#: src/Goals/GoalType.php:89
+msgid "Event name"
+msgstr ""
+
+#: src/Goals/GoalType.php:90
+msgid "Post ID"
+msgstr ""
+
+#: src/Goals/GoalType.php:91
+msgid "Seconds"
+msgstr ""
+
+#: src/Goals/GoalType.php:92
+msgid "Percent"
+msgstr ""
+
+#: src/Goals/GoalType.php:101
+msgid "A path beginning with a slash. A trailing * matches everything below it, and the query string is ignored."
+msgstr ""
+
+#: src/Goals/GoalType.php:102
+msgid "The name passed to the event, matched exactly."
+msgstr ""
+
+#: src/Goals/GoalType.php:103
+msgid "The numeric ID of the post or page."
+msgstr ""
+
+#: src/Goals/GoalType.php:104
+msgid "Seconds spent on the site before the visit went idle."
+msgstr ""
+
+#: src/Goals/GoalType.php:105
+msgid "One of 25, 50, 75 or 100 - depth is recorded in quarters."
+msgstr ""
+
+#: src/Import/Ga4/BrokerProvider.php:64
+msgid "The one-click Google connection is not available on this site yet."
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:164
+#: src/Import/ImportSource.php:55
+#: src/Import/Sources/Ga4Importer.php:91
+#: templates/admin/import/connect.php:92
+msgid "Google Analytics"
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:303
+msgid "You do not have permission to connect an analytics account."
+msgstr ""
+
+#: src/Import/Ga4/Connection.php:418
+msgid "You do not have permission to change the analytics connection."
+msgstr ""
+
+#: src/Import/Ga4/Ga4Exception.php:58
+msgid "Google temporarily limited how quickly we can read your data. Your progress has been saved and we will carry on shortly."
+msgstr ""
+
+#: src/Import/Ga4/Ga4Exception.php:61
+msgid "The connection to Google has expired. Reconnect your Google account and the import will pick up where it stopped."
+msgstr ""
+
+#: src/Import/Ga4/Ga4Exception.php:64
+msgid "We could not reach Google just then. Nothing has been lost and we will try again in a moment."
+msgstr ""
+
+#: src/Import/Ga4/Ga4Exception.php:67
+msgid "We could not continue the Google Analytics import. Nothing already imported has been changed."
+msgstr ""
+
+#: src/Import/Ga4/GoogleClientProvider.php:46
+msgid "your own Google Cloud project"
+msgstr ""
+
+#: src/Import/Ga4/GoogleClientProvider.php:56
+msgid "Add a Google Cloud OAuth client to connect directly to Google from this site."
+msgstr ""
+
+#: src/Import/Ga4/Reports.php:119
+msgid "Daily page views, sessions and visitors"
+msgstr ""
+
+#: src/Import/Ga4/Reports.php:120
+msgid "Page views and time on page, per page"
+msgstr ""
+
+#: src/Import/Ga4/Reports.php:121
+msgid "Where visits came from"
+msgstr ""
+
+#: src/Import/Ga4/Reports.php:122
+#: src/Import/Sources/Ga4Importer.php:255
+#: src/Import/Sources/IndependentAnalyticsImporter.php:144
+#: src/Import/Sources/IndependentAnalyticsImporter.php:195
+#: src/Import/Sources/WPStatisticsImporter.php:131
+#: src/Import/Sources/WPStatisticsImporter.php:191
+#: templates/admin/locations.php:57
+msgid "Countries"
+msgstr ""
+
+#: src/Import/ImporterRegistry.php:139
+msgid "This could not be checked. The data may be in a format this version does not recognise."
+msgstr ""
+
+#. translators: %s: the name of the analytics tool being imported from.
+#: src/Import/ImportRunner.php:378
+#, php-format
+msgid "We could not continue the %s import just now. Your progress has been saved and we will try again shortly."
+msgstr ""
+
+#: src/Import/ImportSource.php:49
+#: src/Import/Sources/WPStatisticsImporter.php:65
+msgid "WP Statistics"
+msgstr ""
+
+#: src/Import/ImportSource.php:52
+#: src/Import/Sources/IndependentAnalyticsImporter.php:81
+msgid "Independent Analytics"
+msgstr ""
+
+#: src/Import/Rest/ImportController.php:74
+msgid "That is not something this plugin can import from."
+msgstr ""
+
+#: src/Import/Rest/ImportController.php:80
+msgid "That import is not available on this site."
+msgstr ""
+
+#: src/Import/Rest/ImportController.php:89
+msgid "There is nothing to import from this source."
+msgstr ""
+
+#: src/Import/Rest/ImportController.php:98
+msgid "That date range does not look right. Please choose a start date before the end date."
+msgstr ""
+
+#: src/Import/Rest/ImportController.php:115
+msgid "That import could not be started. Nothing has been changed."
+msgstr ""
+
+#: src/Import/Rest/ImportController.php:136
+#: src/Import/Rest/ImportController.php:161
+#: src/Import/Rest/ImportController.php:176
+#: templates/admin/import/complete.php:25
+#: templates/admin/import/details.php:27
+msgid "That import could not be found."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:107
+#: templates/admin/import/sources.php:100
+msgid "Connect your Google account to bring historical trends across from GA4."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:119
+msgid "Connected to Google. Choose which property to import from."
+msgstr ""
+
+#. translators: %s: the Google Analytics property name.
+#: src/Import/Sources/Ga4Importer.php:130
+#, php-format
+msgid "Ready to import from %s."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:133
+msgid "Ready to import."
+msgstr ""
+
+#. translators: 1: the Google Analytics property timezone, 2: this site's timezone.
+#: src/Import/Sources/Ga4Importer.php:190
+#, php-format
+msgid "This Google Analytics property reports in %1$s and this site works in %2$s. Each day is imported under the date Google filed it, so a day near the boundary may sit alongside a slightly different set of visits than this plugin would have recorded."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:203
+msgid "Individual events, conversions and audiences"
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:204
+msgid "Browser and operating system, which GA4 groups differently"
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:205
+msgid "Anything identifying a person"
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:219
+#: src/Import/Sources/IndependentAnalyticsImporter.php:128
+#: src/Import/Sources/IndependentAnalyticsImporter.php:172
+#: src/Import/Sources/WPStatisticsImporter.php:112
+#: src/Import/Sources/WPStatisticsImporter.php:167
+#: src/Import/Sources/WPStatisticsImporter.php:168
+msgid "Page views"
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:221
+msgid "Both count a page being looked at, so these should line up."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:227
+msgid "GA4 decides when a visit starts and ends by its own rules, which are not the same as this plugin's thirty-minute window."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:233
+msgid "A GA4 active user is recognised across days and devices. A visitor here is a daily estimate from a salt destroyed every 24 hours, so the two count different things and the numbers will differ."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:237
+msgid "Bounces"
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:239
+msgid "GA4 works out bounces from engagement rather than from single-page visits."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:243
+msgid "Time on page"
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:245
+msgid "GA4 measures engaged time, which pauses when somebody switches tab. This plugin measures the gap between page views."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:249
+#: src/Import/Sources/IndependentAnalyticsImporter.php:190
+#: src/Import/Sources/WPStatisticsImporter.php:186
+msgid "Traffic sources"
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:251
+msgid "GA4 reports a source name rather than a referring address, so well-known ones are matched to their site and the rest are imported as a channel with no referrer."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:257
+msgid "Both use the standard two-letter country codes."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:263
+msgid "Desktop, mobile and tablet mean the same thing in both. Anything else is imported as unknown."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:273
+msgid "GA4 uses Google's own definitions of an event, a user and a session. We import the historical figures that carry across, but \"active users\" in GA4 are not the same thing as visitors measured here."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:274
+msgid "You may see a noticeable change in visitor and session numbers around the day you switched. Nothing is wrong - the way traffic is measured has changed."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:275
+msgid "Your Google Analytics account is not modified, and nothing is sent to Google beyond the requests needed to read your reports."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:314
+msgid "No Google Analytics property has been chosen for this import."
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:516
+#: src/Import/Sources/IndependentAnalyticsImporter.php:130
+#: src/Import/Sources/WPStatisticsImporter.php:117
+msgid "page views"
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:517
+#: src/Import/Sources/IndependentAnalyticsImporter.php:136
+msgid "sessions"
+msgstr ""
+
+#: src/Import/Sources/Ga4Importer.php:518
+msgid "unique visitors"
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:89
+#: src/Import/Sources/WPStatisticsImporter.php:73
+msgid "Not detected on this website."
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:97
+msgid "Independent Analytics is here, but its data is stored in a layout this version does not recognise."
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:106
+msgid "Independent Analytics is installed, but there is no history in it yet."
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:112
+#: src/Import/Sources/WPStatisticsImporter.php:96
+#: templates/admin/import/sources.php:87
+msgid "Historical data is ready to import."
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:134
+msgid "Visitors and sessions"
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:140
+#: src/Import/Sources/IndependentAnalyticsImporter.php:189
+#: src/Import/Sources/WPStatisticsImporter.php:127
+#: src/Import/Sources/WPStatisticsImporter.php:185
+msgid "Referrers"
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:148
+#: src/Import/Sources/WPStatisticsImporter.php:135
+msgid "Devices and browsers"
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:157
+msgid "Addresses, visitor signatures and anything else that identifies a person"
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:171
+#: templates/admin/content.php:62
+#: templates/admin/dashboard.php:146
+#: templates/admin/dashboard.php:266
+#: templates/admin/page.php:21
+#: templates/admin/page.php:73
+#: templates/admin/page.php:133
+#: templates/admin/pages.php:123
+#: templates/email/summary-html.php:184
+#: templates/metabox/post-stats.php:19
+msgid "Views"
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:174
+#: src/Import/Sources/WPStatisticsImporter.php:170
+msgid "Both count one view of one page."
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:180
+msgid "Independent Analytics recognises a returning visitor by a stored signature. This plugin uses a code destroyed every night, so the two will not always agree on who is new."
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:186
+msgid "Both group a visit into a session, but they do not end one at the same moment, so the counts will differ slightly."
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:192
+#: src/Import/Sources/WPStatisticsImporter.php:188
+msgid "Only the referring website is kept, never the full address of the page somebody came from."
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:198
+#: src/Import/Sources/WPStatisticsImporter.php:194
+msgid "Both record a country and nothing more precise."
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:201
+msgid "Devices, browsers and platforms"
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:204
+msgid "Kept as categories, with names made to match the ones already in your reports."
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:216
+msgid "Page views and historical trends can be carried across, along with the other compatible metrics."
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:217
+msgid "Independent Analytics uses its own method for identifying visitors and sessions, so those numbers may differ slightly after switching."
+msgstr ""
+
+#: src/Import/Sources/IndependentAnalyticsImporter.php:218
+msgid "Nothing in Independent Analytics is changed or removed, and it does not need to stay active for its history to be imported."
+msgstr ""
+
+#: src/Import/Sources/WPStatisticsImporter.php:81
+msgid "WP Statistics is here, but its data is stored in a layout this version does not recognise."
+msgstr ""
+
+#: src/Import/Sources/WPStatisticsImporter.php:90
+msgid "WP Statistics is installed, but there is no history in it yet."
+msgstr ""
+
+#: src/Import/Sources/WPStatisticsImporter.php:121
+msgid "visits"
+msgstr ""
+
+#: src/Import/Sources/WPStatisticsImporter.php:142
+msgid "Pre-purge totals, which WP Statistics stores without dates"
+msgstr ""
+
+#: src/Import/Sources/WPStatisticsImporter.php:145
+msgid "IP addresses and anything else that identifies a person"
+msgstr ""
+
+#: src/Import/Sources/WPStatisticsImporter.php:176
+msgid "WP Statistics recognises a returning visitor by their address and browser. This plugin uses a code that is destroyed every night, so the two will not always agree on who is new."
+msgstr ""
+
+#: src/Import/Sources/WPStatisticsImporter.php:179
+msgid "Visits"
+msgstr ""
+
+#: src/Import/Sources/WPStatisticsImporter.php:182
+msgid "WP Statistics keeps one row per person per day. This plugin ends a session after thirty minutes of inactivity, so somebody who reads in the morning and again at night is one visit there and two sessions here."
+msgstr ""
+
+#: src/Import/Sources/WPStatisticsImporter.php:197
+msgid "Browsers and platforms"
+msgstr ""
+
+#: src/Import/Sources/WPStatisticsImporter.php:200
+msgid "Browser, operating system and device type, kept as categories."
+msgstr ""
+
+#: src/Import/Sources/WPStatisticsImporter.php:212
+msgid "We will preserve the historical analytics that map reliably to this plugin."
+msgstr ""
+
+#: src/Import/Sources/WPStatisticsImporter.php:213
+msgid "WP Statistics and this plugin identify visitors and visits differently, so historical visitor totals may not perfectly match the analytics collected after the migration."
+msgstr ""
+
+#: src/Import/Sources/WPStatisticsImporter.php:214
+msgid "Nothing in WP Statistics is changed or removed. Its data stays exactly where it is."
+msgstr ""
+
+#: src/Integrations/CacheDetector.php:60
+msgid "A page cache drop-in"
+msgstr ""
+
+#. translators: %d: the form's numeric id.
+#: src/Integrations/EventNames.php:102
+#, php-format
+msgid "form %d"
+msgstr ""
+
+#: src/Integrations/EventNames.php:105
+msgid "untitled form"
+msgstr ""
+
+#. translators: 1: the form's title, 2: the plugin it belongs to.
+#: src/Integrations/EventNames.php:110
+#, php-format
+msgid "%1$s (%2$s)"
+msgstr ""
+
+#: src/Licensing/LicenceService.php:106
+msgid "The licence key has changed since it was last checked. Save it again to activate this site."
+msgstr ""
+
+#: src/Licensing/LicenceService.php:114
+msgid "The licence key has been removed, so the Pro reports are switched off. Your data is untouched."
+msgstr ""
+
+#: src/Licensing/LicenceService.php:142
+msgid "The licence could not be checked just now. Nothing is wrong with your key; try again shortly."
+msgstr ""
+
+#. translators: %s: number of sites.
+#: src/Licensing/LicenceState.php:118
+#, php-format
+msgid "%s site, of an unlimited number"
+msgid_plural "%s sites, of an unlimited number"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: 1: sites in use, 2: sites allowed.
+#: src/Licensing/LicenceState.php:125
+#, php-format
+msgid "%1$s of %2$s"
+msgstr ""
+
+#: src/Licensing/OfflineProvider.php:44
+msgid "Offline"
+msgstr ""
+
+#: src/Licensing/OfflineProvider.php:63
+msgid "Enter a licence key to switch the Pro reports on."
+msgstr ""
+
+#: src/Licensing/OfflineProvider.php:71
+msgid "That does not look like a licence key. They are formatted HA-XXXX-XXXX-XXXX."
+msgstr ""
+
+#: src/Licensing/OfflineProvider.php:82
+msgid "Active on this site. No licence server was contacted - this build validates the key’s format and takes the site’s word for the rest."
+msgstr ""
+
+#: src/Privacy/PersonalData.php:84
+msgid "Analytics page history"
+msgstr ""
+
+#: src/Privacy/PersonalData.php:85
+msgid "Pages recorded for this account, kept only because durable tracking was consented to."
+msgstr ""
+
+#: src/Privacy/PersonalData.php:89
+msgid "Time"
+msgstr ""
+
+#: src/Privacy/PersonalData.php:97
+msgid "Step in visit"
+msgstr ""
+
+#: src/Privacy/PersonalData.php:111
+msgid "Records held"
+msgstr ""
+
+#: src/Privacy/PersonalData.php:112
+msgid "None. This site's analytics are aggregate counts with no individual inside them, and no per-visitor records are kept for this account."
+msgstr ""
+
+#: src/Privacy/PersonalData.php:151
+msgid "The consent record has been kept: it is the evidence that the processing now erased was lawful while it was happening."
+msgstr ""
+
+#: src/Privacy/PolicyContent.php:49
+msgid "This site measures its own traffic with Honest Analytics, which runs on this server. No analytics data is sent to any third party, and no analytics service holds a copy of it."
+msgstr ""
+
+#. translators: %s: hours between salt rotations.
+#: src/Privacy/PolicyContent.php:53
+#, php-format
+msgid "We do not store your IP address. When you view a page, your address is combined with your browser type and a secret value, turned into a short code, and then discarded - the address itself is never written to our database, our logs or our backups. The secret is replaced every %s hours and the old one destroyed, so the codes from one day cannot be matched against the codes from the next."
+msgstr ""
+
+#. translators: %d: months the cookie lasts.
+#: src/Privacy/PolicyContent.php:60
+#, php-format
+msgid "If you agree to it, we set a first-party cookie so we can recognise your browser on later visits. It lasts about %d months, it is only set once you have agreed, and you can withdraw at any time - doing so deletes what was collected under it."
+msgstr ""
+
+#: src/Privacy/PolicyContent.php:64
+msgid "Our analytics does not use cookies at all, and stores nothing on your device. There is nothing to opt out of, and nothing for you to dismiss."
+msgstr ""
+
+#: src/Privacy/PolicyContent.php:68
+msgid "We record which country a visit came from, worked out on this server from a local database. No location service is contacted, and nothing more precise than a country is derived or kept."
+msgstr ""
+
+#: src/Privacy/PolicyContent.php:72
+msgid "If your browser sends a Global Privacy Control signal, we honour it: you are not counted beyond the anonymous statistics, and nothing on this site can override that."
+msgstr ""
+
+#. translators: %d: months of retention.
+#: src/Privacy/PolicyContent.php:77
+#, php-format
+msgid "The statistics we keep are counts - how many people saw a page, which country they were in, what kind of device they used. They are kept for %d month and then deleted."
+msgid_plural "The statistics we keep are counts - how many people saw a page, which country they were in, what kind of device they used. They are kept for %d months and then deleted."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Privacy/PolicyContent.php:87
+msgid "Because these counts contain no information about any individual, there is nothing in them for us to look up about you, and nothing for us to erase on request."
+msgstr ""
+
+#: src/Privacy/Posture.php:52
+msgid "This site sets a cookie, which needs a consent mechanism."
+msgstr ""
+
+#: src/Privacy/Posture.php:53
+msgid "Cookieless by default: designed not to require an analytics consent banner."
+msgstr ""
+
+#: src/Privacy/Posture.php:61
+msgid "Consented tracking is on, so visitors who agree receive a first-party cookie and a durable identifier. That belongs in your privacy notice, and needs a lawful basis - consent."
+msgstr ""
+
+#: src/Privacy/Posture.php:62
+msgid "No cookie is set, no device storage is used, and no IP address is written anywhere. Visitors are counted with a hash of a salt that is destroyed every 24 hours, so nothing retained can be traced back to anybody afterwards. What that means for your obligations is a question for your own advisers; this screen is here to give them the facts."
+msgstr ""
+
+#: src/Privacy/Posture.php:74
+msgid "Consented tracking is enabled, so this site sets a first-party cookie for visitors who agree. That needs a consent mechanism and a privacy notice entry: the cookieless default no longer applies."
+msgstr ""
+
+#: src/Privacy/Posture.php:78
+msgid "The stored journeys layer is enabled. Individual page-by-page histories are kept for consented visitors - this is personal data, subject to access and erasure requests."
+msgstr ""
+
+#: src/Privacy/Posture.php:82
+msgid "Consented visitors are linked to their WordPress account, which makes the data directly identifiable rather than pseudonymous."
+msgstr ""
+
+#: src/Privacy/Posture.php:86
+msgid "A plugin or theme supplies its own identifier for consented visitors through the extension API. That is no longer a random value meaningful only inside this plugin - it can be joined to your own records, which makes the consented data directly identifiable."
+msgstr ""
+
+#: src/Privacy/Posture.php:90
+msgid "Global Privacy Control is being ignored. GPC is treated as a valid opt-out under several privacy laws, and disregarding it is a legal risk."
+msgstr ""
+
+#: src/Privacy/Posture.php:94
+msgid "The visitor salt rotates less often than every 24 hours, which lengthens how long a visitor stays re-identifiable and weakens the case that this data is anonymous."
+msgstr ""
+
+#: src/Privacy/Posture.php:98
+msgid "The consent cookie lasts longer than 13 months. Guidance in several jurisdictions expects consent to be refreshed at least annually."
+msgstr ""
+
+#: src/Privacy/Posture.php:112
+msgid "The requested path, campaign parameters stripped"
+msgstr ""
+
+#: src/Privacy/Posture.php:113
+msgid "The IP address, in any form"
+msgstr ""
+
+#. translators: %d: days of hourly detail.
+#: src/Privacy/Posture.php:118
+#, php-format
+msgid "The date, and the hour for the last %d days"
+msgstr ""
+
+#: src/Privacy/Posture.php:121
+msgid "The full user-agent string"
+msgstr ""
+
+#: src/Privacy/Posture.php:124
+msgid "Views, entrances, exits and bounces as counts"
+msgstr ""
+
+#: src/Privacy/Posture.php:125
+msgid "The full referrer URL"
+msgstr ""
+
+#: src/Privacy/Posture.php:128
+msgid "A small sketch of who was here today"
+msgstr ""
+
+#: src/Privacy/Posture.php:129
+msgid "Any per-visitor row"
+msgstr ""
+
+#: src/Privacy/Posture.php:132
+msgid "Browser, OS, device type and country as counts"
+msgstr ""
+
+#: src/Privacy/Posture.php:133
+msgid "Anything that survives the salt rotating"
+msgstr ""
+
+#: src/Privacy/Posture.php:148
+msgid "Daily visitor hash"
+msgstr ""
+
+#. translators: %s: hours between rotations.
+#: src/Privacy/Posture.php:151
+#, php-format
+msgid "Eight bytes of SHA-256 over the current salt, the address, the user agent and the site ID. Unlinkable once the salt rotates, every %s hours."
+msgstr ""
+
+#: src/Privacy/Posture.php:158
+msgid "Consent cookie"
+msgstr ""
+
+#. translators: %s: cookie name.
+#: src/Privacy/Posture.php:162
+#, php-format
+msgid "A first-party cookie (%s), set only for visitors who affirmatively agree."
+msgstr ""
+
+#: src/Privacy/Posture.php:165
+msgid "Not in use. Consented tracking is switched off."
+msgstr ""
+
+#: src/Privacy/Posture.php:169
+msgid "Account link"
+msgstr ""
+
+#: src/Privacy/Posture.php:171
+msgid "In use. Consented analytics is joined to WordPress user accounts."
+msgstr ""
+
+#: src/Privacy/Posture.php:172
+msgid "Not in use. Analytics is not joined to WordPress user accounts."
+msgstr ""
+
+#: src/Privacy/Posture.php:183
+msgid "Consent for the identified layer. For the anonymous counters, whichever basis you and your advisers settle on - most operators reach for legitimate interests, or find that none is engaged."
+msgstr ""
+
+#: src/Privacy/Posture.php:184
+msgid "The stored counters hold no individual, and the hashes that produced them stopped being linkable when the salt rotated. Most operators treat that as outside the scope of consent requirements - but that conclusion is yours and your advisers’ to reach, from the facts on this screen."
+msgstr ""
+
+#: src/Privacy/Posture.php:196
+msgid "IP addresses stored"
+msgstr ""
+
+#: src/Privacy/Posture.php:196
+msgid "Never - hashed in memory and discarded"
+msgstr ""
+
+#: src/Privacy/Posture.php:197
+msgid "Cookies set"
+msgstr ""
+
+#. translators: %s: cookie name.
+#: src/Privacy/Posture.php:200
+#, php-format
+msgid "One, for consenting visitors only (%s)"
+msgstr ""
+
+#: src/Privacy/Posture.php:203
+#: src/Privacy/Posture.php:204
+#: src/Privacy/Posture.php:225
+#: templates/admin/page.php:108
+msgid "None"
+msgstr ""
+
+#: src/Privacy/Posture.php:204
+msgid "Device storage used"
+msgstr ""
+
+#: src/Privacy/Posture.php:205
+msgid "Data leaves the site"
+msgstr ""
+
+#: src/Privacy/Posture.php:205
+msgid "Never - no third party receives anything"
+msgstr ""
+
+#: src/Privacy/Posture.php:206
+msgid "Visitor salt rotation"
+msgstr ""
+
+#. translators: %s: hours.
+#: src/Privacy/Posture.php:208
+#, php-format
+msgid "Every %s hours, destroying the previous salt"
+msgstr ""
+
+#: src/Privacy/Posture.php:211
+msgid "Global Privacy Control"
+msgstr ""
+
+#: src/Privacy/Posture.php:212
+msgid "Honoured"
+msgstr ""
+
+#: src/Privacy/Posture.php:213
+msgid "Ignored"
+msgstr ""
+
+#: src/Privacy/Posture.php:214
+msgid "Aggregate retention"
+msgstr ""
+
+#. translators: %d: months.
+#: src/Privacy/Posture.php:216
+#, php-format
+msgid "%d month"
+msgid_plural "%d months"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Privacy/Posture.php:219
+msgid "Raw per-visitor rows"
+msgstr ""
+
+#. translators: %d: days.
+#: src/Privacy/Posture.php:222
+#, php-format
+msgid "Yes, for consenting visitors, kept %d day"
+msgid_plural "Yes, for consenting visitors, kept %d days"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Privacy/PrivacyService.php:237
+msgid "This export covers every record held about this subject: their consented page journeys and their consent history."
+msgstr ""
+
+#: src/Privacy/PrivacyService.php:238
+msgid "Aggregate statistics - pageviews, unique-visitor estimates, sessions, sources, devices - are not included because they contain no personal data. They are counters and probabilistic sketches from which no individual can be identified or removed."
+msgstr ""
+
+#: src/Privacy/PrivacyService.php:239
+msgid "No IP address is held, in any form. Addresses are hashed in memory during a request and discarded; the salt used to hash them is destroyed on rotation."
+msgstr ""
+
+#: src/Scheduling/Cron.php:86
+msgid "Every five minutes (Honest Analytics)"
+msgstr ""
+
+#: src/Scheduling/Health.php:65
+msgid "The database tables are out of date. Open any analytics screen as an administrator to finish the upgrade."
+msgstr ""
+
+#. translators: 1: human readable duration, 2: description of the backlog.
+#: src/Scheduling/Health.php:79
+#, php-format
+msgid "Nothing has been counted for %1$s and %2$s. Page views normally clear this on their own; a backlog this size on a quiet site usually means the spool cannot be written or the database is refusing writes."
+msgstr ""
+
+#. translators: %d: number of batches.
+#: src/Scheduling/Health.php:90
+#, php-format
+msgid "%d batch of hits has been set aside after repeated failures. Use “Retry set-aside batches” below, or run: wp honest-analytics drain --retry"
+msgid_plural "%d batches of hits have been set aside after repeated failures. Use “Retry set-aside batches” below, or run: wp honest-analytics drain --retry"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Scheduling/Health.php:101
+msgid "The spool directory cannot be written to, so views are being dropped. Switch the write driver to the database on the Settings screen."
+msgstr ""
+
+#. translators: %s: description of the backlog.
+#: src/Scheduling/Health.php:107
+#, php-format
+msgid "The backlog is building up: %s. The drain is not keeping pace."
+msgstr ""
+
+#: src/Scheduling/Health.php:113
+msgid "Country reporting is switched on but no geo database is installed, so nothing is being recorded against it."
+msgstr ""
+
+#: src/Scheduling/Health.php:119
+msgid "The write spool can be read over the web. It holds no addresses, but it is not public data. On nginx this needs a rule in the server config — the exact block is in docs/caching.md. On Apache or IIS, check that the .htaccess or web.config in the spool directory has not been removed."
+msgstr ""
+
+#: src/Scheduling/Health.php:123
+msgid "The collection endpoint did not answer when the site asked itself for it, so nothing sent from a browser is being counted. If a security plugin has disabled the REST API, switch the collect endpoint to the plain URL on this screen."
+msgstr ""
+
+#: src/Scheduling/Health.php:127
+msgid "Consented tracking is switched on but this site is running the free edition, so the consented layer is inactive."
+msgstr ""
+
+#: src/Scheduling/Health.php:147
+msgid "WordPress is not running scheduled jobs for this site, so counting is being done by ordinary page views instead and the tidy-up runs when somebody opens the admin. That is a supported arrangement and nothing is lost by it. A real cron entry would keep the figures a few minutes fresher on a busy site - the command is below."
+msgstr ""
+
+#: src/Scheduling/Health.php:151
+msgid "There is no persistent object cache on this site, so sessions, nonces and rate limits are kept in a database table. That is a supported arrangement and nothing is lost by it; a Redis or Memcached cache would make the capture path a little cheaper."
+msgstr ""
+
+#: src/Scheduling/Health.php:153
+msgid "Sessions and nonces are kept in the object cache. If that cache is per-server — APCu, for instance — and this site runs on more than one web server, set HONEST_ANALYTICS_STORE to \"db\" so every server agrees."
+msgstr ""
+
+#. translators: %s: a crontab line.
+#: src/Scheduling/Health.php:159
+#, php-format
+msgid "WP-Cron is switched off, which is the right thing to do on a busy site. Make sure a real cron job runs the drain: %s"
+msgstr ""
+
+#: src/Scheduling/Health.php:165
+msgid "The automatic drain is off, so counting depends entirely on cron running. Leave it on unless cron is known to be reliable here."
+msgstr ""
+
+#: src/Scheduling/Health.php:169
+msgid "Tracking is server-side only. Pages served from a full-page cache never reach PHP, so they will not be counted. Hybrid is the safe setting behind a cache."
+msgstr ""
+
+#: src/Scheduling/Health.php:173
+msgid "The tracking mode expects a beacon but script injection is switched off, so nothing is reporting from the browser."
+msgstr ""
+
+#: src/Scheduling/Health.php:272
+msgid "Not created yet — it is minted on the first pageview."
+msgstr ""
+
+#: src/Scheduling/Health.php:278
+msgid "Unknown — the stored rotation time could not be read."
+msgstr ""
+
+#: src/Scheduling/Health.php:282
+msgid "Due now — it is destroyed on the next pageview or scheduled run."
+msgstr ""
+
+#. translators: 1: formatted date and time, 2: human readable duration.
+#: src/Scheduling/Health.php:287
+#, php-format
+msgid "%1$s (in %2$s)"
+msgstr ""
+
+#: src/Scheduling/Health.php:328
+msgid "due now"
+msgstr ""
+
+#: src/Seed/Seeder.php:73
+msgid "This looks like a production site. Seeding writes invented traffic into the reports; pass --force if that is really what you want."
+msgstr ""
+
+#: src/Settings/Sanitizer.php:86
+msgid "Settings saved."
+msgstr ""
+
+#: src/Settings/Sanitizer.php:145
+msgid "Salt rotation longer than 24 hours lengthens how long a visitor stays re-identifiable, and weakens the case that the retained data is anonymous. The value has been saved, and the Privacy screen now carries a warning."
+msgstr ""
+
+#: src/Settings/Sanitizer.php:172
+msgid "Raw journeys may not be kept longer than 26 months. The value has been capped."
+msgstr ""
+
+#: src/Settings/Sanitizer.php:184
+msgid "A consented visitor cookie may not outlive 24 months. The value has been capped."
+msgstr ""
+
+#: src/Settings/Sanitizer.php:194
+msgid "The consent cookie needs a name made of letters, numbers, hyphens or underscores."
+msgstr ""
+
+#: src/Settings/Sanitizer.php:272
+msgid "This site uses plain permalinks, so the query string is the page. Stripping it would collapse every page onto one row, and the setting has been left off."
+msgstr ""
+
+#: src/Settings/Sanitizer.php:433
+#: src/Settings/Sanitizer.php:440
+msgid "Trusted proxies must be an IP address or a CIDR range, one per line."
+msgstr ""
+
+#: src/Settings/Sanitizer.php:472
+msgid "Report recipients must be email addresses, one per line."
+msgstr ""
+
+#: src/Stats/DateRange.php:60
+msgid "Today"
+msgstr ""
+
+#: src/Stats/DateRange.php:61
+msgid "Yesterday"
+msgstr ""
+
+#: src/Stats/DateRange.php:62
+msgid "Last 7 days"
+msgstr ""
+
+#: src/Stats/DateRange.php:63
+msgid "Last 30 days"
+msgstr ""
+
+#: src/Stats/DateRange.php:64
+msgid "Last 90 days"
+msgstr ""
+
+#: src/Stats/DateRange.php:65
+msgid "Last 12 months"
+msgstr ""
+
+#. translators: 1: start date, 2: end date.
+#: src/Stats/DateRange.php:165
+#: templates/admin/import/details.php:101
+#: templates/admin/import/overlap.php:61
+#: templates/admin/import/preview.php:55
+#: templates/admin/import/range.php:66
+#: templates/admin/import/range.php:85
+#: templates/admin/import/sources.php:50
+#, php-format
+msgid "%1$s to %2$s"
+msgstr ""
+
+#: src/Stats/DateRange.php:198
+msgid "Previous period"
+msgstr ""
+
+#. translators: 1: hours, 2: minutes.
+#: src/Support/Format.php:68
+#, php-format
+msgid "%1$dh %2$dm"
+msgstr ""
+
+#. translators: 1: minutes, 2: seconds.
+#: src/Support/Format.php:76
+#, php-format
+msgid "%1$dm %2$02ds"
+msgstr ""
+
+#. translators: %d: seconds.
+#: src/Support/Format.php:80
+#, php-format
+msgid "%ds"
+msgstr ""
+
+#: src/Uniques/ExactUniqueCounter.php:211
+msgid "exact"
+msgstr ""
+
+#. translators: %s: number of queued hits.
+#: src/Write/SpoolStatus.php:84
+#, php-format
+msgid "%s hit waiting"
+msgid_plural "%s hits waiting"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %s: formatted file size.
+#: src/Write/SpoolStatus.php:89
+#, php-format
+msgid "%s waiting in the spool"
+msgstr ""
+
+#: src/Write/SpoolStatus.php:92
+msgid "Nothing waiting"
+msgstr ""
+
+#: templates/admin/campaigns.php:29
+msgid "Campaign tracking is turned off"
+msgstr ""
+
+#: templates/admin/campaigns.php:30
+msgid "Turn on “Campaigns and attribution” in the settings and tagged links start being credited from the next drain onwards."
+msgstr ""
+
+#: templates/admin/campaigns.php:37
+msgid "By campaign"
+msgstr ""
+
+#. translators: %s: attribution model name.
+#: templates/admin/campaigns.php:43
+#, php-format
+msgid "%s attribution"
+msgstr ""
+
+#: templates/admin/campaigns.php:78
+msgid "No tagged links brought anybody here in this period."
+msgstr ""
+
+#: templates/admin/campaigns.php:86
+msgid "Source / medium"
+msgstr ""
+
+#: templates/admin/campaigns.php:96
+#: templates/admin/sources.php:81
+#: templates/email/summary-html.php:217
+msgid "Bounce"
+msgstr ""
+
+#: templates/admin/campaigns.php:100
+#: templates/admin/dashboard.php:313
+#: templates/admin/goals.php:24
+#: templates/admin/goals.php:45
+msgid "Conversions"
+msgstr ""
+
+#: templates/admin/campaigns.php:112
+msgid "Campaign parameters are read before they are stripped from the stored path, so tagged and untagged views of a page collapse onto one row in Pages while attribution survives here. Attribution is within a session: the salt rotates daily and is destroyed, so a visit today cannot be joined to the campaign click that brought the same person here last week."
+msgstr ""
+
+#: templates/admin/campaigns.php:117
+msgid "Linear attribution splits one session between its touches, so session counts can be fractional. The total still sums to the sessions you actually had."
+msgstr ""
+
+#: templates/admin/content.php:17
+msgid "Content dimension"
+msgstr ""
+
+#: templates/admin/content.php:67
+msgid "Posts"
+msgstr ""
+
+#: templates/admin/content.php:71
+#: templates/admin/content.php:87
+msgid "Views each"
+msgstr ""
+
+#: templates/admin/content.php:76
+#: templates/admin/dashboard.php:151
+#: templates/admin/pages.php:127
+msgid "Avg time"
+msgstr ""
+
+#: templates/admin/content.php:86
+msgid "Views are joined to the content model as it stands now, so moving a post between post types moves its history with it."
+msgstr ""
+
+#: templates/admin/content.php:88
+msgid "is the column worth reading: a post type with 20 posts and 2,000 views is not clearly beating one with 2 posts and 800."
+msgstr ""
+
+#: templates/admin/content.php:92
+msgid "Pages that are not posts - archives, search results, plugin-provided endpoints - have views but no post to attribute them to, and appear only under Pages. Drafts, private posts, revisions and deleted posts are excluded."
+msgstr ""
+
+#: templates/admin/content.php:94
+msgid "Each post is credited to its listed author; a post with several contributors is credited once, to the author WordPress records."
+msgstr ""
+
+#: templates/admin/crawlers.php:21
+msgid "Crawler counting is turned off"
+msgstr ""
+
+#: templates/admin/crawlers.php:22
+msgid "Turn on “Count crawlers separately” in the settings and this screen fills up from the next drain onwards."
+msgstr ""
+
+#: templates/admin/crawlers.php:29
+msgid "Crawler requests"
+msgstr ""
+
+#: templates/admin/crawlers.php:32
+msgid "Excluded from every human report"
+msgstr ""
+
+#: templates/admin/crawlers.php:32
+msgid "Currently counted as human traffic"
+msgstr ""
+
+#: templates/admin/crawlers.php:37
+msgid "Human pageviews"
+msgstr ""
+
+#: templates/admin/crawlers.php:39
+msgid "What every other screen reports"
+msgstr ""
+
+#: templates/admin/crawlers.php:43
+msgid "Crawler types seen"
+msgstr ""
+
+#: templates/admin/crawlers.php:45
+msgid "Normalised names only"
+msgstr ""
+
+#: templates/admin/crawlers.php:52
+msgid "Crawlers are not being kept out of the reports."
+msgstr ""
+
+#: templates/admin/crawlers.php:53
+msgid "The requests counted here are also inside every other number on every other screen. Unless you are debugging something specific, turn “Keep crawlers out of the reports” back on."
+msgstr ""
+
+#: templates/admin/crawlers.php:59
+msgid "By crawler"
+msgstr ""
+
+#: templates/admin/crawlers.php:79
+msgid "No crawler traffic recorded for this period."
+msgstr ""
+
+#: templates/admin/crawlers.php:87
+#: templates/admin/dashboard.php:500
+msgid "Requests"
+msgstr ""
+
+#: templates/admin/crawlers.php:92
+#: templates/admin/dashboard.php:199
+#: templates/admin/dashboard.php:418
+#: templates/admin/devices.php:52
+#: templates/admin/devices.php:121
+#: templates/admin/locations.php:105
+msgid "Share"
+msgstr ""
+
+#: templates/admin/crawlers.php:103
+msgid "This is where the gap between your server logs and your analytics is explained. Only a normalised crawler name and a count are stored, never the full user-agent string. Without filtering, a site with 400 real visitors and 3,000 bot requests would report 3,400, and every figure on every screen would be wrong in a way that still looked plausible."
+msgstr ""
+
+#. translators: %s: accuracy, e.g. "±1.6%".
+#: templates/admin/dashboard.php:48
+#, php-format
+msgid "Unique visitors are daily unique estimates (%s): the hashing salt is destroyed every 24 hours, so a visitor returning on three days counts three times. Pageviews and sessions are exact."
+msgstr ""
+
+#: templates/admin/dashboard.php:57
+#: templates/admin/page.php:70
+msgid "Traffic"
+msgstr ""
+
+#: templates/admin/dashboard.php:74
+msgid "Pageviews and unique visitors over the selected period."
+msgstr ""
+
+#: templates/admin/dashboard.php:75
+msgid "Pageviews and unique visitors"
+msgstr ""
+
+#. translators: %s: a list of analytics tool names.
+#: templates/admin/dashboard.php:89
+#, php-format
+msgid "Figures before this date were imported from %s. Measurement methods differ, so a step in the line here is the change of method rather than a change in your traffic."
+msgstr ""
+
+#: templates/admin/dashboard.php:113
+msgid "Top pages"
+msgstr ""
+
+#: templates/admin/dashboard.php:114
+#: templates/admin/dashboard.php:165
+#: templates/admin/dashboard.php:211
+#: templates/admin/dashboard.php:238
+#: templates/admin/dashboard.php:284
+#: templates/admin/dashboard.php:342
+#: templates/admin/dashboard.php:383
+#: templates/admin/dashboard.php:460
+msgid "View all"
+msgstr ""
+
+#: templates/admin/dashboard.php:164
+#: templates/admin/sources.php:49
+msgid "Channels"
+msgstr ""
+
+#: templates/admin/dashboard.php:190
+#: templates/admin/page.php:129
+#: templates/admin/sources.php:72
+#: templates/email/summary-html.php:215
+msgid "Channel"
+msgstr ""
+
+#: templates/admin/dashboard.php:229
+#: templates/admin/devices.php:70
+#: templates/admin/partials/ranked-table.php:29
+msgid "Nothing recorded for this period."
+msgstr ""
+
+#: templates/admin/dashboard.php:271
+msgid "Per post"
+msgstr ""
+
+#: templates/admin/dashboard.php:305
+msgid "No goals defined yet."
+msgstr ""
+
+#: templates/admin/dashboard.php:309
+#: templates/admin/goals.php:43
+msgid "Goal"
+msgstr ""
+
+#: templates/admin/dashboard.php:318
+#: templates/admin/goals.php:46
+msgid "Rate"
+msgstr ""
+
+#: templates/admin/dashboard.php:332
+msgid "Would tell you how many sessions completed a form submission, a download or a page visit you care about."
+msgstr ""
+
+#: templates/admin/dashboard.php:362
+msgid "No tagged links have brought anybody here in this period."
+msgstr ""
+
+#: templates/admin/dashboard.php:405
+msgid "Nothing yet. Country reporting needs a local database, which you can install on the Locations screen."
+msgstr ""
+
+#: templates/admin/dashboard.php:409
+#: templates/admin/locations.php:96
+msgid "Country"
+msgstr ""
+
+#: templates/admin/dashboard.php:432
+msgid "Would show which tagged links brought people here, and what those visits did next."
+msgstr ""
+
+#: templates/admin/dashboard.php:440
+msgid "Would show which countries visitors came from, resolved locally and never stored against anybody."
+msgstr ""
+
+#: templates/admin/dashboard.php:452
+msgid "Would name the bots that were kept out of every figure above, which is usually the answer to why your server log counts more than this does."
+msgstr ""
+
+#. translators: %s: number of requests.
+#: templates/admin/dashboard.php:469
+#, php-format
+msgid "%s crawler requests, excluded from every figure above."
+msgstr ""
+
+#: templates/admin/dashboard.php:492
+msgid "No crawler traffic recorded."
+msgstr ""
+
+#: templates/admin/devices.php:31
+msgid "Sessions by device type."
+msgstr ""
+
+#: templates/admin/devices.php:46
+msgid "Sessions by device type"
+msgstr ""
+
+#: templates/admin/devices.php:81
+msgid "Browsers"
+msgstr ""
+
+#: templates/admin/devices.php:82
+msgid "Operating systems"
+msgstr ""
+
+#: templates/admin/devices.php:82
+msgid "OS"
+msgstr ""
+
+#: templates/admin/devices.php:133
+msgid "Derived from the user-agent string and stored only as a browser name and major version - never a full version string, and never a device fingerprint. A doughnut is used only for device type, where the set is small and closed; browsers and operating systems have a long tail that a doughnut turns into unreadable slivers."
+msgstr ""
+
+#: templates/admin/events.php:21
+msgid "Events are turned off"
+msgstr ""
+
+#: templates/admin/events.php:22
+msgid "Turn on “Events and interactions” in the settings. The extra script is only loaded once you do."
+msgstr ""
+
+#: templates/admin/events.php:28
+msgid "Custom events"
+msgstr ""
+
+#: templates/admin/events.php:51
+msgid "No events recorded. Call honestAnalytics.event( 'name' ) from your theme, or use the honest_analytics_track_event action in PHP."
+msgstr ""
+
+#: templates/admin/events.php:52
+msgid "Events arrive on the beacon, which server-only tracking mode does not use."
+msgstr ""
+
+#: templates/admin/events.php:60
+#: templates/admin/page.php:218
+msgid "Count"
+msgstr ""
+
+#: templates/admin/events.php:69
+msgid "Per session"
+msgstr ""
+
+#: templates/admin/events.php:80
+#: templates/admin/page.php:229
+msgid "Outbound links and downloads"
+msgstr ""
+
+#: templates/admin/events.php:99
+msgid "No outbound clicks recorded."
+msgstr ""
+
+#: templates/admin/events.php:103
+#: templates/admin/page.php:252
+msgid "Destination"
+msgstr ""
+
+#: templates/admin/events.php:108
+#: templates/admin/page.php:257
+msgid "Clicks"
+msgstr ""
+
+#: templates/admin/events.php:119
+msgid "How far people read"
+msgstr ""
+
+#: templates/admin/events.php:136
+msgid "No scroll depth recorded."
+msgstr ""
+
+#: templates/admin/events.php:156
+#: templates/admin/settings.php:669
+msgid "Site search"
+msgstr ""
+
+#: templates/admin/events.php:175
+msgid "Nobody has searched this site in this period."
+msgstr ""
+
+#: templates/admin/events.php:183
+msgid "Searches"
+msgstr ""
+
+#: templates/admin/events.php:197
+msgid "Events, outbound clicks, downloads and scroll depth all arrive on the beacon, so they need hybrid or client tracking mode. In server mode these tables stay empty rather than showing a zero. Scroll depth rides the existing pageview beacon, so it costs no extra request; reaching 75% means the reader also passed 25% and 50%."
+msgstr ""
+
+#: templates/admin/funnels.php:24
+msgid "No funnels defined yet"
+msgstr ""
+
+#: templates/admin/funnels.php:26
+msgid "A funnel puts two or more goals in order and measures how many visits got through each step. Define the goals first, then arrange them."
+msgstr ""
+
+#: templates/admin/funnels.php:33
+msgid "Funnel"
+msgstr ""
+
+#: templates/admin/funnels.php:48
+msgid "Entered"
+msgstr ""
+
+#: templates/admin/funnels.php:53
+msgid "Completed"
+msgstr ""
+
+#: templates/admin/funnels.php:58
+msgid "Completion rate"
+msgstr ""
+
+#: templates/admin/funnels.php:64
+msgid "Steps"
+msgstr ""
+
+#. translators: %s: percentage of the first step.
+#: templates/admin/funnels.php:83
+#, php-format
+msgid "%s of first step"
+msgstr ""
+
+#. translators: 1: number of sessions, 2: percentage.
+#: templates/admin/funnels.php:102
+#, php-format
+msgid "%1$s left here (%2$s)"
+msgstr ""
+
+#: templates/admin/funnels.php:116
+msgid "Funnel steps"
+msgstr ""
+
+#: templates/admin/funnels.php:119
+msgid "Step"
+msgstr ""
+
+#: templates/admin/funnels.php:121
+msgid "Of first step"
+msgstr ""
+
+#: templates/admin/funnels.php:122
+msgid "Drop-off"
+msgstr ""
+
+#: templates/admin/funnels.php:142
+msgid "Steps must occur in order within a single session. A visitor who reached the last step before the first has not walked this funnel, and is not credited at that step even though the Goals report counts their conversion. There is no cross-session funnel: the salt rotates every 24 hours and is destroyed, so a decision made over three visits is three sessions, reported separately."
+msgstr ""
+
+#: templates/admin/goal-edit.php:29
+msgid "Edit goal"
+msgstr ""
+
+#: templates/admin/goal-edit.php:29
+msgid "New goal"
+msgstr ""
+
+#: templates/admin/goal-edit.php:35
+msgid "Name"
+msgstr ""
+
+#: templates/admin/goal-edit.php:40
+msgid "What this is called in the reports."
+msgstr ""
+
+#: templates/admin/goal-edit.php:49
+msgid "Handle"
+msgstr ""
+
+#: templates/admin/goal-edit.php:54
+msgid "A short identifier used by funnels and by the extension API. Letters, numbers and underscores."
+msgstr ""
+
+#: templates/admin/goal-edit.php:63
+#: templates/admin/goals.php:44
+msgid "Type"
+msgstr ""
+
+#: templates/admin/goal-edit.php:74
+msgid "Page visits, events and specific posts are decided as they happen. Session duration and scroll depth are properties of a whole visit, so they are decided when it ends."
+msgstr ""
+
+#: templates/admin/goal-edit.php:79
+msgid "Target"
+msgstr ""
+
+#: templates/admin/goal-edit.php:93
+msgid "Value"
+msgstr ""
+
+#: templates/admin/goal-edit.php:98
+msgid "What one conversion is worth, if that is a useful thing to total up. Leave at zero to just count them."
+msgstr ""
+
+#: templates/admin/goal-edit.php:107
+msgid "Enabled"
+msgstr ""
+
+#: templates/admin/goal-edit.php:112
+msgid "Measure this goal"
+msgstr ""
+
+#: templates/admin/goal-edit.php:115
+msgid "Turning a goal off stops it being matched. Conversions already recorded are kept."
+msgstr ""
+
+#: templates/admin/goal-edit.php:122
+msgid "Save goal"
+msgstr ""
+
+#: templates/admin/goal-edit.php:123
+#: templates/admin/import/connect.php:105
+#: templates/admin/import/overlap.php:103
+#: templates/admin/import/preview.php:157
+msgid "Cancel"
+msgstr ""
+
+#: templates/admin/goals.php:19
+msgid "Add goal"
+msgstr ""
+
+#: templates/admin/goals.php:29
+msgid "No goals defined yet"
+msgstr ""
+
+#: templates/admin/goals.php:31
+msgid "A goal names something worth counting: a page somebody reached, a form they submitted, an event your theme fires. Goals start counting when you add them and are not applied retrospectively."
+msgstr ""
+
+#: templates/admin/goals.php:35
+msgid "Add your first goal"
+msgstr ""
+
+#: templates/admin/goals.php:48
+msgid "Actions"
+msgstr ""
+
+#: templates/admin/goals.php:78
+#: templates/admin/pages.php:164
+msgid "Edit"
+msgstr ""
+
+#: templates/admin/goals.php:97
+msgid "Delete this goal? Its recorded conversions go with it, and cannot be rebuilt."
+msgstr ""
+
+#: templates/admin/goals.php:98
+msgid "Delete"
+msgstr ""
+
+#: templates/admin/goals.php:111
+msgid "Rate is conversions over sessions in the period. A goal counts once per session, so a visitor who submits the same form twice in one visit is one conversion. Goals start counting when you add them; they are not applied retrospectively, because the pageviews they would have matched have already been aggregated away."
+msgstr ""
+
+#: templates/admin/import/complete.php:29
+#: templates/admin/import/details.php:31
+#: templates/admin/import/progress.php:28
+msgid "Back to importing"
+msgstr ""
+
+#. translators: 1: a number of years, 2: a number of months.
+#: templates/admin/import/complete.php:50
+#, php-format
+msgid "%1$d year, %2$d months"
+msgid_plural "%1$d years, %2$d months"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: a number of years.
+#: templates/admin/import/complete.php:56
+#, php-format
+msgid "%d year"
+msgid_plural "%d years"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: a number of days.
+#: templates/admin/import/complete.php:59
+#, php-format
+msgid "%d day"
+msgid_plural "%d days"
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/admin/import/complete.php:68
+#: templates/admin/import/sources.php:127
+msgid "Import"
+msgstr ""
+
+#. translators: %s: the name of the analytics tool imported from.
+#: templates/admin/import/complete.php:76
+#, php-format
+msgid "Your %s history has been imported."
+msgstr ""
+
+#: templates/admin/import/complete.php:82
+msgid "This import was stopped."
+msgstr ""
+
+#: templates/admin/import/complete.php:84
+msgid "This import did not finish."
+msgstr ""
+
+#: templates/admin/import/complete.php:90
+msgid "Everything it did bring across is already in your reports, and starting it again will carry on rather than repeat what is done."
+msgstr ""
+
+#: templates/admin/import/complete.php:92
+msgid "It is already part of your analytics dashboard."
+msgstr ""
+
+#: templates/admin/import/complete.php:105
+msgid "records imported"
+msgstr ""
+
+#: templates/admin/import/complete.php:111
+msgid "records skipped, because those dates were already covered"
+msgstr ""
+
+#. translators: 1: start date, 2: end date.
+#: templates/admin/import/complete.php:122
+#, php-format
+msgid "of history, %1$s to %2$s"
+msgstr ""
+
+#: templates/admin/import/complete.php:134
+msgid "Remember: visitor and session numbers may change slightly from today, because this plugin measures traffic differently from the tool you imported. Your historical trends are still comparable - the exact totals are not."
+msgstr ""
+
+#: templates/admin/import/complete.php:140
+msgid "View analytics"
+msgstr ""
+
+#: templates/admin/import/complete.php:144
+msgid "View import details"
+msgstr ""
+
+#: templates/admin/import/connect.php:33
+msgid "Importing from Google Analytics is not available in this build."
+msgstr ""
+
+#: templates/admin/import/connect.php:34
+msgid "The other import options on this screen still work."
+msgstr ""
+
+#: templates/admin/import/connect.php:35
+#: templates/admin/import/overlap.php:27
+#: templates/admin/import/preview.php:28
+#: templates/admin/import/range.php:30
+msgid "Back"
+msgstr ""
+
+#: templates/admin/import/connect.php:42
+msgid "Connecting to Google"
+msgstr ""
+
+#: templates/admin/import/connect.php:48
+msgid "You can also use your own Google Cloud project, which keeps the connection entirely between this site and Google. It takes a few minutes to set up and is described in the documentation."
+msgstr ""
+
+#: templates/admin/import/connect.php:57
+msgid "Client ID"
+msgstr ""
+
+#: templates/admin/import/connect.php:62
+msgid "Client secret"
+msgstr ""
+
+#: templates/admin/import/connect.php:66
+msgid "Save"
+msgstr ""
+
+#. translators: %s: the redirect URI to paste into Google Cloud.
+#: templates/admin/import/connect.php:74
+#, php-format
+msgid "Add this as an authorised redirect URI in your Google Cloud project: %s"
+msgstr ""
+
+#: templates/admin/import/connect.php:93
+#: templates/admin/import/sources.php:98
+msgid "Not connected yet"
+msgstr ""
+
+#: templates/admin/import/connect.php:95
+msgid "Sign in with the Google account that can see the property you want to bring across. Only permission to read your analytics is requested - nothing is ever written back to Google, and you can disconnect at any time."
+msgstr ""
+
+#: templates/admin/import/connect.php:102
+#: templates/admin/import/sources.php:127
+#: templates/admin/import/sources.php:131
+msgid "Connect Google Analytics"
+msgstr ""
+
+#: templates/admin/import/connect.php:119
+msgid "Choose a property"
+msgstr ""
+
+#: templates/admin/import/connect.php:125
+msgid "This Google account cannot see any Analytics properties. Try connecting with a different account."
+msgstr ""
+
+#: templates/admin/import/connect.php:127
+msgid "Pick the property that measures this website."
+msgstr ""
+
+#. translators: %s: a Google Analytics account name.
+#: templates/admin/import/connect.php:146
+#, php-format
+msgid "Properties in %s"
+msgstr ""
+
+#. translators: %s: a numeric Google Analytics property id.
+#: templates/admin/import/connect.php:158
+#, php-format
+msgid "Property %s"
+msgstr ""
+
+#: templates/admin/import/connect.php:183
+#: templates/admin/import/connect.php:225
+#: templates/admin/import/notes.php:73
+#: templates/admin/import/overlap.php:100
+#: templates/admin/import/range.php:129
+msgid "Continue"
+msgstr ""
+
+#: templates/admin/import/connect.php:189
+msgid "This account has a lot of properties, so their website addresses are not listed here - fetching each one would mean a great many requests to Google. The address of whichever you choose is shown on the next step."
+msgstr ""
+
+#: templates/admin/import/connect.php:195
+msgid "Use a different Google account"
+msgstr ""
+
+#: templates/admin/import/connect.php:208
+msgid "Connected"
+msgstr ""
+
+#: templates/admin/import/connect.php:217
+msgid "Ready to bring your history across."
+msgstr ""
+
+#: templates/admin/import/connect.php:226
+msgid "Disconnect"
+msgstr ""
+
+#: templates/admin/import/details.php:42
+msgid "Waiting to start"
+msgstr ""
+
+#: templates/admin/import/details.php:43
+msgid "In progress"
+msgstr ""
+
+#: templates/admin/import/details.php:44
+msgid "Paused, carrying on shortly"
+msgstr ""
+
+#: templates/admin/import/details.php:45
+msgid "Complete"
+msgstr ""
+
+#: templates/admin/import/details.php:46
+msgid "Stopped after a problem"
+msgstr ""
+
+#: templates/admin/import/details.php:47
+msgid "Stopped by you"
+msgstr ""
+
+#: templates/admin/import/details.php:68
+msgid "This import"
+msgstr ""
+
+#: templates/admin/import/details.php:74
+msgid "Details of this import"
+msgstr ""
+
+#: templates/admin/import/details.php:78
+#: templates/admin/licence.php:130
+msgid "Status"
+msgstr ""
+
+#: templates/admin/import/details.php:83
+msgid "Source"
+msgstr ""
+
+#: templates/admin/import/details.php:89
+msgid "Property"
+msgstr ""
+
+#: templates/admin/import/details.php:95
+msgid "Dates imported"
+msgstr ""
+
+#: templates/admin/import/details.php:111
+msgid "Records imported"
+msgstr ""
+
+#: templates/admin/import/details.php:117
+msgid "Records skipped"
+msgstr ""
+
+#: templates/admin/import/details.php:120
+msgid "Those dates were already covered by another import."
+msgstr ""
+
+#: templates/admin/import/details.php:127
+msgid "Finished"
+msgstr ""
+
+#: templates/admin/import/details.php:132
+msgid "Started"
+msgstr ""
+
+#: templates/admin/import/details.php:143
+#: templates/admin/import/sources.php:113
+msgid "View progress"
+msgstr ""
+
+#: templates/admin/import/details.php:156
+msgid "What was brought across"
+msgstr ""
+
+#: templates/admin/import/details.php:172
+msgid "How the numbers map"
+msgstr ""
+
+#: templates/admin/import/details.php:184
+msgid "Imported analytics sit alongside the ones this plugin measures, marked internally so the two can always be told apart. Removing the tool you imported from will not remove this history."
+msgstr ""
+
+#: templates/admin/import/notes.php:29
+msgid "A quick note about your numbers"
+msgstr ""
+
+#: templates/admin/import/notes.php:34
+msgid "Analytics platforms don’t all count visitors, sessions and page views in exactly the same way."
+msgstr ""
+
+#: templates/admin/import/notes.php:38
+msgid "We’ll import your historical data so you can keep useful trends and comparisons, but you may notice a change in numbers around the date you switched to this plugin."
+msgstr ""
+
+#: templates/admin/import/notes.php:42
+msgid "Nothing is wrong - the measurement method has changed."
+msgstr ""
+
+#. translators: %s: the name of the analytics tool being imported from.
+#: templates/admin/import/notes.php:55
+#, php-format
+msgid "About %s data"
+msgstr ""
+
+#: templates/admin/import/notes.php:77
+#: templates/admin/import/range.php:132
+msgid "Not now"
+msgstr ""
+
+#: templates/admin/import/overlap.php:32
+msgid "Some of these dates are already covered"
+msgstr ""
+
+#: templates/admin/import/overlap.php:37
+msgid "You have already imported analytics that overlap the dates you have chosen. Importing both without deciding what to do would count the same days twice."
+msgstr ""
+
+#: templates/admin/import/overlap.php:42
+msgid "Dates already imported, by source"
+msgstr ""
+
+#: templates/admin/import/overlap.php:46
+msgid "Already imported from"
+msgstr ""
+
+#: templates/admin/import/overlap.php:47
+msgid "Covering"
+msgstr ""
+
+#: templates/admin/import/overlap.php:48
+msgid "Days"
+msgstr ""
+
+#: templates/admin/import/overlap.php:86
+msgid "Import only the dates that aren’t already covered"
+msgstr ""
+
+#: templates/admin/import/overlap.php:87
+msgid "Nothing you already have is touched, and nothing is counted twice."
+msgstr ""
+
+#: templates/admin/import/overlap.php:94
+msgid "Replace the existing imported data for those dates"
+msgstr ""
+
+#: templates/admin/import/overlap.php:95
+msgid "The other import’s figures for the overlapping days are removed and these ones take their place. Analytics measured by this plugin are never affected."
+msgstr ""
+
+#: templates/admin/import/partials/mappings.php:23
+msgid "How each metric maps into this plugin"
+msgstr ""
+
+#: templates/admin/import/partials/mappings.php:27
+#: templates/admin/import/range.php:104
+#: templates/admin/layout/header.php:69
+msgid "From"
+msgstr ""
+
+#: templates/admin/import/partials/mappings.php:28
+msgid "Becomes"
+msgstr ""
+
+#: templates/admin/import/partials/mappings.php:29
+msgid "How close"
+msgstr ""
+
+#: templates/admin/import/partials/mappings.php:43
+msgid "The same thing"
+msgstr ""
+
+#: templates/admin/import/partials/mappings.php:44
+msgid "Close, not identical"
+msgstr ""
+
+#: templates/admin/import/partials/mappings.php:73
+msgid "Anything marked “close, not identical” measures roughly the same thing by a different method. It is useful for trends and comparisons, and it is not a figure to reconcile to the last unit against what this plugin measures itself."
+msgstr ""
+
+#. translators: %s: the name of the analytics tool being imported from.
+#: templates/admin/import/preview.php:38
+#, php-format
+msgid "Ready to import %s"
+msgstr ""
+
+#: templates/admin/import/preview.php:49
+msgid "Dates to import"
+msgstr ""
+
+#: templates/admin/import/preview.php:70
+msgid "Approximately"
+msgstr ""
+
+#: templates/admin/import/preview.php:71
+msgid "Found"
+msgstr ""
+
+#: templates/admin/import/preview.php:87
+msgid "These are estimates. Counting every row exactly would have kept you waiting for a number you only need the shape of."
+msgstr ""
+
+#: templates/admin/import/preview.php:96
+msgid "We’ll import"
+msgstr ""
+
+#: templates/admin/import/preview.php:106
+msgid "We won’t import"
+msgstr ""
+
+#: templates/admin/import/preview.php:125
+msgid "Where these dates overlap another import, that import’s figures will be replaced. Analytics measured by this plugin are not affected."
+msgstr ""
+
+#. translators: %s: the name of the analytics tool being imported from.
+#: templates/admin/import/preview.php:135
+#, php-format
+msgid "We won’t change or remove any %s data. Importing only reads."
+msgstr ""
+
+#: templates/admin/import/preview.php:154
+msgid "Start import"
+msgstr ""
+
+#. translators: %s: the name of the analytics tool.
+#: templates/admin/import/preview.php:170
+#, php-format
+msgid "There is no %s data on this site to import."
+msgstr ""
+
+#: templates/admin/import/preview.php:179
+msgid "Importing is not available on this installation, so this preview is for information only."
+msgstr ""
+
+#: templates/admin/import/preview.php:188
+msgid "Exactly what becomes what"
+msgstr ""
+
+#: templates/admin/import/progress.php:24
+msgid "That import could not be found. It may have finished, or it may have been started on another site."
+msgstr ""
+
+#. translators: %s: the name of the analytics tool being imported from.
+#: templates/admin/import/progress.php:61
+#, php-format
+msgid "Importing %s"
+msgstr ""
+
+#: templates/admin/import/progress.php:76
+msgid "Import progress"
+msgstr ""
+
+#: templates/admin/import/progress.php:98
+msgid "You can leave this page. The import will continue in the background."
+msgstr ""
+
+#: templates/admin/import/progress.php:107
+msgid "Leave it running"
+msgstr ""
+
+#: templates/admin/import/progress.php:113
+msgid "Stop this import? Everything it has already brought across stays, and you can pick up where it left off later."
+msgstr ""
+
+#: templates/admin/import/progress.php:115
+msgid "Stop importing"
+msgstr ""
+
+#: templates/admin/import/progress.php:122
+msgid "Large imports are done in small pieces so they never hold up your site. If your browser closes, the server keeps going and picks up exactly where it stopped."
+msgstr ""
+
+#: templates/admin/import/range.php:35
+msgid "What would you like to import?"
+msgstr ""
+
+#. translators: 1: start date, 2: end date.
+#: templates/admin/import/range.php:44
+#, php-format
+msgid "We found analytics from %1$s to %2$s."
+msgstr ""
+
+#: templates/admin/import/range.php:60
+msgid "All available history"
+msgstr ""
+
+#: templates/admin/import/range.php:79
+msgid "The last 12 months"
+msgstr ""
+
+#: templates/admin/import/range.php:98
+msgid "Choose dates"
+msgstr ""
+
+#: templates/admin/import/range.php:116
+#: templates/admin/layout/header.php:74
+msgid "To"
+msgstr ""
+
+#: templates/admin/import/range.php:140
+msgid "Older history is subject to the same retention window as everything else: anything past the limit on your Settings screen is removed at the next tidy-up, whether it was imported or measured here."
+msgstr ""
+
+#: templates/admin/import/sources.php:42
+msgid "Imported"
+msgstr ""
+
+#. translators: %s: a number of records, already formatted.
+#: templates/admin/import/sources.php:60
+#, php-format
+msgid " · %s records imported"
+msgstr ""
+
+#: templates/admin/import/sources.php:67
+msgid "Import in progress"
+msgstr ""
+
+#: templates/admin/import/sources.php:68
+msgid "Running in the background."
+msgstr ""
+
+#: templates/admin/import/sources.php:72
+msgid "Found on this website"
+msgstr ""
+
+#. translators: 1: start date, 2: end date.
+#: templates/admin/import/sources.php:81
+#, php-format
+msgid "History from %1$s to %2$s is ready to import."
+msgstr ""
+
+#: templates/admin/import/sources.php:92
+msgid "Found, but empty"
+msgstr ""
+
+#: templates/admin/import/sources.php:93
+msgid "There is no history here to bring across."
+msgstr ""
+
+#: templates/admin/import/sources.php:95
+msgid "Found, but not readable"
+msgstr ""
+
+#: templates/admin/import/sources.php:96
+msgid "This version keeps its data in a shape this importer does not recognise."
+msgstr ""
+
+#: templates/admin/import/sources.php:103
+msgid "Not detected on this website"
+msgstr ""
+
+#: templates/admin/import/sources.php:117
+msgid "View details"
+msgstr ""
+
+#: templates/admin/import/sources.php:122
+msgid "Import again"
+msgstr ""
+
+#: templates/admin/import/sources.php:182
+msgid "Already using another analytics tool? Bring your history with you, so your charts don’t have to start from zero."
+msgstr ""
+
+#: templates/admin/import/sources.php:187
+msgid "No importers are available on this installation."
+msgstr ""
+
+#: templates/admin/import/sources.php:192
+msgid "Importing is not available on this installation, so the sources below are shown for information only."
+msgstr ""
+
+#: templates/admin/import/sources.php:198
+msgid "We didn’t find another analytics tool installed here. If you have history somewhere else, you can still bring it across - Google Analytics is connected rather than detected, and a plugin you have already removed may have left its data behind for us to read."
+msgstr ""
+
+#: templates/admin/import/sources.php:214
+msgid "Other import options"
+msgstr ""
+
+#: templates/admin/import/sources.php:228
+msgid "Importing only ever reads from your other analytics tool. Nothing there is changed, moved or removed, and you can keep using it alongside this plugin for as long as you like."
+msgstr ""
+
+#: templates/admin/layout/header.php:33
+msgid "Export CSV"
+msgstr ""
+
+#: templates/admin/layout/header.php:36
+msgid "JSON"
+msgstr ""
+
+#: templates/admin/layout/header.php:45
+msgid "Date range"
+msgstr ""
+
+#: templates/admin/layout/header.php:56
+msgid "Custom"
+msgstr ""
+
+#: templates/admin/layout/header.php:78
+msgid "Apply"
+msgstr ""
+
+#: templates/admin/licence.php:41
+msgid "This site"
+msgstr ""
+
+#: templates/admin/licence.php:46
+msgid "Pro, switched on in wp-config.php"
+msgstr ""
+
+#: templates/admin/licence.php:48
+msgid "Agency licence, active"
+msgstr ""
+
+#: templates/admin/licence.php:50
+msgid "Pro licence, active"
+msgstr ""
+
+#: templates/admin/licence.php:52
+msgid "Running the free edition"
+msgstr ""
+
+#: templates/admin/licence.php:60
+msgid "HONEST_ANALYTICS_PRO is defined, so every Pro report is available without a key. That is a development and staging arrangement; a production site should hold a licence."
+msgstr ""
+
+#: templates/admin/licence.php:65
+msgid "Every report is available."
+msgstr ""
+
+#: templates/admin/licence.php:68
+msgid "Pageviews, daily unique visitors, sessions, bounce rate, real-time, content, sources, devices and export are all here and always will be. A licence adds campaigns, locations, events, goals, funnels, crawlers and the form and commerce integrations."
+msgstr ""
+
+#: templates/admin/licence.php:78
+msgid "Licence key"
+msgstr ""
+
+#. translators: %s: where the value is set, such as wp-config.php.
+#: templates/admin/licence.php:87
+#, php-format
+msgid "The key is set in %s, so it cannot be changed here."
+msgstr ""
+
+#: templates/admin/licence.php:101
+msgid "Key"
+msgstr ""
+
+#: templates/admin/licence.php:117
+msgid "Check again"
+msgstr ""
+
+#: templates/admin/licence.php:117
+msgid "Activate"
+msgstr ""
+
+#: templates/admin/licence.php:126
+msgid "Licence details"
+msgstr ""
+
+#: templates/admin/licence.php:135
+msgid "Active on this site"
+msgstr ""
+
+#: templates/admin/licence.php:138
+msgid "Every seat on this licence is in use elsewhere"
+msgstr ""
+
+#: templates/admin/licence.php:141
+msgid "Not recognised"
+msgstr ""
+
+#: templates/admin/licence.php:144
+msgid "Deactivated here"
+msgstr ""
+
+#: templates/admin/licence.php:147
+msgid "Not activated yet"
+msgstr ""
+
+#: templates/admin/licence.php:154
+msgid "Sites using it"
+msgstr ""
+
+#: templates/admin/licence.php:159
+msgid "Email support"
+msgstr ""
+
+#: templates/admin/licence.php:163
+msgid "Included for twelve months from purchase"
+msgstr ""
+
+#. translators: %s: a date.
+#: templates/admin/licence.php:168
+#, php-format
+msgid "Included until %s"
+msgstr ""
+
+#. translators: %s: a date.
+#: templates/admin/licence.php:176
+#, php-format
+msgid "Lapsed on %s. The plugin is unaffected - nothing switches off."
+msgstr ""
+
+#: templates/admin/licence.php:186
+msgid "Last checked"
+msgstr ""
+
+#: templates/admin/licence.php:198
+msgid "Never"
+msgstr ""
+
+#: templates/admin/licence.php:205
+msgid "Checked by"
+msgstr ""
+
+#: templates/admin/licence.php:220
+msgid "Remove the licence from this site? The Pro reports stop rendering. Nothing that has been collected is deleted, and re-entering the key brings them back."
+msgstr ""
+
+#: templates/admin/licence.php:222
+msgid "Deactivate this site"
+msgstr ""
+
+#: templates/admin/licence.php:226
+msgid "Frees the seat for another site. Your data stays exactly where it is - in this site’s own database, as it always was."
+msgstr ""
+
+#: templates/admin/licence.php:235
+msgid "What the licence is"
+msgstr ""
+
+#: templates/admin/licence.php:240
+msgid "A one-off payment"
+msgstr ""
+
+#: templates/admin/licence.php:241
+msgid "Not a subscription. There is no renewal date and no expiry: a licence bought once keeps working."
+msgstr ""
+
+#: templates/admin/licence.php:245
+msgid "Updates, indefinitely"
+msgstr ""
+
+#: templates/admin/licence.php:246
+msgid "Delivered through the ordinary WordPress update screen, for as long as the plugin is maintained."
+msgstr ""
+
+#: templates/admin/licence.php:250
+msgid "Email support for twelve months"
+msgstr ""
+
+#: templates/admin/licence.php:251
+msgid "After that, support may lapse. Nothing in the plugin changes when it does - no feature is withdrawn, no report stops rendering and no warning appears."
+msgstr ""
+
+#: templates/admin/licence.php:255
+msgid "Your data, in your database"
+msgstr ""
+
+#: templates/admin/licence.php:256
+msgid "Nothing measured here is sent anywhere. Removing the licence hides the Pro reports and leaves every row they were reading exactly as it was, so re-activating restores the history intact."
+msgstr ""
+
+#: templates/admin/licence.php:262
+msgid "Receipts and licence management"
+msgstr ""
+
+#: templates/admin/licence.php:263
+msgid "- held by the payment provider, not by this site."
+msgstr ""
+
+#: templates/admin/locations.php:26
+msgid "No geo database installed"
+msgstr ""
+
+#: templates/admin/locations.php:31
+msgid "Country lookup runs on this server from a local database. Nothing is downloaded automatically - fetching one is your decision, and it carries a licence. Two databases are commonly used: DB-IP IP to Country Lite and MaxMind GeoLite2 Country. Both are free, both need you to accept their terms, and both give you a .mmdb file."
+msgstr ""
+
+#: templates/admin/locations.php:41
+msgid "Geography is turned off"
+msgstr ""
+
+#. translators: %s: a link to the settings screen, reading "Settings".
+#: templates/admin/locations.php:46
+#, php-format
+msgid "The database is installed, but the setting is off, so nothing is being recorded. Turn on “Geography” in %s."
+msgstr ""
+
+#. translators: 1: database type, 2: how long ago it was built.
+#: templates/admin/locations.php:63
+#, php-format
+msgid "%1$s, local database, built %2$s ago"
+msgstr ""
+
+#: templates/admin/locations.php:64
+msgid "Local database"
+msgstr ""
+
+#: templates/admin/locations.php:65
+msgid "an unknown time"
+msgstr ""
+
+#: templates/admin/locations.php:92
+msgid "No locations recorded for this period."
+msgstr ""
+
+#: templates/admin/locations.php:116
+msgid "Country is resolved from the IP address in memory during the same request that discards it. The address is never written to a table, a log or a cache key, and no city or region is derived, so a country counter is the most granular thing this can honestly report."
+msgstr ""
+
+#: templates/admin/locations.php:125
+msgid "Replace or remove the database"
+msgstr ""
+
+#. translators: 1: database type, 2: file size, 3: build date.
+#: templates/admin/locations.php:134
+#, php-format
+msgid "Installed now: %1$s, %2$s, built %3$s. A geo database goes out of date as addresses are reassigned, so replacing it once or twice a year keeps the countries honest."
+msgstr ""
+
+#: templates/admin/locations.php:135
+msgid "a local database"
+msgstr ""
+
+#: templates/admin/locations.php:137
+msgid "on an unknown date"
+msgstr ""
+
+#: templates/admin/page.php:33
+#: templates/admin/pages.php:124
+#: templates/email/summary-html.php:185
+msgid "Entrances"
+msgstr ""
+
+#: templates/admin/page.php:36
+msgid "sessions starting here"
+msgstr ""
+
+#: templates/admin/page.php:44
+msgid "of entrances"
+msgstr ""
+
+#: templates/admin/page.php:45
+msgid "no sessions started here"
+msgstr ""
+
+#: templates/admin/page.php:51
+msgid "needs the beacon"
+msgstr ""
+
+#: templates/admin/page.php:60
+msgid "Edit post"
+msgstr ""
+
+#: templates/admin/page.php:62
+msgid "Not a WordPress post"
+msgstr ""
+
+#: templates/admin/page.php:87
+msgid "Views and unique visitors for this page."
+msgstr ""
+
+#: templates/admin/page.php:88
+msgid "Views and unique visitors for this page"
+msgstr ""
+
+#: templates/admin/page.php:99
+msgid "How visitors reached this page"
+msgstr ""
+
+#: templates/admin/page.php:120
+msgid "No sources recorded for this page in this period."
+msgstr ""
+
+#: templates/admin/page.php:124
+msgid "Referrer"
+msgstr ""
+
+#. translators: %s: a date.
+#: templates/admin/page.php:147
+#, php-format
+msgid "Fills forward only. Collection for this card began %s; views before then are counted, but their source was not kept. The referrer shown is the one the session arrived by, not the previous page on this site."
+msgstr ""
+
+#: templates/admin/page.php:163
+msgid "Nothing recorded for this page yet."
+msgstr ""
+
+#. translators: %d: percentage of the page.
+#: templates/admin/page.php:174
+#, php-format
+msgid "Reached %d%%"
+msgstr ""
+
+#: templates/admin/page.php:183
+msgid "Requires hybrid or client tracking mode."
+msgstr ""
+
+#: templates/admin/page.php:189
+msgid "Events on this page"
+msgstr ""
+
+#: templates/admin/page.php:209
+msgid "No events recorded on this page."
+msgstr ""
+
+#: templates/admin/page.php:210
+msgid "Events arrive on the beacon, which server-only mode does not use."
+msgstr ""
+
+#: templates/admin/page.php:248
+msgid "No clicks away from this page recorded."
+msgstr ""
+
+#: templates/admin/page.php:272
+msgid "Would tell you how far down this page people actually read before leaving."
+msgstr ""
+
+#: templates/admin/page.php:279
+msgid "Events and outbound clicks"
+msgstr ""
+
+#: templates/admin/page.php:280
+msgid "Would tell you which buttons were pressed on this page and which links took people away from it."
+msgstr ""
+
+#: templates/admin/pages.php:23
+msgid "Pages compared"
+msgstr ""
+
+#: templates/admin/pages.php:33
+msgid "Clear comparison"
+msgstr ""
+
+#: templates/admin/pages.php:44
+msgid "Daily views for the selected pages."
+msgstr ""
+
+#: templates/admin/pages.php:45
+msgid "Daily views by page"
+msgstr ""
+
+#: templates/admin/pages.php:61
+msgid "Path contains"
+msgstr ""
+
+#: templates/admin/pages.php:66
+msgid "Path excludes"
+msgstr ""
+
+#: templates/admin/pages.php:70
+msgid "Filter"
+msgstr ""
+
+#: templates/admin/pages.php:84
+msgid "Clear"
+msgstr ""
+
+#. translators: %s: number of pages.
+#: templates/admin/pages.php:93
+#, php-format
+msgid "%s page"
+msgid_plural "%s pages"
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/admin/pages.php:108
+msgid "No pages match that filter"
+msgstr ""
+
+#: templates/admin/pages.php:109
+msgid "No pages recorded for this period"
+msgstr ""
+
+#: templates/admin/pages.php:120
+msgid "Select for comparison"
+msgstr ""
+
+#: templates/admin/pages.php:125
+msgid "Exits"
+msgstr ""
+
+#. translators: %s: page path.
+#: templates/admin/pages.php:146
+#, php-format
+msgid "Compare %s"
+msgstr ""
+
+#. translators: %s: the daily cardinality cap.
+#: templates/admin/pages.php:158
+#, php-format
+msgid "Not a real page. Paths beyond the daily cap of %s distinct pages are folded in here. No views are lost."
+msgstr ""
+
+#: templates/admin/pages.php:182
+msgid "Compare selected"
+msgstr ""
+
+#. translators: 1: number selected, 2: maximum.
+#: templates/admin/pages.php:188
+#: templates/admin/pages.php:194
+#, php-format
+msgid "%1$d of %2$d pages selected."
+msgstr ""
+
+#: templates/admin/pages.php:202
+msgid "The comparison is written into the URL, so it can be bookmarked or sent to someone."
+msgstr ""
+
+#. translators: %s: the daily cardinality cap.
+#: templates/admin/pages.php:214
+#, php-format
+msgid "“Other” holds paths beyond the daily cardinality cap of %s. No views are lost, they are just not attributed to an individual path, which is why the row does not link anywhere."
+msgstr ""
+
+#: templates/admin/pages.php:219
+msgid "Bounce rate is derived from entrances and shows “-” where a page has none: a bounce is only counted against the page a session entered on."
+msgstr ""
+
+#: templates/admin/pages.php:221
+msgid "Average time needs the beacon, so it is blank in server-only tracking mode."
+msgstr ""
+
+#: templates/admin/partials/chart.php:44
+msgid "This chart could not be drawn, so the figures behind it are shown instead."
+msgstr ""
+
+#: templates/admin/partials/chart.php:56
+msgid "Date"
+msgstr ""
+
+#: templates/admin/partials/geo-install.php:30
+msgid "Replace from a file"
+msgstr ""
+
+#: templates/admin/partials/geo-install.php:31
+msgid "Install from a file"
+msgstr ""
+
+#: templates/admin/partials/geo-install.php:44
+msgid "Upload"
+msgstr ""
+
+#. translators: %s: a file size, for example "8 MB".
+#: templates/admin/partials/geo-install.php:53
+#, php-format
+msgid "A .mmdb file, or the .mmdb.gz straight from the download without unpacking it. This server accepts uploads up to %s; if the file is larger than that, use the address route below instead."
+msgstr ""
+
+#: templates/admin/partials/geo-install.php:67
+msgid "Replace from an address"
+msgstr ""
+
+#: templates/admin/partials/geo-install.php:68
+msgid "Install from an address"
+msgstr ""
+
+#: templates/admin/partials/geo-install.php:81
+msgid "Fetch"
+msgstr ""
+
+#: templates/admin/partials/geo-install.php:86
+msgid "This site downloads the file once, now, and never again on its own. HTTPS only. A large database can take a minute, so give the page time."
+msgstr ""
+
+#: templates/admin/partials/geo-install.php:93
+msgid "Remove the database"
+msgstr ""
+
+#: templates/admin/partials/geo-install.php:102
+msgid "Delete the file"
+msgstr ""
+
+#: templates/admin/partials/geo-install.php:107
+msgid "Deletes the .mmdb file and stops country lookup. The countries already counted are ordinary rollup rows and stay exactly where they are."
+msgstr ""
+
+#: templates/admin/partials/heatmap.php:24
+msgid "When people visit"
+msgstr ""
+
+#. translators: %d: number of days of hourly detail kept.
+#: templates/admin/partials/heatmap.php:30
+#, php-format
+msgid "Last %d day - the hourly retention window"
+msgid_plural "Last %d days - the hourly retention window"
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/admin/partials/heatmap.php:41
+msgid "Nothing to show here yet"
+msgstr ""
+
+#. translators: %d: number of days.
+#: templates/admin/partials/heatmap.php:47
+#, php-format
+msgid "This grid covers the last %d days, which is how long hourly detail is kept before it is folded into daily totals. Nothing has been recorded in that window yet."
+msgstr ""
+
+#: templates/admin/partials/heatmap.php:57
+msgid "Pageviews by day of week and hour of day"
+msgstr ""
+
+#. translators: 1: weekday, 2: hour, 3: view count.
+#: templates/admin/partials/heatmap.php:87
+#, php-format
+msgid "%1$s %2$02d:00 - %3$s views"
+msgstr ""
+
+#: templates/admin/partials/heatmap.php:104
+msgid "Quieter"
+msgstr ""
+
+#: templates/admin/partials/heatmap.php:108
+msgid "Busier"
+msgstr ""
+
+#. translators: 1: weekday, 2: hour, 3: view count.
+#: templates/admin/partials/heatmap.php:117
+#, php-format
+msgid "Peak: %1$s %2$02d:00, %3$s views"
+msgstr ""
+
+#: templates/admin/partials/pro-placeholder.php:24
+msgid "Pro"
+msgstr ""
+
+#. translators: %s: number of visitors, already formatted.
+#: templates/admin/partials/realtime-banner.php:24
+#, php-format
+msgid "%s visitor on the site right now"
+msgid_plural "%s visitors on the site right now"
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/admin/partials/realtime-banner.php:30
+#: templates/widgets/live.php:48
+msgid "Real-time →"
+msgstr ""
+
+#: templates/admin/partials/setting.php:48
+msgid "Consequence:"
+msgstr ""
+
+#: templates/admin/partials/setting.php:58
+msgid "Set in wp-config.php, so it cannot be changed here."
+msgstr ""
+
+#: templates/admin/partials/setting.php:59
+msgid "Set by a filter in your theme or another plugin, so it cannot be changed here."
+msgstr ""
+
+#: templates/admin/privacy.php:23
+msgid "Current posture"
+msgstr ""
+
+#: templates/admin/privacy.php:33
+msgid "Worth knowing"
+msgstr ""
+
+#: templates/admin/privacy.php:38
+msgid "Check"
+msgstr ""
+
+#: templates/admin/privacy.php:47
+msgid "What this site collects"
+msgstr ""
+
+#: templates/admin/privacy.php:54
+msgid "Stored"
+msgstr ""
+
+#: templates/admin/privacy.php:55
+msgid "Not stored"
+msgstr ""
+
+#: templates/admin/privacy.php:74
+msgid "Identifiers held"
+msgstr ""
+
+#: templates/admin/privacy.php:89
+msgid "Lawful basis"
+msgstr ""
+
+#: templates/admin/privacy.php:93
+msgid "Enabling consented tracking, stored journeys or account linking changes this. Each of those switches carries its consequence on the Settings screen."
+msgstr ""
+
+#: templates/admin/privacy.php:99
+msgid "Configuration in detail"
+msgstr ""
+
+#: templates/admin/privacy.php:119
+msgid "Consented data"
+msgstr ""
+
+#: templates/admin/privacy.php:127
+msgid "Consent grants recorded"
+msgstr ""
+
+#: templates/admin/privacy.php:128
+msgid "Consent refusals recorded"
+msgstr ""
+
+#: templates/admin/privacy.php:129
+msgid "Visitors with stored journeys"
+msgstr ""
+
+#: templates/admin/privacy.php:130
+msgid "Journey rows"
+msgstr ""
+
+#: templates/admin/privacy.php:148
+msgid "Subject access and erasure"
+msgstr ""
+
+#: templates/admin/privacy.php:153
+msgid "On this configuration there is nothing to export or erase: the rollups are counters and sketches with no individual inside them, and the hashes that fed them stopped being linkable the moment the salt rotated. These tools act on the consented journeys layer and the consent log, both of which are empty."
+msgstr ""
+
+#: templates/admin/privacy.php:157
+msgid "A request reaches the consented journeys layer and the consent log. Aggregate statistics are out of scope: there is no individual inside a counter to find or remove."
+msgstr ""
+
+#: templates/admin/privacy.php:167
+msgid "Visitor ID or account email"
+msgstr ""
+
+#: templates/admin/privacy.php:171
+msgid "Export data"
+msgstr ""
+
+#: templates/admin/privacy.php:172
+msgid "Erase the stored journeys for this subject? This cannot be undone."
+msgstr ""
+
+#: templates/admin/privacy.php:172
+msgid "Erase data"
+msgstr ""
+
+#: templates/admin/privacy.php:176
+msgid "Erasure keeps the consent record by default: it is the evidence that the now-erased processing was lawful."
+msgstr ""
+
+#. translators: 1: journey rows removed, 2: consent rows removed.
+#: templates/admin/privacy.php:187
+#, php-format
+msgid "Removed %1$d journey row(s) and %2$d consent record(s)."
+msgstr ""
+
+#: templates/admin/privacy.php:206
+msgid "Deleting the plugin will leave your analytics tables in place."
+msgstr ""
+
+#: templates/admin/privacy.php:207
+msgid "That is the default, because rollups cannot be rebuilt from anything else - no raw hit data is kept. A later install picks them straight back up. To have deletion remove them instead, turn off “Keep data on uninstall” on the Settings screen."
+msgstr ""
+
+#: templates/admin/privacy.php:213
+msgid "Deleting the plugin will destroy every analytics table."
+msgstr ""
+
+#: templates/admin/privacy.php:214
+msgid "“Keep data on uninstall” is switched off, so deletion removes the lot. Rollups cannot be rebuilt from anything else, because no raw hit data is kept. Export what you need first. Deactivating the plugin is safe either way - it stops the scheduled work and leaves everything in place."
+msgstr ""
+
+#: templates/admin/privacy.php:220
+msgid "This screen describes what your configuration permits, not what has happened, because “a cookie could be set” is the compliance-relevant fact. It is not legal advice."
+msgstr ""
+
+#: templates/admin/realtime.php:18
+msgid "Updating every 15 seconds"
+msgstr ""
+
+#: templates/admin/realtime.php:24
+#: templates/widgets/live.php:19
+msgid "Visitors now"
+msgstr ""
+
+#: templates/admin/realtime.php:29
+#: templates/widgets/live.php:25
+msgid "Pages viewed"
+msgstr ""
+
+#: templates/admin/realtime.php:34
+msgid "Pages / visitor"
+msgstr ""
+
+#: templates/admin/realtime.php:41
+msgid "Active sessions"
+msgstr ""
+
+#: templates/admin/realtime.php:42
+#: templates/widgets/live.php:47
+msgid "Updated just now"
+msgstr ""
+
+#: templates/admin/realtime.php:50
+msgid "Current page"
+msgstr ""
+
+#: templates/admin/realtime.php:51
+msgid "Entry page"
+msgstr ""
+
+#: templates/admin/realtime.php:54
+msgid "Last seen"
+msgstr ""
+
+#. translators: %d: number of additional sessions.
+#: templates/admin/realtime.php:98
+#, php-format
+msgid "%d more not shown."
+msgid_plural "%d more not shown."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: session window in minutes.
+#: templates/admin/realtime.php:114
+#, php-format
+msgid "Read entirely from the session layer, so this screen runs no report queries. Sessions close after %d minutes of inactivity; there is no date range or export here because nothing on this screen is historical."
+msgstr ""
+
+#: templates/admin/realtime.php:122
+msgid "A row is a visit, not a person. There is nothing here that identifies anyone: no address, no name, no identifier that outlives the visit. Somebody who leaves and comes back tomorrow is a new row, with no way to know it was them - that is the salt rotation, and it is what keeps this screen cookieless."
+msgstr ""
+
+#. translators: 1: when the last drain ran, 2: when the next runs.
+#: templates/admin/settings.php:197
+#, php-format
+msgid "WP-Cron is draining the spool every five minutes and is up to date. Last run %1$s; next %2$s."
+msgstr ""
+
+#: templates/admin/settings.php:209
+msgid "Run maintenance now"
+msgstr ""
+
+#: templates/admin/settings.php:210
+msgid "Nothing here is required. It all runs on its own."
+msgstr ""
+
+#: templates/admin/settings.php:215
+msgid "Update the reports"
+msgstr ""
+
+#: templates/admin/settings.php:223
+msgid "Drain now"
+msgstr ""
+
+#: templates/admin/settings.php:231
+msgid "Retry set-aside batches"
+msgstr ""
+
+#: templates/admin/settings.php:237
+msgid "Folds whatever is waiting in the spool into the reports, here and now, without a terminal. It stops after twenty seconds and picks up where it left off, so a large backlog clears over a few presses."
+msgstr ""
+
+#: templates/admin/settings.php:243
+msgid "Tidy up"
+msgstr ""
+
+#: templates/admin/settings.php:251
+msgid "Run the tidy-up"
+msgstr ""
+
+#: templates/admin/settings.php:256
+msgid "Compacts finished days to daily totals and deletes anything past its retention. This is the one that acts on the retention settings below, and what it deletes does not come back."
+msgstr ""
+
+#: templates/admin/settings.php:262
+msgid "A real cron entry"
+msgstr ""
+
+#: templates/admin/settings.php:271
+msgid "Optional, and only if you have a terminal. On a busy site a real cron is steadier than WP-Cron, which only runs when somebody visits. Without either, ordinary traffic drives the drain, which is why the plugin works on hosts that offer no cron at all."
+msgstr ""
+
+#. translators: %s: cache plugin name.
+#: templates/admin/settings.php:281
+#, php-format
+msgid "%s is active and tracking mode is server-only."
+msgstr ""
+
+#. translators: %s: cache plugin name.
+#: templates/admin/settings.php:282
+msgid "Cached pages never reach PHP, so server-side tracking will silently under-count them - the numbers will look plausible and be wrong. Switch to hybrid: the beacon fills the gap automatically, with no cache configuration needed."
+msgstr ""
+
+#: templates/admin/settings.php:289
+msgid "WP Rocket’s “Delay JavaScript execution” is on. Unless the tracker is excluded from it, visitors who read a page and leave without clicking anything are never counted. The plugin asks to be excluded automatically, but check WP Rocket’s exclusion list if the figures look low."
+msgstr ""
+
+#: templates/admin/settings.php:298
+msgid "Tracking"
+msgstr ""
+
+#: templates/admin/settings.php:303
+msgid "Tracking mode"
+msgstr ""
+
+#: templates/admin/settings.php:308
+msgid "Hybrid (recommended)"
+msgstr ""
+
+#: templates/admin/settings.php:309
+msgid "Server-side only"
+msgstr ""
+
+#: templates/admin/settings.php:310
+msgid "Client beacon only"
+msgstr ""
+
+#: templates/admin/settings.php:314
+msgid "Hybrid counts the view in PHP and confirms it from the browser, deduplicated by a one-time nonce. Server mode misses everything a page cache serves; client mode misses anyone with JavaScript blocked."
+msgstr ""
+
+#: templates/admin/settings.php:319
+msgid "Inject tracker"
+msgstr ""
+
+#: templates/admin/settings.php:320
+msgid "Add the tracker to public pages"
+msgstr ""
+
+#: templates/admin/settings.php:321
+msgid "Adds a 1.3 KB first-party script before the closing body tag on public pages. Nothing is loaded from a CDN."
+msgstr ""
+
+#: templates/admin/settings.php:326
+msgid "Collect endpoint"
+msgstr ""
+
+#: templates/admin/settings.php:331
+msgid "REST API (recommended)"
+msgstr ""
+
+#: templates/admin/settings.php:332
+msgid "Plain URL"
+msgstr ""
+
+#: templates/admin/settings.php:336
+msgid "The first-party path the browser posts to. Switch to the plain URL if a security plugin or your host blocks anonymous access to /wp-json/."
+msgstr ""
+
+#: templates/admin/settings.php:337
+msgid "The endpoint is baked into cached HTML, so purge your page cache after changing this."
+msgstr ""
+
+#: templates/admin/settings.php:342
+msgid "Exclude your own team"
+msgstr ""
+
+#: templates/admin/settings.php:343
+msgid "Do not count signed-in users who can edit posts"
+msgstr ""
+
+#: templates/admin/settings.php:344
+msgid "Covers administrators, editors, authors and contributors. Subscribers and shop customers are still counted, because they are visitors."
+msgstr ""
+
+#: templates/admin/settings.php:349
+msgid "Beacon rate limit"
+msgstr ""
+
+#: templates/admin/settings.php:350
+msgid "per visitor per minute"
+msgstr ""
+
+#: templates/admin/settings.php:351
+msgid "A ceiling on what one visitor can post in a minute. It bounds abuse; it is not an access control."
+msgstr ""
+
+#: templates/admin/settings.php:358
+msgid "Data writing and scheduled maintenance"
+msgstr ""
+
+#: templates/admin/settings.php:368
+#: templates/admin/settings.php:479
+msgid "Automatic (recommended)"
+msgstr ""
+
+#: templates/admin/settings.php:369
+msgid "File spool"
+msgstr ""
+
+#: templates/admin/settings.php:370
+msgid "Database queue"
+msgstr ""
+
+#. translators: %s: the driver currently in use.
+#: templates/admin/settings.php:377
+#, php-format
+msgid "The spool appends one line per view and the drain folds them into totals every few minutes. The database queue does the same with a row, for hosts with a read-only filesystem or several web servers. Currently using: %s."
+msgstr ""
+
+#: templates/admin/settings.php:381
+msgid "Direct mode makes each pageview a database write, and two views in the same instant can race. It is for very small sites and for testing."
+msgstr ""
+
+#: templates/admin/settings.php:387
+msgid "Drain from traffic without cron"
+msgstr ""
+
+#: templates/admin/settings.php:388
+msgid "Run the drain occasionally on ordinary requests"
+msgstr ""
+
+#: templates/admin/settings.php:389
+msgid "A backup for hosts where cron is not an option. At most once a minute, after the visitor already has their page, so it never costs them anything. Leave it on even with cron: it only ever does anything in the gap between one run and the next."
+msgstr ""
+
+#: templates/admin/settings.php:394
+msgid "Session window"
+msgstr ""
+
+#: templates/admin/settings.php:395
+#: templates/admin/settings.php:525
+#: templates/admin/settings.php:713
+msgid "seconds"
+msgstr ""
+
+#: templates/admin/settings.php:396
+msgid "How long somebody can be inactive before their next pageview counts as a new visit. 1,800 seconds is the industry norm, and matching it keeps your numbers comparable with everyone else’s."
+msgstr ""
+
+#: templates/admin/settings.php:401
+msgid "Session storage"
+msgstr ""
+
+#: templates/admin/settings.php:406
+msgid "Automatic"
+msgstr ""
+
+#: templates/admin/settings.php:407
+msgid "Object cache"
+msgstr ""
+
+#: templates/admin/settings.php:408
+msgid "Database"
+msgstr ""
+
+#. translators: %s: the store currently in use.
+#: templates/admin/settings.php:414
+#, php-format
+msgid "Visits in progress are held here until they go quiet. Currently using: %s. Choose the database if your object cache is APCu-backed and you run more than one web server - sessions on one machine would otherwise be invisible to the next."
+msgstr ""
+
+#: templates/admin/settings.php:423
+msgid "Paths and query strings"
+msgstr ""
+
+#: templates/admin/settings.php:428
+msgid "Excluded paths"
+msgstr ""
+
+#: templates/admin/settings.php:430
+msgid "Glob patterns never tracked at all, one per line. The tracker is not even added to a page that matches."
+msgstr ""
+
+#: templates/admin/settings.php:435
+msgid "Strip query string"
+msgstr ""
+
+#: templates/admin/settings.php:436
+msgid "Record the clean path only"
+msgstr ""
+
+#: templates/admin/settings.php:437
+msgid "Collapses every ?ad= and ?cid= variant of a page onto one clean path. Campaign parameters are read before stripping, so attribution is unaffected."
+msgstr ""
+
+#: templates/admin/settings.php:439
+msgid "This site uses plain permalinks, where the query string is the page. The setting is forced off, because stripping it would collapse every page onto one row."
+msgstr ""
+
+#: templates/admin/settings.php:445
+msgid "Extra parameters to strip"
+msgstr ""
+
+#: templates/admin/settings.php:447
+msgid "On top of the campaign and analytics parameters already removed. WordPress’s own page-identifying parameters cannot be added here."
+msgstr ""
+
+#: templates/admin/settings.php:454
+msgid "Privacy signals"
+msgstr ""
+
+#: templates/admin/settings.php:459
+msgid "Honour Global Privacy Control"
+msgstr ""
+
+#: templates/admin/settings.php:460
+msgid "Respect Sec-GPC: 1"
+msgstr ""
+
+#: templates/admin/settings.php:461
+msgid "Visitors sending Sec-GPC: 1 have asked, in a legally recognised way, not to be tracked. With this on they are not counted at all, and nothing - not a consent platform, not your own event handler - can override it. A signal you can overrule is not a signal."
+msgstr ""
+
+#: templates/admin/settings.php:462
+msgid "GPC is treated as a valid opt-out under several privacy laws. Ignoring it is a legal risk, and the Privacy screen now says so."
+msgstr ""
+
+#: templates/admin/settings.php:467
+msgid "Honour Do Not Track"
+msgstr ""
+
+#: templates/admin/settings.php:468
+msgid "Respect DNT: 1"
+msgstr ""
+
+#: templates/admin/settings.php:469
+msgid "Legacy Do Not Track support. Off by default because the standard is dead and most browsers no longer send it."
+msgstr ""
+
+#: templates/admin/settings.php:474
+msgid "Where the address comes from"
+msgstr ""
+
+#: templates/admin/settings.php:480
+msgid "The connecting address only"
+msgstr ""
+
+#: templates/admin/settings.php:481
+msgid "Cloudflare header"
+msgstr ""
+
+#: templates/admin/settings.php:482
+msgid "X-Forwarded-For"
+msgstr ""
+
+#: templates/admin/settings.php:483
+msgid "X-Real-IP"
+msgstr ""
+
+#: templates/admin/settings.php:487
+msgid "The address is only ever an input to the daily visitor hash and is discarded immediately - but behind a proxy every visitor arrives with the proxy’s address, and the site collapses to one visitor per browser type. Automatic trusts Cloudflare only when the connection genuinely came from Cloudflare."
+msgstr ""
+
+#: templates/admin/settings.php:489
+msgid "X-Forwarded-For is set by the client unless a proxy overwrites it. Add your proxy below, or anyone can mint unlimited visitor identities."
+msgstr ""
+
+#: templates/admin/settings.php:495
+msgid "Trusted proxies"
+msgstr ""
+
+#: templates/admin/settings.php:497
+msgid "IP addresses or CIDR ranges whose forwarding headers are believed. One per line. Leave empty unless you know which proxy sits in front of this site."
+msgstr ""
+
+#: templates/admin/settings.php:504
+msgid "Retention"
+msgstr ""
+
+#: templates/admin/settings.php:509
+msgid "Hourly window"
+msgstr ""
+
+#: templates/admin/settings.php:510
+#: templates/admin/settings.php:743
+msgid "days"
+msgstr ""
+
+#: templates/admin/settings.php:511
+msgid "How long rollups are kept hour by hour before lossless compaction to daily rows. This window is also the span the dashboard heatmap can cover."
+msgstr ""
+
+#: templates/admin/settings.php:512
+msgid "Raising this multiplies those rows by 24 for the extra period."
+msgstr ""
+
+#: templates/admin/settings.php:517
+msgid "Rollup retention"
+msgstr ""
+
+#: templates/admin/settings.php:518
+msgid "months"
+msgstr ""
+
+#: templates/admin/settings.php:519
+msgid "Hard capped at 26 months, which is the usual choice: it lets you compare this month against the same month last year, which 12 months does not. Older rows are removed by the nightly tidy-up."
+msgstr ""
+
+#: templates/admin/settings.php:524
+msgid "Salt rotation"
+msgstr ""
+
+#: templates/admin/settings.php:532
+msgid ":00, site time"
+msgstr ""
+
+#: templates/admin/settings.php:533
+msgid "Hour of the day the salt is rotated at, in the site’s timezone"
+msgstr ""
+
+#: templates/admin/settings.php:535
+msgid "The visitor-hash salt is replaced and the old one destroyed. Rotation is aimed at your quietest hour, because a visitor active across the boundary becomes two sessions."
+msgstr ""
+
+#: templates/admin/settings.php:536
+msgid "Extending this is what would make visitors recognisable across days, and would require a consent mechanism."
+msgstr ""
+
+#: templates/admin/settings.php:541
+msgid "Daily cardinality cap"
+msgstr ""
+
+#: templates/admin/settings.php:542
+msgid "distinct values per day"
+msgstr ""
+
+#: templates/admin/settings.php:543
+msgid "Past this many distinct paths, hosts or event names in a day, the rest fold into a single “Other” row. No views are lost; they are just not attributed individually. It is what stops one bad day becoming a permanent table."
+msgstr ""
+
+#: templates/admin/settings.php:548
+msgid "Unique visitor counting"
+msgstr ""
+
+#: templates/admin/settings.php:553
+msgid "Estimated sketch (recommended)"
+msgstr ""
+
+#: templates/admin/settings.php:554
+msgid "Exact"
+msgstr ""
+
+#: templates/admin/settings.php:558
+msgid "The sketch is a few kilobytes per row with no individual inside it, accurate to about 1.6%."
+msgstr ""
+
+#: templates/admin/settings.php:560
+msgid "Exact counting keeps one row per visitor per day. The rows hold only a salted hash that stops meaning anything once the salt rotates, and they are deleted two rotations later - but it is more storage and a shorter distance to “individual” than the default."
+msgstr ""
+
+#: templates/admin/settings.php:573
+msgid "Keep crawlers out of the reports"
+msgstr ""
+
+#: templates/admin/settings.php:574
+msgid "Exclude recognised crawler traffic"
+msgstr ""
+
+#: templates/admin/settings.php:575
+msgid "Search engines, monitoring services and scrapers are not visitors. With this off, a site with 400 real visitors and 3,000 bot requests reports 3,400, and every number on every screen is wrong in a way that looks entirely plausible."
+msgstr ""
+
+#: templates/admin/settings.php:576
+msgid "Crawler traffic is currently being counted as if it were human."
+msgstr ""
+
+#: templates/admin/settings.php:581
+msgid "Count crawlers separately"
+msgstr ""
+
+#: templates/admin/settings.php:582
+msgid "Record what was kept out"
+msgstr ""
+
+#: templates/admin/settings.php:583
+msgid "Records what was excluded, on its own screen, so that “my server logs say 4,000 requests and this says 400” has an answer. Costs one row per crawler per day - never a row per request."
+msgstr ""
+
+#: templates/admin/settings.php:591
+msgid "What gets tracked"
+msgstr ""
+
+#: templates/admin/settings.php:596
+msgid "Campaigns and attribution"
+msgstr ""
+
+#: templates/admin/settings.php:597
+msgid "Read utm_ tags and ad click IDs"
+msgstr ""
+
+#: templates/admin/settings.php:598
+msgid "Shows which tagged links brought people, and what they did next. The tags are stripped from stored paths either way, so this does not change the Pages report."
+msgstr ""
+
+#: templates/admin/settings.php:603
+msgid "Attribution model"
+msgstr ""
+
+#: templates/admin/settings.php:614
+msgid "How a session with more than one campaign touch divides the credit. With a single touch, every model agrees."
+msgstr ""
+
+#: templates/admin/settings.php:619
+msgid "Geography"
+msgstr ""
+
+#: templates/admin/settings.php:620
+msgid "Record which country a visit came from"
+msgstr ""
+
+#: templates/admin/settings.php:622
+msgid "Resolved on this server from a local database. No lookup service is ever called, and nothing more precise than a country is derived."
+msgstr ""
+
+#: templates/admin/settings.php:623
+msgid "Needs a local database, which is not downloaded automatically. Install one from the Locations screen: upload the .mmdb file, or give it an address to fetch once. No terminal needed."
+msgstr ""
+
+#: templates/admin/settings.php:628
+msgid "Events and interactions"
+msgstr ""
+
+#: templates/admin/settings.php:629
+msgid "Record custom events, outbound clicks, downloads and scroll depth"
+msgstr ""
+
+#: templates/admin/settings.php:630
+msgid "Loads a small extra script. Left off, none of these are recorded and the core tracker stays smaller."
+msgstr ""
+
+#: templates/admin/settings.php:638
+msgid "Outbound links"
+msgstr ""
+
+#: templates/admin/settings.php:639
+msgid "Count clicks that leave the site"
+msgstr ""
+
+#: templates/admin/settings.php:640
+msgid "The destination URL is recorded, so keep an eye on it if your outbound links carry anything sensitive in their query strings."
+msgstr ""
+
+#: templates/admin/settings.php:645
+msgid "Downloads"
+msgstr ""
+
+#: templates/admin/settings.php:646
+msgid "Count clicks on downloadable files"
+msgstr ""
+
+#: templates/admin/settings.php:647
+msgid "Same-site links whose extension is listed below."
+msgstr ""
+
+#: templates/admin/settings.php:652
+msgid "Download extensions"
+msgstr ""
+
+#: templates/admin/settings.php:654
+msgid "One per line, without the dot."
+msgstr ""
+
+#: templates/admin/settings.php:660
+msgid "Record how far down each page people read"
+msgstr ""
+
+#: templates/admin/settings.php:661
+msgid "Rides the existing pageview beacon, so it adds no extra request."
+msgstr ""
+
+#: templates/admin/settings.php:670
+msgid "Record what people search for on this site"
+msgstr ""
+
+#: templates/admin/settings.php:671
+msgid "Read from the search URL, so it needs no JavaScript. The term goes to its own report and is removed from the stored path."
+msgstr ""
+
+#: templates/admin/settings.php:679
+msgid "Search parameter"
+msgstr ""
+
+#: templates/admin/settings.php:681
+msgid "The query-string parameter holding the search term. WordPress uses “s”; change it only if a search plugin uses something else."
+msgstr ""
+
+#: templates/admin/settings.php:689
+msgid "Consent and durable tracking"
+msgstr ""
+
+#: templates/admin/settings.php:694
+msgid "Consented tracking"
+msgstr ""
+
+#: templates/admin/settings.php:695
+msgid "Allow a first-party cookie for visitors who agree"
+msgstr ""
+
+#: templates/admin/settings.php:696
+msgid "Lets visitors who affirmatively agree be counted across days and sessions."
+msgstr ""
+
+#: templates/admin/settings.php:697
+msgid "Turning this on sets a cookie, so the cookieless default no longer applies. You will need a consent mechanism and a privacy notice entry."
+msgstr ""
+
+#: templates/admin/settings.php:705
+msgid "Cookie name"
+msgstr ""
+
+#: templates/admin/settings.php:707
+msgid "The name of the first-party cookie set for consenting visitors."
+msgstr ""
+
+#: templates/admin/settings.php:712
+msgid "Cookie lifetime"
+msgstr ""
+
+#: templates/admin/settings.php:714
+msgid "Hard capped at 24 months. Guidance in several jurisdictions expects consent to be refreshed at least annually."
+msgstr ""
+
+#: templates/admin/settings.php:721
+msgid "If you already run a consent platform, name its cookie and this will read it server-side. A value that is not on the accept list is treated as a refusal, not as “not asked”."
+msgstr ""
+
+#: templates/admin/settings.php:726
+msgid "Link to WordPress accounts"
+msgstr ""
+
+#: templates/admin/settings.php:727
+msgid "Join consented analytics to user accounts"
+msgstr ""
+
+#: templates/admin/settings.php:728
+msgid "Records which signed-in account a consented visit belonged to."
+msgstr ""
+
+#: templates/admin/settings.php:729
+msgid "Being measured and being named are different agreements. Ask for the second one separately."
+msgstr ""
+
+#: templates/admin/settings.php:734
+msgid "Stored journeys"
+msgstr ""
+
+#: templates/admin/settings.php:735
+msgid "Keep per-visitor page histories"
+msgstr ""
+
+#: templates/admin/settings.php:736
+msgid "The only table in this plugin that grows with traffic rather than with the number of distinct pages."
+msgstr ""
+
+#: templates/admin/settings.php:737
+msgid "This is personal data, with export and erasure obligations attached."
+msgstr ""
+
+#: templates/admin/settings.php:742
+msgid "Journey retention"
+msgstr ""
+
+#: templates/admin/settings.php:744
+msgid "Hard capped at 26 months."
+msgstr ""
+
+#: templates/admin/settings.php:749
+msgid "Consent log retention"
+msgstr ""
+
+#: templates/admin/settings.php:750
+msgid "days, 0 to keep indefinitely"
+msgstr ""
+
+#: templates/admin/settings.php:751
+msgid "Kept indefinitely by default. The record is the evidence that processing you have already carried out was lawful, which is why erasing a visitor deliberately leaves it behind."
+msgstr ""
+
+#: templates/admin/settings.php:756
+msgid "Policy version"
+msgstr ""
+
+#: templates/admin/settings.php:758
+msgid "Recorded against every consent decision. Bump it when your privacy notice changes materially, so old consents can be told apart from new ones."
+msgstr ""
+
+#: templates/admin/settings.php:767
+msgid "When the plugin is deleted"
+msgstr ""
+
+#: templates/admin/settings.php:772
+msgid "Keep data on uninstall"
+msgstr ""
+
+#: templates/admin/settings.php:773
+msgid "Leave the analytics tables in place when the plugin is deleted"
+msgstr ""
+
+#: templates/admin/settings.php:774
+msgid "On by default. The rollups cannot be rebuilt from anything else, because no raw hit data is kept, so throwing them away has to be something you choose rather than something that happens. Deactivating never deletes anything either way."
+msgstr ""
+
+#: templates/admin/settings.php:775
+msgid "Uninstalling will drop every analytics table. There is no undo and no export afterwards."
+msgstr ""
+
+#: templates/admin/settings.php:782
+msgid "Save changes"
+msgstr ""
+
+#: templates/admin/settings.php:783
+msgid "Defaults are the privacy-preserving option in every group."
+msgstr ""
+
+#: templates/admin/settings.php:789
+msgid "A licence key is not a setting, so it lives on its own screen:"
+msgstr ""
+
+#: templates/admin/sources.php:20
+msgid "Channel mix"
+msgstr ""
+
+#: templates/admin/sources.php:39
+msgid "Sessions by channel over the selected period."
+msgstr ""
+
+#: templates/admin/sources.php:40
+msgid "Sessions by channel and day"
+msgstr ""
+
+#: templates/admin/sources.php:91
+msgid "Referring hosts"
+msgstr ""
+
+#: templates/admin/sources.php:110
+msgid "No referring hosts recorded. Every visit in this period arrived directly."
+msgstr ""
+
+#: templates/admin/sources.php:114
+msgid "Host"
+msgstr ""
+
+#: templates/admin/sources.php:131
+msgid "Only the referring host is stored, never the full referrer URL, which can carry search terms. The referrer is read when PHP renders the page; the beacon never sends one, because a browser-supplied referrer is forgeable. A session that enters on a cached page is therefore reported as Direct. Campaign tags travel in the URL and are unaffected."
+msgstr ""
+
+#. translators: %s: the site name.
+#: templates/email/summary-html.php:105
+#: templates/email/summary-text.php:68
+#, php-format
+msgid "%s - analytics summary"
+msgstr ""
+
+#. translators: 1: previous start date, 2: previous end date.
+#: templates/email/summary-html.php:127
+#, php-format
+msgid " · compared with %1$s - %2$s"
+msgstr ""
+
+#: templates/email/summary-html.php:173
+msgid "Most-read pages"
+msgstr ""
+
+#: templates/email/summary-html.php:178
+#: templates/email/summary-text.php:104
+msgid "No pages were recorded in this period."
+msgstr ""
+
+#: templates/email/summary-html.php:205
+msgid "Where they came from"
+msgstr ""
+
+#: templates/email/summary-html.php:210
+#: templates/email/summary-text.php:117
+msgid "No sessions were recorded in this period."
+msgstr ""
+
+#: templates/email/summary-html.php:237
+msgid "Open the full report"
+msgstr ""
+
+#: templates/email/summary-html.php:245
+#: templates/email/summary-text.php:129
+msgid "Unique visitors are a daily estimate. Visitors are counted with a salted hash that is destroyed every 24 hours, so somebody who returns on two days counts on both - the figure cannot be added up across a period and is not a headcount."
+msgstr ""
+
+#. translators: 1: opening link tag to the site, 2: the site name, 3: closing link tag, 4: opening link tag to Settings, 5: closing link tag.
+#: templates/email/summary-html.php:252
+#, php-format
+msgid "Sent by Honest Analytics on %1$s%2$s%3$s. To stop these, turn off scheduled reports in %4$sSettings%5$s."
+msgstr ""
+
+#. translators: 1: previous start date, 2: previous end date.
+#: templates/email/summary-text.php:80
+#, php-format
+msgid " (compared with %1$s - %2$s)"
+msgstr ""
+
+#: templates/email/summary-text.php:92
+msgid "Avg. visit"
+msgstr ""
+
+#: templates/email/summary-text.php:101
+msgid "MOST-READ PAGES"
+msgstr ""
+
+#: templates/email/summary-text.php:114
+msgid "WHERE THEY CAME FROM"
+msgstr ""
+
+#: templates/email/summary-text.php:127
+msgid "Open the full report:"
+msgstr ""
+
+#. translators: %s: the site name.
+#: templates/email/summary-text.php:134
+#, php-format
+msgid "Sent by Honest Analytics on %s."
+msgstr ""
+
+#: templates/email/summary-text.php:138
+msgid "To stop these, turn off scheduled reports in Settings:"
+msgstr ""
+
+#: templates/metabox/post-stats.php:31
+msgid "Daily views for this post over the last 30 days."
+msgstr ""
+
+#: templates/metabox/post-stats.php:37
+msgid "Full report for this page"
+msgstr ""
+
+#. translators: %s: accuracy, e.g. "±1.6%".
+#: templates/metabox/post-stats.php:45
+#, php-format
+msgid "Visitors are daily unique estimates (%s)."
+msgstr ""
+
+#: templates/widgets/overview-controls.php:15
+msgid "Period"
+msgstr ""
+
+#: templates/widgets/overview-controls.php:26
+msgid "Show"
+msgstr ""
+
+#: templates/widgets/overview-controls.php:41
+msgid "These choices are yours alone; other people on this site keep their own."
+msgstr ""
+
+#: templates/widgets/overview.php:44
+msgid "Daily pageviews over the selected period."
+msgstr ""
+
+#: templates/widgets/overview.php:51
+msgid "Open analytics"
+msgstr ""
+
+#. translators: %s: accuracy, e.g. "±1.6%".
+#: templates/widgets/overview.php:60
+#, php-format
+msgid "Visitors are daily unique estimates (%s): the hashing salt is destroyed every 24 hours, so somebody returning on three days counts three times."
+msgstr ""

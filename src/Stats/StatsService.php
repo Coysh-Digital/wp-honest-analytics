@@ -1,0 +1,1207 @@
+<?php
+/**
+ * Report queries.
+ *
+ * @package HonestAnalytics
+ */
+
+declare(strict_types=1);
+
+namespace HonestAnalytics\Stats;
+
+use HonestAnalytics\Dimensions\DimensionType;
+use HonestAnalytics\Rollup\Compactor;
+use HonestAnalytics\Schema\Tables;
+use HonestAnalytics\Settings\Settings;
+use HonestAnalytics\Uniques\UniqueCounterInterface;
+use HonestAnalytics\Uniques\UniqueScope;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * Everything the reports ask the database.
+ *
+ * Every query here reads pre-aggregated rows, so a year of history costs about
+ * what a month does. The one rule that runs through all of it: unique visitors
+ * are **merged**, never summed. Adding up daily figures to produce a monthly one
+ * counts a regular reader once per visit, and produces a number that is wrong
+ * in proportion to how loyal the audience is.
+ */
+final class StatsService {
+
+	private const CACHE_GROUP = 'honest-analytics-reports';
+	private const CACHE_TTL   = 3600;
+
+	private Settings $settings;
+	private UniqueCounterInterface $counter;
+
+	/**
+	 * @param Settings               $settings Settings.
+	 * @param UniqueCounterInterface $counter  Unique counter.
+	 */
+	public function __construct( Settings $settings, UniqueCounterInterface $counter ) {
+		$this->settings = $settings;
+		$this->counter  = $counter;
+	}
+
+	// -------------------------------------------------------------- headline
+
+	/**
+	 * The headline figures for a period.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param DateRange $range  Period.
+	 *
+	 * @return array<string,int|float>
+	 */
+	public function totals( int $siteId, DateRange $range ): array {
+		return $this->remember(
+			'totals',
+			$siteId,
+			$range,
+			function () use ( $siteId, $range ): array {
+				global $wpdb;
+
+				$pages    = Tables::name( Tables::PAGES_ROLLUP );
+				$sessions = Tables::name( Tables::SESSIONS_ROLLUP );
+
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+				$pageRow = $wpdb->get_row(
+					$wpdb->prepare(
+						"SELECT COALESCE(SUM(views),0) AS views, COALESCE(SUM(totalDwellMs),0) AS dwell
+						FROM `$pages` WHERE siteId = %d AND date BETWEEN %s AND %s",
+						$siteId,
+						$range->from,
+						$range->to
+					),
+					ARRAY_A
+				);
+				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+				$sessionRow = $wpdb->get_row(
+					$wpdb->prepare(
+						"SELECT COALESCE(SUM(sessions),0) AS sessions, COALESCE(SUM(bounces),0) AS bounces,
+							COALESCE(SUM(totalDurationMs),0) AS duration, COALESCE(SUM(totalPageviews),0) AS pageviews
+						FROM `$sessions` WHERE siteId = %d AND date BETWEEN %s AND %s",
+						$siteId,
+						$range->from,
+						$range->to
+					),
+					ARRAY_A
+				);
+				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+				$views       = (int) ( $pageRow['views'] ?? 0 );
+				$dwell       = (int) ( $pageRow['dwell'] ?? 0 );
+				$sessionsNum = (int) ( $sessionRow['sessions'] ?? 0 );
+				$bounces     = (int) ( $sessionRow['bounces'] ?? 0 );
+				$duration    = (int) ( $sessionRow['duration'] ?? 0 );
+				$pageviews   = (int) ( $sessionRow['pageviews'] ?? 0 );
+
+				return [
+					'views'              => $views,
+					'uniques'            => $this->uniquesFor( $siteId, $range ),
+					'sessions'           => $sessionsNum,
+					// At site level the denominator is sessions. At page level it
+					// is entrances, because a bounce is only ever counted against
+					// the page a visit started on.
+					'bounceRate'         => $sessionsNum > 0 ? $bounces / $sessionsNum * 100 : 0.0,
+					'avgDurationMs'      => $sessionsNum > 0 ? (int) round( $duration / $sessionsNum ) : 0,
+					'avgViewsPerSession' => $sessionsNum > 0 ? $pageviews / $sessionsNum : 0.0,
+					'avgDwellMs'         => $views > 0 ? (int) round( $dwell / $views ) : 0,
+				];
+			}
+		);
+	}
+
+	/**
+	 * Distinct visitors across a period.
+	 *
+	 * @param int       $siteId    Site ID.
+	 * @param DateRange $range     Period.
+	 * @param int|null  $pathDimId Restrict to one page.
+	 */
+	public function uniquesFor( int $siteId, DateRange $range, ?int $pathDimId = null ): int {
+		// Native rows carry a sketch; imported rows carry a plain count, and the
+		// two are added rather than merged. A visitor count cannot be turned
+		// back into a sketch - you would have to invent the identities it was
+		// built from - and a sketch of invented identities is a lie that merges
+		// convincingly. Adding is also right rather than merely convenient:
+		// uniques here are daily, the salt rotates every night, so two days
+		// already sum. An imported day and a native day sum for the same reason.
+		return (int) $this->remember(
+			'uniques:' . ( $pathDimId ?? '' ),
+			$siteId,
+			$range,
+			function () use ( $siteId, $range, $pathDimId ): int {
+				$rows     = $this->uniqueRows( $siteId, $range, $pathDimId );
+				$scopes   = [];
+				$sketches = [];
+
+				$imported = 0;
+
+				foreach ( $rows as $row ) {
+					$scope    = new UniqueScope(
+						UniqueScope::KIND_PAGE,
+						$siteId,
+						(string) $row['date'],
+						(int) $row['hour'],
+						(int) $row['pathDimId']
+					);
+					$scopes[] = $scope;
+
+					if ( array_key_exists( 'uniques', $row ) ) {
+						$sketches[ $scope->key() ] = $this->readBlob( $row['uniques'] );
+					}
+
+					$imported += (int) ( $row['importedUniques'] ?? 0 );
+				}
+
+				return $this->counter->estimate( $scopes, $sketches ) + $imported;
+			}
+		);
+	}
+
+	/**
+	 * Distinct visitors who started a session.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param DateRange $range  Period.
+	 */
+	public function sessionUniques( int $siteId, DateRange $range ): int {
+		global $wpdb;
+
+		$table = Tables::name( Tables::SESSIONS_ROLLUP );
+
+		$columns = $this->counter->storesOnRow() ? 'date, hour, uniques, importedUniques' : 'date, hour, importedUniques';
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT $columns FROM `$table` WHERE siteId = %d AND date BETWEEN %s AND %s",
+				$siteId,
+				$range->from,
+				$range->to
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$scopes   = [];
+		$sketches = [];
+
+		$imported = 0;
+
+		foreach ( (array) $rows as $row ) {
+			$scope    = new UniqueScope( UniqueScope::KIND_SESSION, $siteId, (string) $row['date'], (int) $row['hour'] );
+			$scopes[] = $scope;
+
+			if ( array_key_exists( 'uniques', $row ) ) {
+				$sketches[ $scope->key() ] = $this->readBlob( $row['uniques'] );
+			}
+
+			$imported += (int) ( $row['importedUniques'] ?? 0 );
+		}
+
+		return $this->counter->estimate( $scopes, $sketches ) + $imported;
+	}
+
+	/**
+	 * The rows a unique count has to union.
+	 *
+	 * The sketch column is only selected when the counter actually reads it:
+	 * on a driver that keeps its data elsewhere, selecting the blob drags a few
+	 * kilobytes per row across the wire for nothing, tens of thousands of times.
+	 *
+	 * @param int       $siteId    Site ID.
+	 * @param DateRange $range     Period.
+	 * @param int|null  $pathDimId Restrict to one page.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function uniqueRows( int $siteId, DateRange $range, ?int $pathDimId = null ): array {
+		global $wpdb;
+
+		$table   = Tables::name( Tables::PAGES_ROLLUP );
+		$columns = $this->counter->storesOnRow() ? 'date, hour, pathDimId, uniques, importedUniques' : 'date, hour, pathDimId, importedUniques';
+
+		if ( null !== $pathDimId ) {
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+			return (array) $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT $columns FROM `$table` WHERE siteId = %d AND pathDimId = %d AND date BETWEEN %s AND %s",
+					$siteId,
+					$pathDimId,
+					$range->from,
+					$range->to
+				),
+				ARRAY_A
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		return (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT $columns FROM `$table` WHERE siteId = %d AND date BETWEEN %s AND %s",
+				$siteId,
+				$range->from,
+				$range->to
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	// ----------------------------------------------------------------- trend
+
+	/**
+	 * Views and unique visitors over time.
+	 *
+	 * @param int       $siteId    Site ID.
+	 * @param DateRange $range     Period.
+	 * @param int|null  $pathDimId Restrict to one page.
+	 *
+	 * @return array{labels:string[],views:int[],uniques:int[],hourly:bool}
+	 */
+	public function trend( int $siteId, DateRange $range, ?int $pathDimId = null ): array {
+		return $this->remember(
+			'trend:' . ( $pathDimId ?? '' ),
+			$siteId,
+			$range,
+			function () use ( $siteId, $range, $pathDimId ): array {
+				// A single day still inside the hourly window gets 24 points. One
+				// from three months ago has been compacted to a single row, so it
+				// gets one honest point rather than 24 zeroes.
+				if ( $range->isHourly() && $range->from >= $this->hourlyWindowFrom() ) {
+					return $this->hourlyTrend( $siteId, $range, $pathDimId );
+				}
+
+				return $this->dailyTrend( $siteId, $range, $pathDimId );
+			}
+		);
+	}
+
+	/**
+	 * Twenty-four hourly points for one day.
+	 *
+	 * @param int       $siteId    Site ID.
+	 * @param DateRange $range     Period.
+	 * @param int|null  $pathDimId Restrict to one page.
+	 *
+	 * @return array{labels:string[],views:int[],uniques:int[],hourly:bool}
+	 */
+	private function hourlyTrend( int $siteId, DateRange $range, ?int $pathDimId ): array {
+		global $wpdb;
+
+		$table = Tables::name( Tables::PAGES_ROLLUP );
+		$where = 'siteId = %d AND date = %s';
+		$args  = [ $siteId, $range->from ];
+
+		if ( null !== $pathDimId ) {
+			$where .= ' AND pathDimId = %d';
+			$args[] = $pathDimId;
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT hour, COALESCE(SUM(views),0) AS views FROM `$table` WHERE $where GROUP BY hour", $args ),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+		$byHour = [];
+
+		foreach ( (array) $rows as $row ) {
+			$byHour[ (int) $row['hour'] ] = (int) $row['views'];
+		}
+
+		$labels = [];
+		$views  = [];
+
+		for ( $hour = 0; $hour < 24; $hour++ ) {
+			$labels[] = sprintf( '%02d:00', $hour );
+			// A day that has already been compacted carries hour -1 and cannot
+			// answer this. Flat zeroes are the honest answer rather than
+			// spreading the daily total across the hours.
+			$views[] = isset( $byHour[ Compactor::DAILY_HOUR ] ) ? 0 : ( $byHour[ $hour ] ?? 0 );
+		}
+
+		return [
+			'labels'  => $labels,
+			'views'   => $views,
+			// There are no per-hour unique counts to merge, so the series is
+			// left empty and the chart drops it rather than drawing a flat line
+			// that reads as "nobody was unique".
+			'uniques' => array_fill( 0, 24, 0 ),
+			'hourly'  => true,
+		];
+	}
+
+	/**
+	 * One point per day.
+	 *
+	 * @param int       $siteId    Site ID.
+	 * @param DateRange $range     Period.
+	 * @param int|null  $pathDimId Restrict to one page.
+	 *
+	 * @return array{labels:string[],views:int[],uniques:int[],hourly:bool}
+	 */
+	private function dailyTrend( int $siteId, DateRange $range, ?int $pathDimId ): array {
+		global $wpdb;
+
+		$table = Tables::name( Tables::PAGES_ROLLUP );
+		$where = 'siteId = %d AND date BETWEEN %s AND %s';
+		$args  = [ $siteId, $range->from, $range->to ];
+
+		if ( null !== $pathDimId ) {
+			$where .= ' AND pathDimId = %d';
+			$args[] = $pathDimId;
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT date, COALESCE(SUM(views),0) AS views FROM `$table` WHERE $where GROUP BY date", $args ),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+		$byDate = [];
+
+		foreach ( (array) $rows as $row ) {
+			$byDate[ (string) $row['date'] ] = (int) $row['views'];
+		}
+
+		$uniquesByDate = $this->uniquesByDate( $siteId, $range, $pathDimId );
+
+		$labels  = [];
+		$views   = [];
+		$uniques = [];
+
+		foreach ( $range->dates() as $date ) {
+			$labels[]  = $date;
+			$views[]   = $byDate[ $date ] ?? 0;
+			$uniques[] = $uniquesByDate[ $date ] ?? 0;
+		}
+
+		return [
+			'labels'  => $labels,
+			'views'   => $views,
+			'uniques' => $uniques,
+			'hourly'  => false,
+		];
+	}
+
+	/**
+	 * Unique visitors for each day in a range.
+	 *
+	 * One pass over the rows, grouped in PHP, with each day merged separately -
+	 * a query per day would be a year of queries on a twelve-month chart.
+	 *
+	 * @param int       $siteId    Site ID.
+	 * @param DateRange $range     Period.
+	 * @param int|null  $pathDimId Restrict to one page.
+	 *
+	 * @return array<string,int>
+	 */
+	private function uniquesByDate( int $siteId, DateRange $range, ?int $pathDimId ): array {
+		$rows           = $this->uniqueRows( $siteId, $range, $pathDimId );
+		$byDate         = [];
+		$sketches       = [];
+		$importedByDate = [];
+
+		foreach ( $rows as $row ) {
+			$date  = (string) $row['date'];
+			$scope = new UniqueScope(
+				UniqueScope::KIND_PAGE,
+				$siteId,
+				$date,
+				(int) $row['hour'],
+				(int) $row['pathDimId']
+			);
+
+			$byDate[ $date ][] = $scope;
+
+			if ( array_key_exists( 'uniques', $row ) ) {
+				$sketches[ $scope->key() ] = $this->readBlob( $row['uniques'] );
+			}
+
+			$importedByDate[ $date ] = ( $importedByDate[ $date ] ?? 0 ) + (int) ( $row['importedUniques'] ?? 0 );
+		}
+
+		$out = [];
+
+		foreach ( $byDate as $date => $scopes ) {
+			$out[ $date ] = $this->counter->estimate( $scopes, $sketches ) + ( $importedByDate[ $date ] ?? 0 );
+		}
+
+		return $out;
+	}
+
+	// ----------------------------------------------------------------- pages
+
+	/**
+	 * The most-viewed pages.
+	 *
+	 * @param int         $siteId  Site ID.
+	 * @param DateRange   $range   Period.
+	 * @param int         $limit   Maximum rows.
+	 * @param string|null $include Only paths containing this.
+	 * @param string|null $exclude Skip paths containing this.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function topPages( int $siteId, DateRange $range, int $limit = 100, ?string $include = null, ?string $exclude = null ): array {
+		global $wpdb;
+
+		$pages      = Tables::name( Tables::PAGES_ROLLUP );
+		$dimensions = Tables::name( Tables::DIMENSIONS );
+
+		$where = 'p.siteId = %d AND p.date BETWEEN %s AND %s';
+		$args  = [ $siteId, $range->from, $range->to ];
+
+		if ( null !== $include && '' !== $include ) {
+			$where .= ' AND d.value LIKE %s';
+			$args[] = '%' . $wpdb->esc_like( $include ) . '%';
+		}
+
+		if ( null !== $exclude && '' !== $exclude ) {
+			$where .= ' AND d.value NOT LIKE %s';
+			$args[] = '%' . $wpdb->esc_like( $exclude ) . '%';
+		}
+
+		$args[] = max( 1, $limit );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT d.value AS path, d.id AS pathDimId, MAX(p.postId) AS postId,
+					COALESCE(SUM(p.views),0) AS views,
+					COALESCE(SUM(p.entrances),0) AS entrances,
+					COALESCE(SUM(p.exits),0) AS exits,
+					COALESCE(SUM(p.bounces),0) AS bounces,
+					COALESCE(SUM(p.totalDwellMs),0) AS dwell
+				FROM `$pages` p
+				INNER JOIN `$dimensions` d ON d.id = p.pathDimId
+				WHERE $where
+				GROUP BY d.id, d.value
+				ORDER BY views DESC
+				LIMIT %d",
+				$args
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+
+		return array_map( [ $this, 'shapePageRow' ], (array) $rows );
+	}
+
+	/**
+	 * The figures for one page.
+	 *
+	 * Returns zeroes rather than null for a page with no traffic in the period:
+	 * "nobody came" is a real answer.
+	 *
+	 * @param int       $siteId    Site ID.
+	 * @param DateRange $range     Period.
+	 * @param int       $pathDimId Page dimension id.
+	 *
+	 * @return array<string,int|float>
+	 */
+	public function pageTotals( int $siteId, DateRange $range, int $pathDimId ): array {
+		global $wpdb;
+
+		$table = Tables::name( Tables::PAGES_ROLLUP );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT COALESCE(SUM(views),0) AS views, COALESCE(SUM(entrances),0) AS entrances,
+					COALESCE(SUM(exits),0) AS exits, COALESCE(SUM(bounces),0) AS bounces,
+					COALESCE(SUM(totalDwellMs),0) AS dwell, MAX(postId) AS postId
+				FROM `$table` WHERE siteId = %d AND pathDimId = %d AND date BETWEEN %s AND %s",
+				$siteId,
+				$pathDimId,
+				$range->from,
+				$range->to
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$views     = (int) ( $row['views'] ?? 0 );
+		$entrances = (int) ( $row['entrances'] ?? 0 );
+		$bounces   = (int) ( $row['bounces'] ?? 0 );
+		$dwell     = (int) ( $row['dwell'] ?? 0 );
+
+		return [
+			'views'      => $views,
+			'uniques'    => $this->uniquesFor( $siteId, $range, $pathDimId ),
+			'entrances'  => $entrances,
+			'exits'      => (int) ( $row['exits'] ?? 0 ),
+			'bounces'    => $bounces,
+			'bounceRate' => $entrances > 0 ? $bounces / $entrances * 100 : 0.0,
+			'avgDwellMs' => $views > 0 ? (int) round( $dwell / $views ) : 0,
+			'postId'     => null !== ( $row['postId'] ?? null ) ? (int) $row['postId'] : 0,
+		];
+	}
+
+	/**
+	 * Views per day for a set of paths, for the comparison chart.
+	 *
+	 * The caller must have validated the paths: an unvalidated list would let a
+	 * request answer "does this path exist on a site you can see the report
+	 * for", one guess at a time.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param DateRange $range  Period.
+	 * @param string[]  $paths  Paths.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function pathsTrend( int $siteId, DateRange $range, array $paths ): array {
+		global $wpdb;
+
+		$paths = array_values( array_filter( $paths ) );
+
+		if ( [] === $paths ) {
+			return [];
+		}
+
+		$pages        = Tables::name( Tables::PAGES_ROLLUP );
+		$dimensions   = Tables::name( Tables::DIMENSIONS );
+		$placeholders = implode( ',', array_fill( 0, count( $paths ), '%s' ) );
+
+		$args = array_merge( [ $siteId, DimensionType::Path->value ], $paths, [ $range->from, $range->to ] );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT p.date, d.value AS path, COALESCE(SUM(p.views),0) AS views
+				FROM `$pages` p
+				INNER JOIN `$dimensions` d ON d.id = p.pathDimId
+				WHERE p.siteId = %d AND d.type = %d AND d.value IN ($placeholders)
+					AND p.date BETWEEN %s AND %s
+				GROUP BY p.date, d.value",
+				$args
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+
+		return (array) $rows;
+	}
+
+	/**
+	 * How visits reached one page.
+	 *
+	 * @param int       $siteId    Site ID.
+	 * @param DateRange $range     Period.
+	 * @param int       $pathDimId Page dimension id.
+	 * @param int       $limit     Maximum rows.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function pageSources( int $siteId, DateRange $range, int $pathDimId, int $limit = 20 ): array {
+		global $wpdb;
+
+		$table      = Tables::name( Tables::PAGE_SOURCES_ROLLUP );
+		$dimensions = Tables::name( Tables::DIMENSIONS );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT p.channel, d.value AS host, COALESCE(SUM(p.views),0) AS views
+				FROM `$table` p
+				LEFT JOIN `$dimensions` d ON d.id = p.refHostDimId
+				WHERE p.siteId = %d AND p.pathDimId = %d AND p.date BETWEEN %s AND %s
+				GROUP BY p.channel, d.value
+				ORDER BY views DESC
+				LIMIT %d",
+				$siteId,
+				$pathDimId,
+				$range->from,
+				$range->to,
+				max( 1, $limit )
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return (array) $rows;
+	}
+
+	/**
+	 * The first day per-page sources were recorded.
+	 *
+	 * The screen uses it to say "collecting since" rather than implying a page
+	 * had no referrers before the table existed.
+	 *
+	 * @param int $siteId Site ID.
+	 */
+	public function pageSourcesSince( int $siteId ): ?string {
+		global $wpdb;
+
+		$table = Tables::name( Tables::PAGE_SOURCES_ROLLUP );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$date = $wpdb->get_var( $wpdb->prepare( "SELECT MIN(date) FROM `$table` WHERE siteId = %d", $siteId ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return is_string( $date ) && '' !== $date ? $date : null;
+	}
+
+	// --------------------------------------------------------------- sources
+
+	/**
+	 * Sessions by channel and referring host.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param DateRange $range  Period.
+	 * @param int       $limit  Maximum rows.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function sources( int $siteId, DateRange $range, int $limit = 100 ): array {
+		global $wpdb;
+
+		$table      = Tables::name( Tables::SOURCES_ROLLUP );
+		$dimensions = Tables::name( Tables::DIMENSIONS );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT s.channel, d.value AS host,
+					COALESCE(SUM(s.sessions),0) AS sessions, COALESCE(SUM(s.bounces),0) AS bounces
+				FROM `$table` s
+				LEFT JOIN `$dimensions` d ON d.id = s.refHostDimId
+				WHERE s.siteId = %d AND s.date BETWEEN %s AND %s
+				GROUP BY s.channel, d.value
+				ORDER BY sessions DESC
+				LIMIT %d",
+				$siteId,
+				$range->from,
+				$range->to,
+				max( 1, $limit )
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$out = [];
+
+		foreach ( (array) $rows as $row ) {
+			$sessions = (int) $row['sessions'];
+			$bounces  = (int) $row['bounces'];
+
+			$out[] = [
+				'channel'    => (int) $row['channel'],
+				'host'       => null !== $row['host'] ? (string) $row['host'] : '',
+				'sessions'   => $sessions,
+				'bounces'    => $bounces,
+				'bounceRate' => $sessions > 0 ? $bounces / $sessions * 100 : 0.0,
+			];
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Sessions by channel.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param DateRange $range  Period.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function channels( int $siteId, DateRange $range ): array {
+		global $wpdb;
+
+		$table = Tables::name( Tables::SOURCES_ROLLUP );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT channel, COALESCE(SUM(sessions),0) AS sessions, COALESCE(SUM(bounces),0) AS bounces
+				FROM `$table` WHERE siteId = %d AND date BETWEEN %s AND %s
+				GROUP BY channel ORDER BY sessions DESC",
+				$siteId,
+				$range->from,
+				$range->to
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$out = [];
+
+		foreach ( (array) $rows as $row ) {
+			$sessions = (int) $row['sessions'];
+			$bounces  = (int) $row['bounces'];
+
+			$out[] = [
+				'channel'    => (int) $row['channel'],
+				'sessions'   => $sessions,
+				'bounces'    => $bounces,
+				'bounceRate' => $sessions > 0 ? $bounces / $sessions * 100 : 0.0,
+			];
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Sessions by channel and day, for the stacked chart.
+	 *
+	 * Returned raw: zero-filling and folding the tail into "Other" is the chart
+	 * builder's job, and is tested there.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param DateRange $range  Period.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function channelTrend( int $siteId, DateRange $range ): array {
+		global $wpdb;
+
+		$table = Tables::name( Tables::SOURCES_ROLLUP );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		return (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT date, channel, COALESCE(SUM(sessions),0) AS sessions
+				FROM `$table` WHERE siteId = %d AND date BETWEEN %s AND %s
+				GROUP BY date, channel",
+				$siteId,
+				$range->from,
+				$range->to
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	// --------------------------------------------------------------- devices
+
+	/**
+	 * Sessions by browser, operating system or device shape.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param DateRange $range  Period.
+	 * @param string    $by     'browser', 'os' or 'deviceType'.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function devices( int $siteId, DateRange $range, string $by = 'browser' ): array {
+		global $wpdb;
+
+		$table = Tables::name( Tables::DEVICES_ROLLUP );
+
+		if ( 'deviceType' === $by ) {
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT deviceType AS label, COALESCE(SUM(sessions),0) AS sessions
+					FROM `$table` WHERE siteId = %d AND date BETWEEN %s AND %s
+					GROUP BY deviceType ORDER BY sessions DESC",
+					$siteId,
+					$range->from,
+					$range->to
+				),
+				ARRAY_A
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+			return (array) $rows;
+		}
+
+		$column     = 'os' === $by ? 'osDimId' : 'browserDimId';
+		$dimensions = Tables::name( Tables::DIMENSIONS );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT d.value AS label, COALESCE(SUM(v.sessions),0) AS sessions
+				FROM `$table` v
+				INNER JOIN `$dimensions` d ON d.id = v.$column
+				WHERE v.siteId = %d AND v.date BETWEEN %s AND %s
+				GROUP BY d.value ORDER BY sessions DESC",
+				$siteId,
+				$range->from,
+				$range->to
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return (array) $rows;
+	}
+
+	// -------------------------------------------------------------- crawlers
+
+	/**
+	 * Requests by crawler.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param DateRange $range  Period.
+	 * @param int       $limit  Maximum rows.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function crawlers( int $siteId, DateRange $range, int $limit = 100 ): array {
+		global $wpdb;
+
+		$table      = Tables::name( Tables::CRAWLERS_ROLLUP );
+		$dimensions = Tables::name( Tables::DIMENSIONS );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		return (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT d.value AS label, COALESCE(SUM(c.requests),0) AS requests
+				FROM `$table` c
+				INNER JOIN `$dimensions` d ON d.id = c.crawlerDimId
+				WHERE c.siteId = %d AND c.date BETWEEN %s AND %s
+				GROUP BY d.value ORDER BY requests DESC LIMIT %d",
+				$siteId,
+				$range->from,
+				$range->to,
+				max( 1, $limit )
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/**
+	 * Total crawler requests kept out of the human reports.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param DateRange $range  Period.
+	 */
+	public function crawlerRequests( int $siteId, DateRange $range ): int {
+		global $wpdb;
+
+		$table = Tables::name( Tables::CRAWLERS_ROLLUP );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COALESCE(SUM(requests),0) FROM `$table` WHERE siteId = %d AND date BETWEEN %s AND %s",
+				$siteId,
+				$range->from,
+				$range->to
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/**
+	 * How many distinct crawlers were seen.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param DateRange $range  Period.
+	 */
+	public function crawlerTypes( int $siteId, DateRange $range ): int {
+		global $wpdb;
+
+		$table = Tables::name( Tables::CRAWLERS_ROLLUP );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		return (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(DISTINCT crawlerDimId) FROM `$table` WHERE siteId = %d AND date BETWEEN %s AND %s",
+				$siteId,
+				$range->from,
+				$range->to
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	// --------------------------------------------------------------- heatmap
+
+	/**
+	 * Views by day and hour.
+	 *
+	 * Clamped to the hourly retention window whatever range is asked for: past
+	 * that the rows have been compacted and the hour genuinely is not recorded
+	 * any more. The card on screen states the window, so the limit reads as
+	 * policy rather than as a broken chart.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param DateRange $range  Period.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function hourOfWeek( int $siteId, DateRange $range ): array {
+		global $wpdb;
+
+		$from = max( $range->from, $this->hourlyWindowFrom() );
+
+		if ( $from > $range->to ) {
+			return [];
+		}
+
+		$table = Tables::name( Tables::PAGES_ROLLUP );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		return (array) $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT date, hour, COALESCE(SUM(views),0) AS views
+				FROM `$table`
+				WHERE siteId = %d AND date BETWEEN %s AND %s AND hour <> %d
+				GROUP BY date, hour",
+				$siteId,
+				$from,
+				$range->to,
+				Compactor::DAILY_HOUR
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/**
+	 * The oldest date still recorded hour by hour.
+	 *
+	 * @param int|null $now Timestamp.
+	 */
+	public function hourlyWindowFrom( ?int $now = null ): string {
+		return ( new Compactor( $this->settings, $this->counter ) )->cutoffDate( $now ?? time() );
+	}
+
+	// ----------------------------------------------------------------- posts
+
+	/**
+	 * Views for a set of posts, in one query.
+	 *
+	 * @param int       $siteId  Site ID.
+	 * @param int[]     $postIds Post ids.
+	 * @param DateRange $range   Period.
+	 *
+	 * @return array<int,int>
+	 */
+	public function viewsByPost( int $siteId, array $postIds, DateRange $range ): array {
+		global $wpdb;
+
+		$postIds = array_values( array_unique( array_filter( array_map( 'intval', $postIds ) ) ) );
+
+		if ( [] === $postIds ) {
+			return [];
+		}
+
+		$table        = Tables::name( Tables::PAGES_ROLLUP );
+		$placeholders = implode( ',', array_fill( 0, count( $postIds ), '%d' ) );
+		$args         = array_merge( [ $siteId, $range->from, $range->to ], $postIds );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT postId, COALESCE(SUM(views),0) AS views
+				FROM `$table`
+				WHERE siteId = %d AND date BETWEEN %s AND %s AND postId IN ($placeholders)
+				GROUP BY postId",
+				$args
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+
+		$out = [];
+
+		foreach ( (array) $rows as $row ) {
+			$out[ (int) $row['postId'] ] = (int) $row['views'];
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Views and a daily series for one post.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param int       $postId Post id.
+	 * @param DateRange $range  Period.
+	 *
+	 * @return array{views:int,uniques:int,series:int[]}
+	 */
+	public function postStats( int $siteId, int $postId, DateRange $range ): array {
+		global $wpdb;
+
+		$table = Tables::name( Tables::PAGES_ROLLUP );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT date, COALESCE(SUM(views),0) AS views
+				FROM `$table` WHERE siteId = %d AND postId = %d AND date BETWEEN %s AND %s
+				GROUP BY date",
+				$siteId,
+				$postId,
+				$range->from,
+				$range->to
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$byDate = [];
+
+		foreach ( (array) $rows as $row ) {
+			$byDate[ (string) $row['date'] ] = (int) $row['views'];
+		}
+
+		$series = [];
+
+		foreach ( $range->dates() as $date ) {
+			$series[] = $byDate[ $date ] ?? 0;
+		}
+
+		return [
+			'views'   => array_sum( $series ),
+			'uniques' => $this->postUniques( $siteId, $postId, $range ),
+			'series'  => $series,
+		];
+	}
+
+	/**
+	 * Distinct visitors to one post.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param int       $postId Post id.
+	 * @param DateRange $range  Period.
+	 */
+	private function postUniques( int $siteId, int $postId, DateRange $range ): int {
+		global $wpdb;
+
+		$table   = Tables::name( Tables::PAGES_ROLLUP );
+		$columns = $this->counter->storesOnRow() ? 'date, hour, pathDimId, uniques, importedUniques' : 'date, hour, pathDimId, importedUniques';
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT $columns FROM `$table` WHERE siteId = %d AND postId = %d AND date BETWEEN %s AND %s",
+				$siteId,
+				$postId,
+				$range->from,
+				$range->to
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$scopes   = [];
+		$sketches = [];
+		$imported = 0;
+
+		foreach ( (array) $rows as $row ) {
+			$scope    = new UniqueScope(
+				UniqueScope::KIND_PAGE,
+				$siteId,
+				(string) $row['date'],
+				(int) $row['hour'],
+				(int) $row['pathDimId']
+			);
+			$scopes[] = $scope;
+
+			if ( array_key_exists( 'uniques', $row ) ) {
+				$sketches[ $scope->key() ] = $this->readBlob( $row['uniques'] );
+			}
+
+			$imported += (int) ( $row['importedUniques'] ?? 0 );
+		}
+
+		return $this->counter->estimate( $scopes, $sketches ) + $imported;
+	}
+
+	// ----------------------------------------------------------------- misc
+
+	/**
+	 * How accurate the unique figures are, in words a report can print.
+	 */
+	public function uniquesAccuracy(): string {
+		return $this->counter->accuracy();
+	}
+
+	/**
+	 * The unique counter in use.
+	 */
+	public function counter(): UniqueCounterInterface {
+		return $this->counter;
+	}
+
+	/**
+	 * Shape a page row for the reports.
+	 *
+	 * @param array<string,mixed> $row Row.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function shapePageRow( array $row ): array {
+		$views     = (int) $row['views'];
+		$entrances = (int) $row['entrances'];
+		$bounces   = (int) $row['bounces'];
+		$dwell     = (int) $row['dwell'];
+
+		return [
+			'path'       => (string) $row['path'],
+			'pathDimId'  => (int) $row['pathDimId'],
+			'postId'     => null !== ( $row['postId'] ?? null ) ? (int) $row['postId'] : 0,
+			'views'      => $views,
+			'entrances'  => $entrances,
+			'exits'      => (int) $row['exits'],
+			'bounces'    => $bounces,
+			'bounceRate' => $entrances > 0 ? $bounces / $entrances * 100 : null,
+			'avgDwellMs' => $views > 0 ? (int) round( $dwell / $views ) : 0,
+		];
+	}
+
+	/**
+	 * Read a sketch column, whatever shape the driver returned it in.
+	 *
+	 * @param mixed $value Column value.
+	 */
+	private function readBlob( mixed $value ): ?string {
+		if ( is_resource( $value ) ) {
+			$value = stream_get_contents( $value );
+		}
+
+		return is_string( $value ) && '' !== $value ? $value : null;
+	}
+
+	/**
+	 * Remember an answer for a period that has finished.
+	 *
+	 * A range including today is never cached: it is still being added to, and
+	 * a dashboard that lags reality by an hour is worse than one that costs a
+	 * query. The counter's name is part of the key, because the same range
+	 * answered by a sketch and by exact counting are different numbers.
+	 *
+	 * @param string    $name    Query name.
+	 * @param int       $siteId  Site ID.
+	 * @param DateRange $range   Period.
+	 * @param callable  $compute Producer.
+	 */
+	private function remember( string $name, int $siteId, DateRange $range, callable $compute ): mixed {
+		if ( $range->includesToday() || ! function_exists( 'wp_cache_get' ) ) {
+			return $compute();
+		}
+
+		$key   = implode( ':', [ $name, $siteId, $range->from, $range->to, $this->counter->name() ] );
+		$found = false;
+		$value = wp_cache_get( $key, self::CACHE_GROUP, false, $found );
+
+		if ( $found ) {
+			return $value;
+		}
+
+		$value = $compute();
+
+		wp_cache_set( $key, $value, self::CACHE_GROUP, self::CACHE_TTL );
+
+		return $value;
+	}
+}

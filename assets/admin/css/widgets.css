@@ -1,0 +1,134 @@
+/**
+ * Honest Analytics - dashboard widgets and the post editor panel.
+ *
+ * Kept separate from the report styles because these render inside somebody
+ * else's screen, and neither loads the charting library.
+ */
+
+.ha-widget-stats {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 18px;
+	margin-bottom: 12px;
+}
+
+.ha-widget-stat {
+	min-width: 84px;
+}
+
+.ha-widget-label {
+	font-size: 11px;
+	font-weight: 500;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	color: #646970;
+	margin-bottom: 2px;
+}
+
+.ha-widget-value {
+	font-size: 20px;
+	font-weight: 600;
+	line-height: 1.2;
+	font-variant-numeric: tabular-nums;
+	color: #1d2327;
+}
+
+.ha-widget-hero {
+	font-size: 32px;
+	font-weight: 600;
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+}
+
+.ha-sparkline {
+	display: block;
+	width: 100%;
+	height: 40px;
+	overflow: visible;
+	margin: 4px 0 10px;
+}
+
+.ha-sparkline path {
+	fill: none;
+	stroke: var(--wp-admin-theme-color, #2271b1);
+	stroke-width: 1.5;
+	stroke-linejoin: round;
+	stroke-linecap: round;
+}
+
+.ha-widget-foot {
+	margin-top: 10px;
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 10px;
+	font-size: 12px;
+	color: #646970;
+	flex-wrap: wrap;
+}
+
+.ha-widget-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-variant-numeric: tabular-nums;
+	margin-top: 6px;
+}
+
+.ha-widget-table td {
+	padding: 5px 0;
+	border-bottom: 1px solid #f0f0f1;
+	font-size: 13px;
+}
+
+.ha-widget-table tr:last-child td {
+	border-bottom: 0;
+}
+
+.ha-widget-table td:last-child {
+	text-align: right;
+	white-space: nowrap;
+	color: #646970;
+}
+
+.ha-metabox .ha-widget-stats {
+	gap: 14px;
+	margin-bottom: 6px;
+}
+
+.ha-metabox .ha-widget-value {
+	font-size: 18px;
+}
+
+.ha-metabox .ha-sparkline {
+	height: 30px;
+}
+
+.ha-muted {
+	color: #646970;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ha-live-dot {
+		animation: none !important;
+	}
+}
+
+/* See the note in admin.css: no template carries a style attribute. */
+.ha-widget-note {
+	margin: 6px 0 0;
+}
+
+.ha-widget-fine {
+	margin: 8px 0 0;
+	font-size: 11px;
+}
+
+.ha-check-row {
+	display: block;
+	margin: 2px 0;
+}
+
+.ha-path-mono {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	word-break: break-all;
+}

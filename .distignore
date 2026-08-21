@@ -1,0 +1,9 @@
+.git
+.github
+.wordpress-org
+.gitignore
+.distignore
+docs
+CONTRIBUTING.md
+.DS_Store
+*.zip
