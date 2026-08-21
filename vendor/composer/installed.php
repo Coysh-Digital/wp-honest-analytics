@@ -3,7 +3,7 @@
         'name' => 'coysh-digital/honest-analytics',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '975de8d1e252c30305cd23e5966724e1b509d7a6',
+        'reference' => '0.1.0',
         'type' => 'wordpress-plugin',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -13,7 +13,7 @@
         'coysh-digital/honest-analytics' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '975de8d1e252c30305cd23e5966724e1b509d7a6',
+            'reference' => '0.1.0',
             'type' => 'wordpress-plugin',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
