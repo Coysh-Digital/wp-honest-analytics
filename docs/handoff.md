@@ -12,15 +12,15 @@ seeded traffic, not asserted from the code.
 
 | | |
 |---|---|
-| PHP classes | 213 under `src/`, namespaced `HonestAnalytics\` |
-| Templates | 43 under `templates/` |
-| Lines of PHP | ~47,000 in `src/` and `templates/` |
+| PHP classes | 216 under `src/`, namespaced `HonestAnalytics\` |
+| Templates | 44 under `templates/` |
+| Lines of PHP | ~48,000 in `src/` and `templates/` |
 | Database tables | 30, versioned and migrated |
 | Screens | 17, plus two dashboard widgets, a post-list column and an editor panel |
-| Tests | 316 unit + 364 integration = **680** |
-| Documentation | 13 files under `docs/` |
+| Tests | 318 unit + 377 integration = **695** |
+| Documentation | 15 files under `docs/` |
 | Screenshots | 46 (23 screens × desktop and mobile) |
-| Distributables | Lite 580 KB / 321 files, Pro 636 KB / 354 files |
+| Distributables | Lite 724 KB / 378 files, Pro 784 KB / 412 files |
 
 ### The pipeline
 
@@ -221,7 +221,9 @@ into the code.
 dimension tables are shaped to accept segments later.
 
 **Geo needs a database you install yourself.** GeoLite2 and DB-IP are not
-bundled, for licensing reasons; `wp honest-analytics geo install` fetches one.
+bundled, for licensing reasons. The Locations screen installs one by upload or
+by HTTPS address, and `wp honest-analytics geo install` does the same from a
+terminal.
 
 **Licence validation is offline only.** `LicenceValidatorInterface` is the
 extension point for remote activation; nothing calls home today.

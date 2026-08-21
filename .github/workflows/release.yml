@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Work out the version
         id: version
@@ -63,7 +63,7 @@ jobs:
     if: ${{ vars.DEPLOY_TO_WORDPRESS_ORG == 'true' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Deploy
         uses: 10up/action-wordpress-plugin-deploy@stable
