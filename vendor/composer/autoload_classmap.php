@@ -184,6 +184,7 @@ return array(
     'HonestAnalytics\\Support\\Autoloader' => $baseDir . '/src/Support/Autoloader.php',
     'HonestAnalytics\\Support\\ClientIp' => $baseDir . '/src/Support/ClientIp.php',
     'HonestAnalytics\\Support\\Clock' => $baseDir . '/src/Support/Clock.php',
+    'HonestAnalytics\\Support\\CountryNames' => $baseDir . '/src/Support/CountryNames.php',
     'HonestAnalytics\\Support\\Format' => $baseDir . '/src/Support/Format.php',
     'HonestAnalytics\\Support\\Lock' => $baseDir . '/src/Support/Lock.php',
     'HonestAnalytics\\Support\\Log' => $baseDir . '/src/Support/Log.php',

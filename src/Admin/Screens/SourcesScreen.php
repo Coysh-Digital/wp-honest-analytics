@@ -13,6 +13,7 @@ use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Channels\Channel;
 use HonestAnalytics\Charts\ChartData;
 use HonestAnalytics\Plugin;
+use HonestAnalytics\Stats\Comparison;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -48,10 +49,12 @@ final class SourcesScreen extends Screen {
 	 * Render.
 	 */
 	public function render(): void {
-		$stats  = Plugin::instance()->stats();
-		$params = $this->params();
-		$siteId = $this->siteId();
-		$range  = $params->range;
+		$plugin     = Plugin::instance();
+		$stats      = $plugin->stats();
+		$params     = $this->params();
+		$siteId     = $this->siteId();
+		$range      = $params->range;
+		$comparison = $params->comparisonRange();
 
 		$channels = $stats->channels( $siteId, $range );
 		$dates    = $range->dates();
@@ -74,14 +77,28 @@ final class SourcesScreen extends Screen {
 
 		$sources = $stats->sources( $siteId, $range, 200 );
 		$hosts   = array_values( array_filter( $sources, static fn ( array $row ): bool => '' !== $row['host'] ) );
+		$hosts   = array_slice( $hosts, 0, 50 );
+
+		// The site-wide row, like Dashboard and Pages - not a sum of the
+		// tables below, which are already limited to a top-N.
+		$totals       = $stats->totals( $siteId, $range );
+		$totalsBefore = null !== $comparison ? $stats->totals( $siteId, $comparison ) : null;
+
+		if ( null !== $comparison ) {
+			$channels = Comparison::rows( $channels, $stats->channels( $siteId, $comparison ), 'channel', [ 'sessions' ] );
+
+			$previousSources = $stats->sources( $siteId, $comparison, 200 );
+			$hosts           = Comparison::rows( $hosts, $previousSources, 'host', [ 'sessions' ] );
+		}
 
 		View::render(
 			'admin/sources',
 			[
 				'params'       => $params,
+				'kpis'         => DashboardScreen::kpis( $totals, $totalsBefore, $plugin->settings(), DashboardScreen::compareNote( $params->comparePeriod ) ),
 				'channels'     => $channels,
 				'channelTotal' => array_sum( array_column( $channels, 'sessions' ) ),
-				'hosts'        => array_slice( $hosts, 0, 50 ),
+				'hosts'        => $hosts,
 				'maxHost'      => $hosts ? max( array_column( $hosts, 'sessions' ) ) : 0,
 				'maxChannel'   => $channels ? max( array_column( $channels, 'sessions' ) ) : 0,
 				'mixChart'     => $mixChart,

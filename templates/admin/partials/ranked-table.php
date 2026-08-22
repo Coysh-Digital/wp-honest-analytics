@@ -5,6 +5,12 @@
  * The bar is a wash behind the label and the number is always spelled out
  * beside it, so nothing is communicated by length or colour alone.
  *
+ * A column marked `'delta' => true` gets a small comparison badge beside its
+ * value, read from `$row[$key . '_delta']` - a float, or absent/null when
+ * there is nothing to compare this row against (no comparison active, or no
+ * counterpart for this row in the comparison period). Absent means no badge,
+ * never a badge reading zero: those are different facts.
+ *
  * @package HonestAnalytics
  *
  * @var array<int,array<string,mixed>> $rows
@@ -15,6 +21,8 @@
  */
 
 declare(strict_types=1);
+
+use HonestAnalytics\Support\Format;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -62,6 +70,19 @@ $ha_wide    = $wide ?? '';
 									</span>
 								<?php else : ?>
 									<?php echo esc_html( (string) $ha_value ); ?>
+									<?php
+									$ha_delta = ! empty( $ha_column['delta'] ) && array_key_exists( $ha_key . '_delta', $ha_row )
+										? $ha_row[ $ha_key . '_delta' ]
+										: null;
+									?>
+									<?php if ( null !== $ha_delta ) : ?>
+										<?php
+										$ha_delta       = (float) $ha_delta;
+										$ha_delta_good  = ! empty( $ha_column['deltaInverse'] ) ? $ha_delta < 0 : $ha_delta > 0;
+										$ha_delta_class = abs( $ha_delta ) < 0.05 ? 'is-flat' : ( $ha_delta_good ? 'is-up' : 'is-down' );
+										?>
+										<span class="ha-delta ha-delta-inline <?php echo esc_attr( $ha_delta_class ); ?>"><?php echo esc_html( Format::delta( $ha_delta ) ); ?></span>
+									<?php endif; ?>
 								<?php endif; ?>
 							</td>
 						<?php endforeach; ?>

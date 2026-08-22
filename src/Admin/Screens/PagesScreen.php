@@ -15,6 +15,7 @@ use HonestAnalytics\Charts\ChartData;
 use HonestAnalytics\Dimensions\DimensionType;
 use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Plugin;
+use HonestAnalytics\Stats\Comparison;
 use HonestAnalytics\Stats\Granularity;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -100,6 +101,21 @@ final class PagesScreen extends Screen {
 		$comparison   = $params->comparisonRange();
 		$totals       = $stats->totals( $siteId, $params->range );
 		$totalsBefore = null !== $comparison ? $stats->totals( $siteId, $comparison ) : null;
+
+		if ( null !== $comparison ) {
+			$previousRows = $stats->topPages(
+				$siteId,
+				$comparison,
+				200,
+				'' !== $params->include ? $params->include : null,
+				'' !== $params->exclude ? $params->exclude : null
+			);
+
+			// Keyed by pathDimId, not by rank: the top 200 pages this period
+			// are not guaranteed to be the top 200 - or even present at all -
+			// in the comparison period.
+			$rows = Comparison::rows( $rows, $previousRows, 'pathDimId', [ 'views' ] );
+		}
 
 		View::render(
 			'admin/pages',

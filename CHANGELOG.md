@@ -7,6 +7,30 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-08-22
+
+Comparison finishes reaching the screens it was missing from, and Locations
+gets a map.
+
+### Added
+
+- **Comparison now shows on Devices and Sources.** Both screens gained the
+  same site-wide totals row Dashboard and Pages already show, with a
+  percentage change against whichever period is being compared.
+- **Ranked tables show a per-row change, not just the totals row.** The
+  Pages, Devices and Sources tables each show a change beside their headline
+  column - Views, Sessions - when a comparison is active, matched to its
+  counterpart by identity rather than by rank, since the top row this period
+  is not guaranteed to be the top row, or present at all, in the one being
+  compared against.
+- **Locations shows the country, not just its code**, a breakdown by region,
+  and a shaded world map built from the same figures as the table beside it.
+  Region is derived the same way it already was internally; nothing new is
+  collected, and city-level location is still never recorded.
+- **Pro only:** the Licence screen links to the account area at
+  pro.honest-analytics.com, to manage seats or view billing without leaving
+  wp-admin to look it up.
+
 ## [0.2.2] - 2026-08-22
 
 **Pro only.** The paid edition now talks to a real licence server instead of

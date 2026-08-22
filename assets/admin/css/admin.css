@@ -276,6 +276,11 @@
 	color: var(--ha-muted);
 }
 
+.ha-delta-inline {
+	margin-left: 6px;
+	font-size: 11px;
+}
+
 /* -------------------------------------------------------------------- card */
 
 .ha-card {
@@ -612,6 +617,23 @@ tr:hover .ha-row-edit,
 .ha-heat-peak {
 	margin-left: auto;
 	font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------- world map */
+
+.ha-worldmap svg {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 420px;
+}
+
+/* The vendored file's own stylesheet sets this; restated here so a country
+   with no traffic reads as "no data" rather than "unset" if that ever
+   changes upstream. */
+.ha-worldmap :is(.landxx, .coastxx) {
+	fill: var(--ha-heat-0);
+	stroke: var(--ha-surface);
 }
 
 /* -------------------------------------------------------------- real-time */

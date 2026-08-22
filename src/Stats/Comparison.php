@@ -38,4 +38,44 @@ final class Comparison {
 
 		return ( $current - $previous ) / $previous * 100;
 	}
+
+	/**
+	 * Pair two periods' row-sets by a shared key, and attach a delta for
+	 * each named field.
+	 *
+	 * Matched by key, not by position: the top rows in one period are not
+	 * guaranteed to be the top rows - or even present at all - in another.
+	 * A row with no counterpart in the comparison period gets a null delta
+	 * for every field, the same "nothing to compare against" null
+	 * {@see delta()} already returns for a zero baseline, rather than being
+	 * dropped or compared against zero.
+	 *
+	 * @param array<int,array<string,mixed>> $current  This period's rows.
+	 * @param array<int,array<string,mixed>> $previous The comparison period's rows.
+	 * @param string                         $key      Field both row-sets are keyed by.
+	 * @param string[]                       $fields   Which numeric fields get a delta.
+	 *
+	 * @return array<int,array<string,mixed>> `$current`, each row gaining a `"{$field}_delta"` key.
+	 */
+	public static function rows( array $current, array $previous, string $key, array $fields ): array {
+		$byKey = [];
+
+		foreach ( $previous as $row ) {
+			$byKey[ (string) ( $row[ $key ] ?? '' ) ] = $row;
+		}
+
+		foreach ( $current as &$row ) {
+			$match = $byKey[ (string) ( $row[ $key ] ?? '' ) ] ?? null;
+
+			foreach ( $fields as $field ) {
+				$row[ $field . '_delta' ] = null !== $match
+					? self::delta( (float) ( $row[ $field ] ?? 0 ), (float) ( $match[ $field ] ?? 0 ) )
+					: null;
+			}
+		}
+
+		unset( $row );
+
+		return $current;
+	}
 }

@@ -126,6 +126,11 @@ final class Menu {
 		// build with no commerce provider at all - wins in the usual way.
 		add_filter( 'honest_analytics_licence_provider', static fn (): LicenceProviderInterface => new StripeProvider() );
 
+		// Where the Licence screen sends "Receipts and licence management" -
+		// there is no account area on this site to build, the provider
+		// already has one.
+		add_filter( 'honest_analytics_portal_url', static fn (): string => 'https://pro.honest-analytics.com/account' );
+
 		Updates::register();
 
 		// On `shutdown`, so that a site whose licence has not been checked for

@@ -16,6 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $ha_typeTotal = array_sum( array_column( $types, 'sessions' ) );
 ?>
+<?php View::render( 'admin/partials/kpis', [ 'kpis' => $kpis ] ); ?>
+
 <div class="ha-card">
 	<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Device type', 'honest-analytics' ); ?></h2></div>
 
@@ -94,10 +96,11 @@ $ha_typeTotal = array_sum( array_column( $types, 'sessions' ) );
 
 				foreach ( $ha_data as $ha_row ) {
 					$ha_rows[] = [
-						'label'    => (string) $ha_row['label'],
-						'sessions' => Format::count( (int) $ha_row['sessions'] ),
-						'share'    => $ha_total > 0 ? Format::percent( (int) $ha_row['sessions'] / $ha_total * 100 ) : '-',
-						'_bar'     => (int) $ha_row['sessions'],
+						'label'          => (string) $ha_row['label'],
+						'sessions'       => Format::count( (int) $ha_row['sessions'] ),
+						'sessions_delta' => $ha_row['sessions_delta'] ?? null,
+						'share'          => $ha_total > 0 ? Format::percent( (int) $ha_row['sessions'] / $ha_total * 100 ) : '-',
+						'_bar'           => (int) $ha_row['sessions'],
 					];
 				}
 
@@ -115,6 +118,7 @@ $ha_typeTotal = array_sum( array_column( $types, 'sessions' ) );
 								'key'     => 'sessions',
 								'label'   => __( 'Sessions', 'honest-analytics' ),
 								'numeric' => true,
+								'delta'   => true,
 							],
 							[
 								'key'   => 'share',

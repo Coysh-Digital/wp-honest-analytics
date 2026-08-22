@@ -15,6 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>
+<?php View::render( 'admin/partials/kpis', [ 'kpis' => $kpis ] ); ?>
+
 <div class="ha-card">
 	<div class="ha-card-head">
 		<h2 class="ha-card-title"><?php esc_html_e( 'Channel mix', 'honest-analytics' ); ?></h2>
@@ -54,10 +56,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			foreach ( $channels as $ha_channel ) {
 				$ha_rows[] = [
-					'label'    => Channel::fromStored( $ha_channel['channel'] )->label(),
-					'sessions' => Format::count( $ha_channel['sessions'] ),
-					'bounce'   => Format::percent( (float) $ha_channel['bounceRate'] ),
-					'_bar'     => $ha_channel['sessions'],
+					'label'          => Channel::fromStored( $ha_channel['channel'] )->label(),
+					'sessions'       => Format::count( $ha_channel['sessions'] ),
+					'sessions_delta' => $ha_channel['sessions_delta'] ?? null,
+					'bounce'         => Format::percent( (float) $ha_channel['bounceRate'] ),
+					'_bar'           => $ha_channel['sessions'],
 				];
 			}
 
@@ -75,6 +78,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 							'key'     => 'sessions',
 							'label'   => __( 'Sessions', 'honest-analytics' ),
 							'numeric' => true,
+							'delta'   => true,
 						],
 						[
 							'key'   => 'bounce',
@@ -96,9 +100,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 			foreach ( $hosts as $ha_host ) {
 				$ha_rows[] = [
-					'label'    => $ha_host['host'],
-					'sessions' => Format::count( $ha_host['sessions'] ),
-					'_bar'     => $ha_host['sessions'],
+					'label'          => $ha_host['host'],
+					'sessions'       => Format::count( $ha_host['sessions'] ),
+					'sessions_delta' => $ha_host['sessions_delta'] ?? null,
+					'_bar'           => $ha_host['sessions'],
 				];
 			}
 
@@ -118,6 +123,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 							'key'     => 'sessions',
 							'label'   => __( 'Sessions', 'honest-analytics' ),
 							'numeric' => true,
+							'delta'   => true,
 						],
 					],
 				]

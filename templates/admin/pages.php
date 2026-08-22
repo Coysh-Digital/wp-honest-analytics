@@ -169,7 +169,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 										</span>
 									</td>
 
-									<td class="ha-num"><?php echo esc_html( Format::count( $ha_row['views'] ) ); ?></td>
+									<td class="ha-num">
+										<?php echo esc_html( Format::count( $ha_row['views'] ) ); ?>
+										<?php $ha_delta = $ha_row['views_delta'] ?? null; ?>
+										<?php if ( null !== $ha_delta ) : ?>
+											<?php
+											$ha_delta       = (float) $ha_delta;
+											$ha_delta_class = abs( $ha_delta ) < 0.05 ? 'is-flat' : ( $ha_delta > 0 ? 'is-up' : 'is-down' );
+											?>
+											<span class="ha-delta ha-delta-inline <?php echo esc_attr( $ha_delta_class ); ?>"><?php echo esc_html( Format::delta( $ha_delta ) ); ?></span>
+										<?php endif; ?>
+									</td>
 									<td class="ha-num-muted"><?php echo esc_html( $ha_row['entrances'] > 0 ? Format::count( $ha_row['entrances'] ) : '-' ); ?></td>
 									<td class="ha-num-muted"><?php echo esc_html( $ha_row['exits'] > 0 ? Format::count( $ha_row['exits'] ) : '-' ); ?></td>
 									<td class="ha-num-muted"><?php echo esc_html( null !== $ha_row['bounceRate'] ? Format::percent( (float) $ha_row['bounceRate'] ) : '-' ); ?></td>
