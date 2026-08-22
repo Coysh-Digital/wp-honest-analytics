@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 0.2.1
+Stable tag: 0.2.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,11 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.2.2 =
+* Pro only: activating, deactivating and checking a licence now calls a real licence server, instead of taking a well-formed key's word for it. A network problem still never takes Pro away from a site that already had it.
+* Pro only: updates for the Pro build now come from the same server, through the normal WordPress update screen.
+* Pro only: fixed the "View version details" link, which checked the free edition's slug regardless of which one was installed and so never opened for a Pro site.
 
 = 0.2.1 =
 * Fixed: "No comparison" still showed a percentage change against the previous period on every headline figure. It is now silent about change when no comparison is active.

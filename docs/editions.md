@@ -176,12 +176,19 @@ opted in with their eyes open. The Settings screen carries an amber
 
 ## The licence layer
 
-The commerce and licensing provider is **TBC**. Freemius, Lemon Squeezy and
-WooCommerce with a licensing add-on were the candidates. **No provider SDK,
-endpoint or payload shape is hard-coded anywhere.**
+The commerce and licensing provider is decided: `Licensing\StripeProvider`
+talks to `pro.honest-analytics.com`, a small Laravel API documented in full in
+that repository. The licence key authenticates every call by being real -
+there is no separate API key, and none is sent. Every call answers 200,
+always, with a `{tier, status, activations, limit, support_expires, message}`
+envelope; anything else (a timeout, a 5xx, a 429, a 422, a 200 with no
+`status`) is thrown rather than read as an outcome, which is what keeps the
+fail-open rule below true of the real provider and not just of the interface.
 
 Everything sits behind `Licensing\LicenceProviderInterface`, so the provider can
-be swapped without touching a single gate:
+still be swapped without touching a single gate - a self-hosted or
+agency-internal build with no commerce provider at all is one filter away from
+`OfflineProvider`, which remains what an unconfigured Pro build falls back to:
 
 | | |
 |---|---|
@@ -196,8 +203,10 @@ status, activations used, limit, support expiry, when it was last checked and
 whether the answer came from cache. It deliberately has **no `isExpired()`** -
 the docblock says why, so the next person is not tempted to add a gate.
 
-`OfflineProvider` is the default and makes no network request at all. Swapping
-it in is one filter:
+`OfflineProvider` makes no network request at all, and is what the filter
+falls back to when nothing else answers it. `Menu::register()` registers
+`StripeProvider` as the actual default in a Pro build - still just a filter,
+so a test or a self-hosted build can still replace it with one line:
 
 ```php
 add_filter( 'honest_analytics_licence_provider', fn () => new MyProvider() );
@@ -261,10 +270,10 @@ whose conclusion the compliance question actually is.
 | Pro price | TBC |
 | Agency price | TBC |
 | Agency activation cap | TBC - read from the provider's response, never hard-coded |
-| Commerce and licensing provider | TBC |
 | Paid support extension, and its price | TBC, may be dropped |
 | VAT handling | TBC - calculated at checkout by the provider |
 | Refund policy | TBC |
 
-None of these blocks the plugin. The licence layer works offline today and the
-provider is a matter of implementing one interface.
+None of these blocks the plugin. The commerce and licensing provider is
+decided and implemented - see [The licence layer](#the-licence-layer) - and
+what remains open is pricing and policy, not architecture.

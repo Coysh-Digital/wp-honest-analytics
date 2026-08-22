@@ -7,6 +7,29 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-08-22
+
+**Pro only.** The paid edition now talks to a real licence server instead of
+taking a well-formed key's word for it.
+
+### Added
+
+- **Activating, deactivating and checking a licence now calls
+  `pro.honest-analytics.com`.** Entering a key claims a real seat, an
+  over-used or refunded key is reported as such, and a seat released from the
+  account area is picked up here. As before, a network problem never takes
+  Pro away from a site that already had it - only a clear answer from the
+  server changes what is stored.
+- **Updates for the Pro build now come from the same server**, offered
+  through the normal WordPress update screen once a key is active.
+
+### Fixed
+
+- **The "View version details" link for the Pro build never opened.** It
+  checked the free edition's slug regardless of which one was actually
+  installed, so the modal silently failed to answer for every Pro site. It
+  now checks the slug this build actually installed as.
+
 ## [0.2.1] - 2026-08-22
 
 Two problems with the comparison feature added in 0.2.0.

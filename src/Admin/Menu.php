@@ -28,7 +28,9 @@ use HonestAnalytics\Admin\Screens\SettingsScreen;
 use HonestAnalytics\Admin\Screens\SourcesScreen;
 use HonestAnalytics\Capabilities\Capabilities;
 use HonestAnalytics\Edition\Edition;
+use HonestAnalytics\Licensing\LicenceProviderInterface;
 use HonestAnalytics\Licensing\LicenceService;
+use HonestAnalytics\Licensing\StripeProvider;
 use HonestAnalytics\Licensing\Updates;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -117,6 +119,12 @@ final class Menu {
 		if ( ! class_exists( Updates::class ) ) {
 			return;
 		}
+
+		// The default answer to `honest_analytics_licence_provider`, so a Pro
+		// build talks to the real licence API out of the box. Still just a
+		// filter: anything registered after this one - a test, a self-hosted
+		// build with no commerce provider at all - wins in the usual way.
+		add_filter( 'honest_analytics_licence_provider', static fn (): LicenceProviderInterface => new StripeProvider() );
 
 		Updates::register();
 
