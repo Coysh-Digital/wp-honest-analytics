@@ -46,8 +46,8 @@ final class Settings {
 	/** Raw journeys may never be kept longer than 26 months. */
 	public const JOURNEY_MAX_RETENTION_DAYS = 790;
 
-	/** Aggregates may never be kept longer than 26 months. */
-	public const ROLLUP_MAX_RETENTION_MONTHS = 26;
+	/** Aggregates may never be kept longer than 36 months. */
+	public const ROLLUP_MAX_RETENTION_MONTHS = 36;
 
 	// Capture.
 	public string $trackingMode    = self::TRACKING_HYBRID;
@@ -76,7 +76,7 @@ final class Settings {
 	public int $saltRotationHour       = 4;
 	public int $hourlyWindowDays       = 7;
 	public int $dimensionCap           = 1000;
-	public int $rollupRetentionMonths  = 26;
+	public int $rollupRetentionMonths  = 36;
 	public string $uniqueCounterDriver = self::UNIQUES_HLL;
 	public int $hllPrecision           = 12;
 

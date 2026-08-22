@@ -169,13 +169,25 @@ The point is historical reporting, not reproducing old tracking identities -
 and an import that increased the amount of personal data on the site would be a
 strange feature for this plugin to have.
 
-## Retention applies
+## Retention does not apply
 
-The garbage collector deletes rollups past `rollupRetentionMonths`, and it does
-not care where they came from. Importing eight years of history onto a site
-keeping twenty-six months means the older rows go at the next tidy-up. The
-preview says so when the requested range is longer than the retention window,
-because discovering it afterwards would feel like the import had failed.
+The garbage collector deletes rollups past `rollupRetentionMonths`, but only
+the native ones: `Tables::sourcedRollups()` lists every table that carries a
+`source` column, and on those the nightly sweep's `WHERE` clause adds
+`AND source = 'native'`. Importing eight years of history onto a site keeping
+thirty-six months of its own measurements keeps all eight years - retention is
+a promise about what this plugin measures itself, not about history brought in
+from elsewhere. Reversing that would mean an import silently losing most of
+what it just brought across the first time cron ran.
+
+The importer says so before the import starts, when the discovered range
+reaches further back than `rollupRetentionMonths` would otherwise keep: each
+`ImporterInterface::inspect()` appends a note once it knows the earliest date,
+comparing it against today minus the configured retention. Compaction has to
+respect the same boundary or the point is moot - `Compactor::groupColumns()`
+includes `source` in its grouping key on every table that has one, so a day
+inside the hourly window that holds both a native row and an already-imported
+one folds to two rows, not one that quietly forgets which was which.
 
 ## Editions
 

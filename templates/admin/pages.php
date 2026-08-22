@@ -17,6 +17,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 
+<?php View::render( 'admin/partials/kpis', [ 'kpis' => $kpis ] ); ?>
+
 <?php if ( null !== $compareChart ) : ?>
 	<div class="ha-card">
 		<div class="ha-card-head">

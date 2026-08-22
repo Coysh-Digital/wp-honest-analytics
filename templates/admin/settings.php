@@ -516,7 +516,7 @@ $ha_submitted = [
 				'rollupRetentionMonths',
 				__( 'Rollup retention', 'honest-analytics' ),
 				$ha_number( 'rollupRetentionMonths', $settings->rollupRetentionMonths, 1, Settings::ROLLUP_MAX_RETENTION_MONTHS, $overrides( 'rollupRetentionMonths' ), __( 'months', 'honest-analytics' ) ),
-				__( 'Hard capped at 26 months, which is the usual choice: it lets you compare this month against the same month last year, which 12 months does not. Older rows are removed by the nightly tidy-up.', 'honest-analytics' )
+				__( 'Hard capped at 36 months, which is the usual choice: it lets you compare this month against the same month last year, which 12 months does not. Older rows are removed by the nightly tidy-up.', 'honest-analytics' )
 			);
 
 			$ha_row(

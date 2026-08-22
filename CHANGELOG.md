@@ -5,6 +5,84 @@ All notable changes to Honest Analytics are recorded here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.2.0] - 2026-08-22
+
+Reports can now be read at a glance across years, not just days, and figures
+mean something once there is something to measure them against.
+
+### Added
+
+- **A date range spanning more than one year now says so on the chart.** Axis
+  labels carry the year whenever a point could otherwise be mistaken for the
+  same month a year apart.
+- **Trend charts can be grouped by day, week, month or year**, independently
+  of the date range chosen - a three-year range read by month, for instance.
+  The control only offers grains a range is actually long enough for.
+- **Compare a period against the one before it, or the same period last
+  year.** The trend chart draws the comparison as a second, dashed line, and
+  every headline figure on the Dashboard and on a page's own report shows the
+  percentage change alongside it. The Pages screen gained the same headline
+  row it was missing.
+- **The date range, grouping and comparison chosen on one screen now follow
+  you to the next.** A link that names them explicitly still wins, so nothing
+  bookmarked or sent to somebody else changes; a plain click through the
+  sidebar picks up whatever was chosen last instead of resetting to thirty
+  days.
+- **The write-spool warning can now be dismissed** for thirty days at a time,
+  rather than every time until the underlying nginx configuration is fixed.
+  It comes back on schedule only if the exposure is still real.
+
+### Changed
+
+- **Rollup retention now defaults to thirty-six months**, up from
+  twenty-six - long enough to compare a month against the same month a year
+  earlier with room to spare.
+
+### Fixed
+
+- **History brought in from Google Analytics, WP Statistics or Independent
+  Analytics could be quietly deleted the night after import**, the moment it
+  fell outside the retention window - the opposite of what the import wizard
+  told you would happen. Imported history is now kept regardless of the
+  retention setting, and the wizard says so before you start.
+- **A day that mixed native traffic with already-imported history could be
+  merged into one row by the nightly tidy-up**, once that day fell inside the
+  compaction window, silently losing which source the figures belonged to.
+  Native and imported rows are now kept apart through compaction the same way
+  they are kept apart everywhere else.
+- **The range step could claim a property had one day of analytics when it
+  had years.** It read only the cached date range, which is empty the first
+  time anybody reaches the step after choosing a property, and fell back to
+  today on each side independently. The range is now discovered properly
+  before the step is drawn.
+
+## [0.1.2] - 2026-08-21
+
+A GA4 connection said the same thing whether the redirect address was wrong,
+the Client ID and secret did not match, or an API was not switched on yet.
+Now it says which.
+
+### Added
+
+- **Step 3 of the Google setup guide links straight to enabling each API**,
+  rather than naming them for a console search.
+- **The Client ID field flags an obviously wrong paste** before it round-trips
+  through a Google error - non-blocking, since the format is common rather
+  than guaranteed.
+
+### Fixed
+
+- **A failed Google connection said one generic sentence for every cause.** A
+  mismatched redirect address, an unrecognised Client ID or secret, and a
+  Google Analytics API that is not switched on yet now say which of those it
+  was, instead of guessing at two of them in one sentence.
+- **A wrong Client ID or secret looked like an expired connection.** Google
+  answers both with the same HTTP status, and the connection told people to
+  reconnect - which fails again, identically, with the same wrong secret. It
+  now says the sign-in details do not match instead.
+
 ## [0.1.1] - 2026-08-21
 
 A fixes release. The Google Analytics import could not be connected at all, and

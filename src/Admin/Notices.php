@@ -31,6 +31,20 @@ final class Notices {
 	private const IMPORT_PROMPT = 'honest_analytics_import_prompt';
 
 	/**
+	 * The option that remembers somebody said "not now" to the spool warning.
+	 *
+	 * Holds a timestamp, not a flag: dismissing this notice does not fix the
+	 * exposure it describes, so it is a snooze, not a goodbye. Site-wide rather
+	 * than per-admin, because whether the write spool is public is a fact about
+	 * the server, not a preference - a second administrator re-warned a minute
+	 * after the first one dismissed it would be noise, not safety.
+	 */
+	private const SPOOL_SNOOZE = 'honest_analytics_spool_snooze_until';
+
+	/** How long a dismissal buys before the notice checks again. */
+	private const SPOOL_SNOOZE_SECONDS = 30 * DAY_IN_SECONDS;
+
+	/**
 	 * Where the detection answer is cached between page loads.
 	 *
 	 * Suffixed, because what is stored here changed shape: it used to be a list
@@ -45,6 +59,7 @@ final class Notices {
 	public static function register(): void {
 		add_action( 'admin_notices', [ self::class, 'render' ] );
 		add_action( 'admin_init', [ self::class, 'handleDismissal' ] );
+		add_action( 'admin_init', [ self::class, 'handleSpoolSnooze' ] );
 	}
 
 	/**
@@ -73,6 +88,32 @@ final class Notices {
 	}
 
 	/**
+	 * Snooze the spool warning, for a while.
+	 *
+	 * Not a permanent dismissal: the notice checks again once the snooze runs
+	 * out, and only stays quiet then if the spool has actually stopped being
+	 * public in the meantime.
+	 */
+	public static function handleSpoolSnooze(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET['honest_dismiss_spool'] ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( Capabilities::MANAGE ) ) {
+			return;
+		}
+
+		check_admin_referer( 'honest-analytics-dismiss-spool' );
+
+		update_option( self::SPOOL_SNOOZE, time() + self::SPOOL_SNOOZE_SECONDS, false );
+
+		wp_safe_redirect( remove_query_arg( [ 'honest_dismiss_spool', '_wpnonce' ] ) );
+
+		exit;
+	}
+
+	/**
 	 * Render the notices.
 	 */
 	public static function render(): void {
@@ -92,7 +133,17 @@ final class Notices {
 			return;
 		}
 
-		foreach ( ( new Health() )->problems() as $problem ) {
+		$health = new Health();
+
+		foreach ( $health->problems() as $problem ) {
+			// The spool warning gets its own dismissible rendering below - a
+			// snoozed-but-still-true fault should stay off this screen without
+			// stopping `problems()` from reporting it everywhere else that asks
+			// (the CLI, the health filter, isHealthy()).
+			if ( $health->spoolPublic() && str_contains( $problem, 'write spool can be read' ) ) {
+				continue;
+			}
+
 			printf(
 				'<div class="notice notice-warning"><p><strong>%s</strong> %s</p></div>',
 				esc_html__( 'Honest Analytics:', 'honest-analytics' ),
@@ -100,7 +151,46 @@ final class Notices {
 			);
 		}
 
+		self::renderSpoolNotice( $health );
 		self::renderImportOffer( (string) $screen->id );
+	}
+
+	/**
+	 * The spool warning, dismissible for a while.
+	 *
+	 * Snoozing does not fix the exposure, so this reappears once the snooze
+	 * runs out - but only if the spool is still actually public then. A site
+	 * that fixed its nginx config in the meantime never sees it again.
+	 *
+	 * @param Health $health Health.
+	 */
+	private static function renderSpoolNotice( Health $health ): void {
+		if ( ! $health->spoolPublic() ) {
+			return;
+		}
+
+		if ( ! current_user_can( Capabilities::MANAGE ) ) {
+			return;
+		}
+
+		$snoozedUntil = (int) get_option( self::SPOOL_SNOOZE, 0 );
+
+		if ( $snoozedUntil > time() ) {
+			return;
+		}
+
+		$dismiss = wp_nonce_url(
+			add_query_arg( 'honest_dismiss_spool', '1' ),
+			'honest-analytics-dismiss-spool'
+		);
+
+		printf(
+			'<div class="notice notice-warning"><p><strong>%s</strong> %s</p><p><a href="%s">%s</a></p></div>',
+			esc_html__( 'Honest Analytics:', 'honest-analytics' ),
+			esc_html__( 'The write spool can be read over the web. It holds no addresses, but it is not public data. On nginx this needs a rule in the server config - the exact block is in docs/caching.md. On Apache or IIS, check that the .htaccess or web.config in the spool directory has not been removed.', 'honest-analytics' ),
+			esc_url( $dismiss ),
+			esc_html__( 'Remind me again in 30 days', 'honest-analytics' )
+		);
 	}
 
 	/**

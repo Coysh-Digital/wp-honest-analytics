@@ -18,6 +18,7 @@ use HonestAnalytics\Plugin;
 use HonestAnalytics\Schema\Schema;
 use HonestAnalytics\Schema\Tables;
 use HonestAnalytics\Settings\Settings;
+use HonestAnalytics\Stats\Comparison;
 use HonestAnalytics\Support\Format;
 use HonestAnalytics\Write\SpoolStatus;
 
@@ -130,16 +131,20 @@ final class DashboardScreen extends Screen {
 	 * Render.
 	 */
 	public function render(): void {
-		$plugin   = Plugin::instance();
-		$stats    = $plugin->stats();
-		$params   = $this->params();
-		$siteId   = $this->siteId();
-		$range    = $params->range;
-		$previous = $range->previous();
-		$isPro    = Edition::isPro();
+		$plugin     = Plugin::instance();
+		$stats      = $plugin->stats();
+		$params     = $this->params();
+		$siteId     = $this->siteId();
+		$range      = $params->range;
+		$comparison = $params->comparisonRange();
+		$previous   = $comparison ?? $range->previous();
+		$isPro      = Edition::isPro();
 
 		$totals       = $stats->totals( $siteId, $range );
 		$totalsBefore = $stats->totals( $siteId, $previous );
+
+		$trend           = $stats->trend( $siteId, $range, null, $params->granularity );
+		$comparisonTrend = null !== $comparison ? $stats->trend( $siteId, $comparison, null, $params->granularity ) : null;
 
 		$data = [
 			'params'      => $params,
@@ -147,8 +152,8 @@ final class DashboardScreen extends Screen {
 			'isPro'       => $isPro,
 			'accuracy'    => $stats->uniquesAccuracy(),
 			'realtime'    => $plugin->realtime()->snapshot( $siteId, null, 0 ),
-			'kpis'        => $this->kpis( $totals, $totalsBefore, $plugin->settings() ),
-			'trendChart'  => ChartData::trend( $stats->trend( $siteId, $range ) ),
+			'kpis'        => self::kpis( $totals, $totalsBefore, $plugin->settings(), self::compareNote( $params->comparePeriod ) ),
+			'trendChart'  => ChartData::trend( $trend, $comparisonTrend, $comparison?->label ),
 			'heatmap'     => Heatmap::grid( $stats->hourOfWeek( $siteId, $range ) ),
 			'heatmapFrom' => $stats->hourlyWindowFrom(),
 			'hourlyDays'  => $plugin->settings()->hourlyWindowDays,
@@ -174,26 +179,27 @@ final class DashboardScreen extends Screen {
 	/**
 	 * The seven headline figures, with their comparisons.
 	 *
-	 * @param array<string,int|float> $totals   This period.
-	 * @param array<string,int|float> $previous The period before.
-	 * @param Settings                $settings Settings.
+	 * @param array<string,int|float> $totals      This period.
+	 * @param array<string,int|float> $previous    The period being compared against.
+	 * @param Settings                $settings    Settings.
+	 * @param string                  $compareNote What to call the comparison period.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
-	private function kpis( array $totals, array $previous, Settings $settings ): array {
+	public static function kpis( array $totals, array $previous, Settings $settings, string $compareNote ): array {
 		$beacon = $settings->usesBeacon();
 
 		return [
 			[
 				'label' => __( 'Pageviews', 'honest-analytics' ),
 				'value' => Format::count( $totals['views'] ),
-				'delta' => self::delta( $totals['views'], $previous['views'] ),
-				'note'  => __( 'vs previous period', 'honest-analytics' ),
+				'delta' => Comparison::delta( $totals['views'], $previous['views'] ),
+				'note'  => $compareNote,
 			],
 			[
 				'label' => __( 'Unique visitors', 'honest-analytics' ),
 				'value' => Format::count( $totals['uniques'] ),
-				'delta' => self::delta( $totals['uniques'], $previous['uniques'] ),
+				'delta' => Comparison::delta( $totals['uniques'], $previous['uniques'] ),
 				'note'  => sprintf(
 					/* translators: %s: accuracy, e.g. "±1.6%". */
 					__( 'daily uniques, %s', 'honest-analytics' ),
@@ -203,32 +209,32 @@ final class DashboardScreen extends Screen {
 			[
 				'label' => __( 'Sessions', 'honest-analytics' ),
 				'value' => Format::count( $totals['sessions'] ),
-				'delta' => self::delta( $totals['sessions'], $previous['sessions'] ),
-				'note'  => __( 'vs previous period', 'honest-analytics' ),
+				'delta' => Comparison::delta( $totals['sessions'], $previous['sessions'] ),
+				'note'  => $compareNote,
 			],
 			[
 				'label'   => __( 'Bounce rate', 'honest-analytics' ),
 				'value'   => Format::percent( (float) $totals['bounceRate'] ),
-				'delta'   => self::delta( $totals['bounceRate'], $previous['bounceRate'] ),
+				'delta'   => Comparison::delta( $totals['bounceRate'], $previous['bounceRate'] ),
 				'inverse' => true,
 				'note'    => __( 'lower is better', 'honest-analytics' ),
 			],
 			[
 				'label' => __( 'Pages / session', 'honest-analytics' ),
 				'value' => number_format_i18n( (float) $totals['avgViewsPerSession'], 2 ),
-				'delta' => self::delta( $totals['avgViewsPerSession'], $previous['avgViewsPerSession'] ),
-				'note'  => __( 'vs previous period', 'honest-analytics' ),
+				'delta' => Comparison::delta( $totals['avgViewsPerSession'], $previous['avgViewsPerSession'] ),
+				'note'  => $compareNote,
 			],
 			[
 				'label' => __( 'Avg session', 'honest-analytics' ),
 				'value' => Format::duration( (int) $totals['avgDurationMs'] ),
-				'delta' => self::delta( $totals['avgDurationMs'], $previous['avgDurationMs'] ),
+				'delta' => Comparison::delta( $totals['avgDurationMs'], $previous['avgDurationMs'] ),
 				'note'  => __( 'closed sessions only', 'honest-analytics' ),
 			],
 			[
 				'label' => __( 'Avg time on page', 'honest-analytics' ),
 				'value' => $beacon ? Format::duration( (int) $totals['avgDwellMs'] ) : '-',
-				'delta' => $beacon ? self::delta( $totals['avgDwellMs'], $previous['avgDwellMs'] ) : null,
+				'delta' => $beacon ? Comparison::delta( $totals['avgDwellMs'], $previous['avgDwellMs'] ) : null,
 				'note'  => $beacon
 					? __( 'measured by the tracker', 'honest-analytics' )
 					: __( 'needs hybrid or client mode', 'honest-analytics' ),
@@ -265,17 +271,23 @@ final class DashboardScreen extends Screen {
 	/**
 	 * The percentage change between two figures.
 	 *
-	 * Null rather than "+100%" when there was nothing to compare against:
-	 * growth from zero is not a percentage.
-	 *
 	 * @param int|float $current  This period.
 	 * @param int|float $previous The period before.
+	 *
+	 * @deprecated Call {@see Comparison::delta()} directly.
 	 */
 	public static function delta( int|float $current, int|float $previous ): ?float {
-		if ( $previous <= 0 ) {
-			return null;
-		}
+		return Comparison::delta( $current, $previous );
+	}
 
-		return ( $current - $previous ) / $previous * 100;
+	/**
+	 * What to call the period a KPI card is compared against.
+	 *
+	 * @param string $comparePeriod {@see \HonestAnalytics\Admin\RequestParams::$comparePeriod}.
+	 */
+	public static function compareNote( string $comparePeriod ): string {
+		return 'year' === $comparePeriod
+			? __( 'vs same period last year', 'honest-analytics' )
+			: __( 'vs previous period', 'honest-analytics' );
 	}
 }

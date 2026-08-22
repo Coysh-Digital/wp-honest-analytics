@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Import\Sources;
 
+use DateTimeImmutable;
 use HonestAnalytics\Import\Coverage;
 use HonestAnalytics\Import\DayBucket;
 use HonestAnalytics\Import\DetectionResult;
@@ -21,6 +22,7 @@ use HonestAnalytics\Import\ImportSource;
 use HonestAnalytics\Import\ImportSummary;
 use HonestAnalytics\Import\MetricMapping;
 use HonestAnalytics\Plugin;
+use HonestAnalytics\Support\Timezone;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -144,6 +146,12 @@ final class WPStatisticsImporter implements ImporterInterface {
 
 		$excluded[] = __( 'IP addresses and anything else that identifies a person', 'honest-analytics' );
 
+		$notes = $this->notes();
+
+		if ( null !== $from && (string) $from < self::retentionCutoff() ) {
+			$notes[] = __( 'Some of this history is older than your current retention setting. It will be kept regardless - imported history is exempt from the retention window.', 'honest-analytics' );
+		}
+
 		return new ImportSummary(
 			(string) ( $from ?? '' ),
 			(string) ( $to ?? '' ),
@@ -152,8 +160,18 @@ final class WPStatisticsImporter implements ImporterInterface {
 			$dimensions,
 			$excluded,
 			$this->mappings(),
-			$this->notes()
+			$notes
 		);
+	}
+
+	/**
+	 * The oldest date this site's own retention setting would otherwise keep.
+	 */
+	private static function retentionCutoff(): string {
+		return ( new DateTimeImmutable( '@' . time() ) )
+			->setTimezone( Timezone::site() )
+			->modify( '-' . Plugin::instance()->settings()->rollupRetentionMonths . ' months' )
+			->format( 'Y-m-d' );
 	}
 
 	/**

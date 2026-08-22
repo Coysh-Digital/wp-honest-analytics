@@ -13,14 +13,16 @@ declare(strict_types=1);
 use HonestAnalytics\Capabilities\Capabilities;
 use HonestAnalytics\Export\ExportHandler;
 use HonestAnalytics\Stats\DateRange;
+use HonestAnalytics\Stats\Granularity;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$ha_range      = $params->range;
-$ha_export     = $screen->exportKind();
-$ha_can_export = null !== $ha_export && current_user_can( Capabilities::EXPORT );
+$ha_range         = $params->range;
+$ha_export        = $screen->exportKind();
+$ha_can_export    = null !== $ha_export && current_user_can( Capabilities::EXPORT );
+$ha_granularities = Granularity::availableFor( $ha_range );
 ?>
 <div class="wrap">
 	<div class="ha-wrap<?php echo 900 === $screen->maxWidth() ? ' is-narrow' : ''; ?>">
@@ -78,6 +80,36 @@ $ha_can_export = null !== $ha_export && current_user_can( Capabilities::EXPORT )
 							<button type="submit" class="button button-primary"><?php esc_html_e( 'Apply', 'honest-analytics' ); ?></button>
 						</form>
 					</details>
+				</div>
+
+				<?php if ( count( $ha_granularities ) > 1 ) : ?>
+					<div class="ha-toolbar-group" role="group" aria-label="<?php esc_attr_e( 'Chart grouping', 'honest-analytics' ); ?>">
+						<?php foreach ( $ha_granularities as $ha_granularity ) : ?>
+							<a
+								class="ha-range<?php echo $params->granularity === $ha_granularity ? ' is-selected' : ''; ?>"
+								href="<?php echo esc_url( $params->url( [ 'granularity' => $ha_granularity->value ] ) ); ?>"
+								<?php echo $params->granularity === $ha_granularity ? 'aria-current="true"' : ''; ?>
+							><?php echo esc_html( $ha_granularity->label() ); ?></a>
+						<?php endforeach; ?>
+					</div>
+				<?php endif; ?>
+
+				<div class="ha-toolbar-group" role="group" aria-label="<?php esc_attr_e( 'Compare', 'honest-analytics' ); ?>">
+					<?php
+					foreach (
+						[
+							''         => __( 'No comparison', 'honest-analytics' ),
+							'previous' => __( 'Previous period', 'honest-analytics' ),
+							'year'     => __( 'Same period last year', 'honest-analytics' ),
+						] as $ha_compare_period => $ha_compare_label
+					) :
+						?>
+						<a
+							class="ha-range<?php echo $params->comparePeriod === $ha_compare_period ? ' is-selected' : ''; ?>"
+							href="<?php echo esc_url( $params->url( [ 'compare_period' => '' === $ha_compare_period ? 'none' : $ha_compare_period ] ) ); ?>"
+							<?php echo $params->comparePeriod === $ha_compare_period ? 'aria-current="true"' : ''; ?>
+						><?php echo esc_html( $ha_compare_label ); ?></a>
+					<?php endforeach; ?>
 				</div>
 
 				<span class="ha-range-note">

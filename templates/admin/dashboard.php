@@ -61,6 +61,11 @@ View::render(
 				<?php if ( ! empty( $trendChart['hasUniques'] ) ) : ?>
 					<span class="ha-legend-item"><span class="ha-swatch is-uniques"></span><?php esc_html_e( 'Unique visitors', 'honest-analytics' ); ?></span>
 				<?php endif; ?>
+				<?php foreach ( $trendChart['datasets'] as $ha_trend_dataset ) : ?>
+					<?php if ( 'compare' === $ha_trend_dataset['token'] ) : ?>
+						<span class="ha-legend-item"><span class="ha-swatch is-compare is-dashed"></span><?php echo esc_html( $ha_trend_dataset['label'] ); ?></span>
+					<?php endif; ?>
+				<?php endforeach; ?>
 			</div>
 		</div>
 

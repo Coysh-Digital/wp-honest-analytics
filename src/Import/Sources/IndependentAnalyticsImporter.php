@@ -148,6 +148,12 @@ final class IndependentAnalyticsImporter implements ImporterInterface {
 			$dimensions[] = __( 'Devices and browsers', 'honest-analytics' );
 		}
 
+		$notes = $this->notes();
+
+		if ( null !== $from && (string) $from < self::retentionCutoff() ) {
+			$notes[] = __( 'Some of this history is older than your current retention setting. It will be kept regardless - imported history is exempt from the retention window.', 'honest-analytics' );
+		}
+
 		return new ImportSummary(
 			(string) ( $from ?? '' ),
 			(string) ( $to ?? '' ),
@@ -156,8 +162,18 @@ final class IndependentAnalyticsImporter implements ImporterInterface {
 			$dimensions,
 			[ __( 'Addresses, visitor signatures and anything else that identifies a person', 'honest-analytics' ) ],
 			$this->mappings(),
-			$this->notes()
+			$notes
 		);
+	}
+
+	/**
+	 * The oldest date this site's own retention setting would otherwise keep.
+	 */
+	private static function retentionCutoff(): string {
+		return ( new DateTimeImmutable( '@' . time() ) )
+			->setTimezone( Timezone::site() )
+			->modify( '-' . Plugin::instance()->settings()->rollupRetentionMonths . ' months' )
+			->format( 'Y-m-d' );
 	}
 
 	/**

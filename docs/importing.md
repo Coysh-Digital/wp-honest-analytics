@@ -140,7 +140,8 @@ the name is only for you.
 
 **3. Switch on the two APIs it reads through.**
 
-In the console, **APIs and services → Library**, search for and enable both:
+The Import screen's own Step 3 links straight to the enable page for each one,
+in the same Google Cloud project:
 
 | API | What it is for |
 |---|---|
@@ -148,7 +149,8 @@ In the console, **APIs and services → Library**, search for and enable both:
 | Google Analytics Data API | Reading the actual figures |
 
 Miss the first and your property list comes back empty. Miss the second and the
-import fails as soon as it starts.
+import fails as soon as it starts. If you would rather find them yourself,
+they are also under **APIs and services → Library**.
 
 **4. Fill in the consent screen.**
 
@@ -189,14 +191,16 @@ approve.
 
 ### When it does not work
 
-The screen now tells you which of these happened, in words. The three common
-ones:
+The screen tells you which of these happened, in words:
 
 | What you see | What it means |
 |---|---|
-| Google refused the connection | The redirect address in your Google project does not match the one on the Import screen, or the two APIs are not switched on yet |
+| The redirect address does not match | The Authorised redirect URI in your Google project is not the same, character for character, as the one on the Import screen |
+| Google did not recognise the Client ID and secret | What is saved on this site does not match what Google Cloud issued - a partial paste is the usual cause |
+| The Admin API / Data API is not switched on | The named API has not been enabled in your Google Cloud project yet - follow its link in step 3 |
 | There are no Google sign-in details saved | The Client ID and secret have not been saved on this site |
 | The reply from Google did not match | The attempt sat around too long, or was finished in a different browser or tab. Press Connect and go straight through |
+| Google refused the connection, with no further detail | Kept as a fallback for anything not covered above - check the redirect address and both APIs |
 
 Some other things worth knowing before you start:
 

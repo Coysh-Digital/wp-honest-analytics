@@ -261,26 +261,32 @@ final class StatsService {
 	/**
 	 * Views and unique visitors over time.
 	 *
-	 * @param int       $siteId    Site ID.
-	 * @param DateRange $range     Period.
-	 * @param int|null  $pathDimId Restrict to one page.
+	 * @param int         $siteId      Site ID.
+	 * @param DateRange   $range       Period.
+	 * @param int|null    $pathDimId   Restrict to one page.
+	 * @param Granularity $granularity Bucket size. Ignored for an hourly range.
 	 *
-	 * @return array{labels:string[],views:int[],uniques:int[],hourly:bool}
+	 * @return array{labels:string[],views:int[],uniques:int[],hourly:bool,granularity:string}
 	 */
-	public function trend( int $siteId, DateRange $range, ?int $pathDimId = null ): array {
+	public function trend( int $siteId, DateRange $range, ?int $pathDimId = null, Granularity $granularity = Granularity::Day ): array {
 		return $this->remember(
-			'trend:' . ( $pathDimId ?? '' ),
+			'trend:' . $granularity->value . ':' . ( $pathDimId ?? '' ),
 			$siteId,
 			$range,
-			function () use ( $siteId, $range, $pathDimId ): array {
+			function () use ( $siteId, $range, $pathDimId, $granularity ): array {
 				// A single day still inside the hourly window gets 24 points. One
 				// from three months ago has been compacted to a single row, so it
-				// gets one honest point rather than 24 zeroes.
+				// gets one honest point rather than 24 zeroes. Granularity is moot
+				// either way: there is only one bucket to offer it on.
 				if ( $range->isHourly() && $range->from >= $this->hourlyWindowFrom() ) {
 					return $this->hourlyTrend( $siteId, $range, $pathDimId );
 				}
 
-				return $this->dailyTrend( $siteId, $range, $pathDimId );
+				if ( Granularity::Day === $granularity ) {
+					return $this->dailyTrend( $siteId, $range, $pathDimId );
+				}
+
+				return $this->bucketedTrend( $siteId, $range, $pathDimId, $granularity );
 			}
 		);
 	}
@@ -331,13 +337,14 @@ final class StatsService {
 		}
 
 		return [
-			'labels'  => $labels,
-			'views'   => $views,
+			'labels'      => $labels,
+			'views'       => $views,
 			// There are no per-hour unique counts to merge, so the series is
 			// left empty and the chart drops it rather than drawing a flat line
 			// that reads as "nobody was unique".
-			'uniques' => array_fill( 0, 24, 0 ),
-			'hourly'  => true,
+			'uniques'     => array_fill( 0, 24, 0 ),
+			'hourly'      => true,
+			'granularity' => Granularity::Day->value,
 		];
 	}
 
@@ -388,11 +395,123 @@ final class StatsService {
 		}
 
 		return [
-			'labels'  => $labels,
-			'views'   => $views,
-			'uniques' => $uniques,
-			'hourly'  => false,
+			'labels'      => $labels,
+			'views'       => $views,
+			'uniques'     => $uniques,
+			'hourly'      => false,
+			'granularity' => Granularity::Day->value,
 		];
+	}
+
+	/**
+	 * One point per bucket, at any grain coarser than a day.
+	 *
+	 * Reuses the same per-day query {@see dailyTrend()} runs - day-level rows
+	 * are kept for the whole retention window, so a coarser chart is a
+	 * re-bucketing of rows that already exist, not a different query.
+	 *
+	 * @param int         $siteId      Site ID.
+	 * @param DateRange   $range       Period.
+	 * @param int|null    $pathDimId   Restrict to one page.
+	 * @param Granularity $granularity Bucket size.
+	 *
+	 * @return array{labels:string[],views:int[],uniques:int[],hourly:bool,granularity:string}
+	 */
+	private function bucketedTrend( int $siteId, DateRange $range, ?int $pathDimId, Granularity $granularity ): array {
+		global $wpdb;
+
+		$table = Tables::name( Tables::PAGES_ROLLUP );
+		$where = 'siteId = %d AND date BETWEEN %s AND %s';
+		$args  = [ $siteId, $range->from, $range->to ];
+
+		if ( null !== $pathDimId ) {
+			$where .= ' AND pathDimId = %d';
+			$args[] = $pathDimId;
+		}
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( "SELECT date, COALESCE(SUM(views),0) AS views FROM `$table` WHERE $where GROUP BY date", $args ),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+		$viewsByBucket = [];
+
+		foreach ( (array) $rows as $row ) {
+			$bucket                   = $granularity->bucketKeyFor( (string) $row['date'] );
+			$viewsByBucket[ $bucket ] = ( $viewsByBucket[ $bucket ] ?? 0 ) + (int) $row['views'];
+		}
+
+		$uniquesByBucket = $this->uniquesByBucket( $siteId, $range, $pathDimId, $granularity );
+
+		$labels  = [];
+		$views   = [];
+		$uniques = [];
+
+		foreach ( $granularity->bucketsFor( $range ) as $bucket ) {
+			$labels[]  = $bucket;
+			$views[]   = $viewsByBucket[ $bucket ] ?? 0;
+			$uniques[] = $uniquesByBucket[ $bucket ] ?? 0;
+		}
+
+		return [
+			'labels'      => $labels,
+			'views'       => $views,
+			'uniques'     => $uniques,
+			'hourly'      => false,
+			'granularity' => $granularity->value,
+		];
+	}
+
+	/**
+	 * Unique visitors for each bucket in a range, at any grain.
+	 *
+	 * The grouping key changes, the merge does not: every scope inside a
+	 * bucket - whichever days it spans - is merged together in one pass, never
+	 * summed from smaller pre-merged figures. Adding up daily uniques to make
+	 * a monthly one counts a regular reader once per visit.
+	 *
+	 * @param int         $siteId      Site ID.
+	 * @param DateRange   $range       Period.
+	 * @param int|null    $pathDimId   Restrict to one page.
+	 * @param Granularity $granularity Bucket size.
+	 *
+	 * @return array<string,int>
+	 */
+	private function uniquesByBucket( int $siteId, DateRange $range, ?int $pathDimId, Granularity $granularity ): array {
+		$rows             = $this->uniqueRows( $siteId, $range, $pathDimId );
+		$byBucket         = [];
+		$sketches         = [];
+		$importedByBucket = [];
+
+		foreach ( $rows as $row ) {
+			$date   = (string) $row['date'];
+			$bucket = $granularity->bucketKeyFor( $date );
+			$scope  = new UniqueScope(
+				UniqueScope::KIND_PAGE,
+				$siteId,
+				$date,
+				(int) $row['hour'],
+				(int) $row['pathDimId']
+			);
+
+			$byBucket[ $bucket ][] = $scope;
+
+			if ( array_key_exists( 'uniques', $row ) ) {
+				$sketches[ $scope->key() ] = $this->readBlob( $row['uniques'] );
+			}
+
+			$importedByBucket[ $bucket ] = ( $importedByBucket[ $bucket ] ?? 0 ) + (int) ( $row['importedUniques'] ?? 0 );
+		}
+
+		$out = [];
+
+		foreach ( $byBucket as $bucket => $scopes ) {
+			$out[ $bucket ] = $this->counter->estimate( $scopes, $sketches ) + ( $importedByBucket[ $bucket ] ?? 0 );
+		}
+
+		return $out;
 	}
 
 	/**

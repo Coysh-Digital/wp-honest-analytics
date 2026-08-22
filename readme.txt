@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 0.1.1
+Stable tag: 0.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -43,7 +43,7 @@ A request carrying `Sec-GPC: 1` is not counted, not queued, and is sent no track
 
 = Storage that does not grow with your traffic =
 
-Storage grows with dimensions × time, not pageviews × time. A site with a hundred thousand views a day uses roughly the same disk as one with a hundred. Hourly detail is kept for a week, then compacted to daily; everything is deleted at 26 months at the latest.
+Storage grows with dimensions × time, not pageviews × time. A site with a hundred thousand views a day uses roughly the same disk as one with a hundred. Hourly detail is kept for a week, then compacted to daily; everything is deleted at 36 months at the latest.
 
 = What is in this free edition =
 
@@ -131,6 +131,23 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.2.0 =
+* Added: a date range spanning more than one year now shows the year on the chart.
+* Added: trend charts can be grouped by day, week, month or year, independently of the date range.
+* Added: compare a period against the one before it, or the same period last year, with a second line on the chart and a percentage change on every headline figure.
+* Added: the date range, grouping and comparison chosen on one screen now follow you to the next.
+* Added: the write-spool warning can now be dismissed for thirty days at a time.
+* Changed: rollup retention now defaults to thirty-six months, up from twenty-six.
+* Fixed: history brought in from Google Analytics, WP Statistics or Independent Analytics is now kept regardless of the retention setting, instead of being deleted the night after import.
+* Fixed: a day mixing native traffic with already-imported history could be merged into one row by the nightly tidy-up, losing which source it belonged to.
+* Fixed: the Google Analytics import range step could claim a property had one day of data when it had years.
+
+= 0.1.2 =
+* Fixed: a failed Google Analytics connection said one generic sentence for every cause. A mismatched redirect address, an unrecognised Client ID or secret, and a Google Analytics API that is not switched on yet now each say which one it was.
+* Fixed: a wrong Client ID or secret looked exactly like an expired connection, and told you to reconnect - which failed again the same way. It now says the sign-in details do not match.
+* Added: the Google setup guide links straight to enabling each required API, instead of sending you to search for it.
+* Added: the Client ID field flags an obviously wrong paste before it round-trips through a Google error.
 
 = 0.1.1 =
 * Fixed: connecting to Google Analytics went to the dashboard and stopped, because the redirect to Google's sign-in screen was treated as though it were a link back to your own site.

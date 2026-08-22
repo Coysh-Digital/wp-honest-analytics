@@ -200,6 +200,48 @@ final class DateRange {
 	}
 
 	/**
+	 * The same period, one calendar year earlier.
+	 *
+	 * Not preset-aware: this shifts both ends back exactly a year, the same way
+	 * {@see previous()} recomputes the parameter rather than preserving preset
+	 * semantics. A range ending on 29 February rolls forward to 1 March in the
+	 * target year, because that is what `modify('-1 year')` does and pretending
+	 * otherwise would only make the one time in four it matters harder to spot.
+	 */
+	public function sameLastYear(): self {
+		$timezone = Timezone::site();
+		$start    = self::parseDate( $this->from, $timezone );
+		$end      = self::parseDate( $this->to, $timezone );
+
+		if ( null === $start || null === $end ) {
+			return $this;
+		}
+
+		$lastYearStart = $start->modify( '-1 year' );
+		$lastYearEnd   = $end->modify( '-1 year' );
+
+		return new self(
+			$lastYearStart->format( 'Y-m-d' ),
+			$lastYearEnd->format( 'Y-m-d' ),
+			$this->preset,
+			$lastYearStart->format( 'Y-m-d' ) . ':' . $lastYearEnd->format( 'Y-m-d' ),
+			__( 'Same period last year', 'honest-analytics' )
+		);
+	}
+
+	/**
+	 * Whether the range crosses a calendar year boundary.
+	 *
+	 * Drives whether a chart needs to say the year out loud: a range entirely
+	 * inside one year does not, and one that spans two or more does, on every
+	 * axis label, or a point in December and a point in January the following
+	 * year look adjacent instead of eleven months apart.
+	 */
+	public function spansMultipleYears(): bool {
+		return substr( $this->from, 0, 4 ) !== substr( $this->to, 0, 4 );
+	}
+
+	/**
 	 * How many days the range covers, inclusive.
 	 */
 	public function days(): int {

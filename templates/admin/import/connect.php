@@ -16,6 +16,7 @@
 
 declare(strict_types=1);
 
+use HonestAnalytics\Import\Ga4\Client;
 use HonestAnalytics\Import\Ga4\Connection;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -97,12 +98,12 @@ $ha_ready = ! empty( $ha_state['connected'] ) && '' !== (string) ( $ha_state['pr
 			<h3 class="ha-subhead"><?php esc_html_e( 'Step 3. Switch on the two things it needs to read', 'honest-analytics' ); ?></h3>
 
 			<p class="ha-muted ha-measure ha-tight-below">
-				<?php esc_html_e( 'In the console, go to APIs and services, then Library, and enable both of these by name. Miss the first and your property list comes back empty; miss the second and the import stops as soon as it starts.', 'honest-analytics' ); ?>
+				<?php esc_html_e( 'Open each link below and choose Enable, in the same Google Cloud project. Miss the first and your property list comes back empty; miss the second and the import stops as soon as it starts.', 'honest-analytics' ); ?>
 			</p>
 
 			<ul class="ha-plain-list ha-measure">
-				<li><code>Google Analytics Admin API</code></li>
-				<li><code>Google Analytics Data API</code></li>
+				<li><a href="<?php echo esc_url( Client::enableApiUrl( Client::ADMIN_HOST ) ); ?>" rel="noopener noreferrer" target="_blank"><code>Google Analytics Admin API</code></a></li>
+				<li><a href="<?php echo esc_url( Client::enableApiUrl( Client::DATA_HOST ) ); ?>" rel="noopener noreferrer" target="_blank"><code>Google Analytics Data API</code></a></li>
 			</ul>
 
 			<h3 class="ha-subhead"><?php esc_html_e( 'Step 4. Create the sign-in details', 'honest-analytics' ); ?></h3>
@@ -124,7 +125,18 @@ $ha_ready = ! empty( $ha_state['connected'] ) && '' !== (string) ( $ha_state['pr
 				<div class="ha-form-row">
 					<label class="ha-field" for="honest-ga4-client-id">
 						<?php esc_html_e( 'Client ID', 'honest-analytics' ); ?>
-						<input type="text" id="honest-ga4-client-id" name="honest_ga4_client_id" class="regular-text" autocomplete="off" spellcheck="false" placeholder="000000000000-xxxxxxxx.apps.googleusercontent.com" />
+						<input
+							type="text"
+							id="honest-ga4-client-id"
+							name="honest_ga4_client_id"
+							class="regular-text"
+							autocomplete="off"
+							spellcheck="false"
+							placeholder="000000000000-xxxxxxxx.apps.googleusercontent.com"
+							data-ha-format="\.apps\.googleusercontent\.com$"
+							data-ha-format-warning="<?php esc_attr_e( 'That does not look like a Google Client ID - they end in .apps.googleusercontent.com. Worth checking before you save.', 'honest-analytics' ); ?>"
+						/>
+						<span class="ha-field-hint" data-ha-format-hint hidden></span>
 					</label>
 
 					<label class="ha-field" for="honest-ga4-client-secret">

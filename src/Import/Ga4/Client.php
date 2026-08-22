@@ -39,11 +39,26 @@ final class Client {
 	 */
 	public const SCOPE = 'https://www.googleapis.com/auth/analytics.readonly';
 
-	private const ADMIN_BASE = 'https://analyticsadmin.googleapis.com/v1beta';
-	private const DATA_BASE  = 'https://analyticsdata.googleapis.com/v1beta';
+	/** The host named in Google's SERVICE_DISABLED error when the Admin API is off. */
+	public const ADMIN_HOST = 'analyticsadmin.googleapis.com';
+
+	/** The host named in Google's SERVICE_DISABLED error when the Data API is off. */
+	public const DATA_HOST = 'analyticsdata.googleapis.com';
+
+	private const ADMIN_BASE = 'https://' . self::ADMIN_HOST . '/v1beta';
+	private const DATA_BASE  = 'https://' . self::DATA_HOST . '/v1beta';
 
 	/** One quick retry for a blip. Anything more belongs to the batch runner. */
 	private const TRANSIENT_RETRIES = 1;
+
+	/**
+	 * The Cloud Console page that switches one specific API on.
+	 *
+	 * @param string $host One of the *_HOST constants above.
+	 */
+	public static function enableApiUrl( string $host ): string {
+		return 'https://console.cloud.google.com/apis/library/' . $host;
+	}
 
 	/**
 	 * @var callable|null
@@ -272,7 +287,16 @@ final class Client {
 					throw new Ga4Exception( Ga4Exception::RATE_LIMIT, 'Google quota exhausted: ' . $detail, $this->retryAfter( $response ) );
 				}
 
-				throw new Ga4Exception( Ga4Exception::FATAL, 'Google returned 403: ' . $detail );
+				$disabledHost = $this->disabledApiHost( $decoded );
+
+				$apiReason = match ( $disabledHost ) {
+					'' => '',
+					self::ADMIN_HOST => Ga4Exception::REASON_APIS_DISABLED_ADMIN,
+					self::DATA_HOST => Ga4Exception::REASON_APIS_DISABLED_DATA,
+					default => Ga4Exception::REASON_APIS_DISABLED,
+				};
+
+				throw new Ga4Exception( Ga4Exception::FATAL, 'Google returned 403: ' . $detail, reason: $apiReason );
 			}
 
 			if ( 429 === $status ) {
@@ -302,6 +326,29 @@ final class Client {
 		$header = $response['retryAfter'] ?? 0;
 
 		return is_numeric( $header ) ? max( 0, (int) $header ) : 0;
+	}
+
+	/**
+	 * Which API host a SERVICE_DISABLED error names, if it names one.
+	 *
+	 * Google's 403 body carries this in `error.details[]` as an ErrorInfo
+	 * entry rather than in the top-level `error.status`, which is why the
+	 * screen has never been able to say which of the two APIs was off.
+	 *
+	 * @param array<string,mixed> $decoded The decoded response body.
+	 *
+	 * @return string One of the *_HOST constants, '*' if disabled but unnamed, or '' if not this kind of error.
+	 */
+	private function disabledApiHost( array $decoded ): string {
+		foreach ( (array) ( $decoded['error']['details'] ?? [] ) as $entry ) {
+			if ( is_array( $entry ) && 'SERVICE_DISABLED' === ( $entry['reason'] ?? '' ) ) {
+				$service = $entry['metadata']['service'] ?? '';
+
+				return is_string( $service ) && '' !== $service ? $service : '*';
+			}
+		}
+
+		return '';
 	}
 
 	/**

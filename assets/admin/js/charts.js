@@ -153,6 +153,21 @@
 					boxHeight: 8,
 					usePointStyle: true,
 					callbacks: {
+						title: function ( items ) {
+							if ( ! payload.compareFull || ! items.length ) {
+								return undefined;
+							}
+
+							// A comparison series is aligned by position, not by
+							// calendar date, so the default title (the primary
+							// range's date) needs the comparison range's date for
+							// the same point spelled out beside it.
+							var index = items[ 0 ].dataIndex;
+							var primary = ( payload.full && payload.full[ index ] ) || items[ 0 ].label;
+							var compare = payload.compareFull[ index ];
+
+							return compare ? primary + ' / ' + compare : primary;
+						},
 						label: function ( context ) {
 							// Named as well as coloured.
 							return ' ' + context.dataset.label + ': ' + count( context.parsed.y ?? context.parsed, payload.locale );
@@ -204,6 +219,7 @@
 				backgroundColor: fade( colour, stacked ? 0.55 : 0.14 ),
 				fill: stacked ? ( 0 === index ? 'origin' : '-1' ) : ( dataset.fill ? 'origin' : false ),
 				borderWidth: 2,
+				borderDash: dataset.dashed ? [ 6, 4 ] : undefined,
 				pointRadius: 0,
 				pointHoverRadius: 4,
 				pointBackgroundColor: colour,

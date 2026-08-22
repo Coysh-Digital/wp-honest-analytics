@@ -36,15 +36,32 @@ final class Ga4Exception extends \RuntimeException {
 	/** A bad request, a missing property, a permission the account lacks. */
 	public const FATAL = 'fatal';
 
+	/** The redirect URI Google was given does not match what is registered. */
+	public const REASON_REDIRECT_MISMATCH = 'redirect-mismatch';
+
+	/** Google does not recognise the Client ID and/or secret saved here. */
+	public const REASON_INVALID_CLIENT = 'invalid-client';
+
+	/** The Google Analytics Admin API is not switched on in the Cloud project. */
+	public const REASON_APIS_DISABLED_ADMIN = 'apis-disabled-admin';
+
+	/** The Google Analytics Data API is not switched on in the Cloud project. */
+	public const REASON_APIS_DISABLED_DATA = 'apis-disabled-data';
+
+	/** One of the two APIs is off, but Google did not say which. */
+	public const REASON_APIS_DISABLED = 'apis-disabled';
+
 	/**
 	 * @param string $kind       One of the constants above.
 	 * @param string $message    Technical detail, for the log.
 	 * @param int    $retryAfter Seconds Google asked for, where it said.
+	 * @param string $reason     One of the REASON_* constants, where the FATAL kind is specific enough to name.
 	 */
 	public function __construct(
 		public readonly string $kind,
 		string $message,
-		public readonly int $retryAfter = 0
+		public readonly int $retryAfter = 0,
+		public readonly string $reason = ''
 	) {
 		parent::__construct( $message );
 	}
@@ -62,6 +79,37 @@ final class Ga4Exception extends \RuntimeException {
 
 			case self::TRANSIENT:
 				return __( 'We could not reach Google just then. Nothing has been lost and we will try again in a moment.', 'honest-analytics' );
+		}
+
+		return self::reasonSentence( $this->reason );
+	}
+
+	/**
+	 * What a REASON_* constant means, in a sentence.
+	 *
+	 * The one place this wording lives. A FATAL exception still holding the
+	 * exception object reaches it through friendly(); a redirect-based caller
+	 * that only has the `reason` slug left after the round trip calls this
+	 * directly from Connection::outcome() - both say exactly the same thing.
+	 *
+	 * @param string $reason One of the REASON_* constants, or '' for none.
+	 */
+	public static function reasonSentence( string $reason ): string {
+		switch ( $reason ) {
+			case self::REASON_REDIRECT_MISMATCH:
+				return __( 'Google says the redirect address does not match what is registered for this project. Open the OAuth client in Google Cloud and check the Authorised redirect URI is copied from this screen character for character - including whether it is http or https, and whether it has www. Nothing on this site has been changed.', 'honest-analytics' );
+
+			case self::REASON_INVALID_CLIENT:
+				return __( 'Google did not recognise the Client ID and secret saved on this site. Check they were copied in full from Google Cloud - a client secret is long, and a partial paste is easy to miss - and save them again below. Nothing on this site has been changed.', 'honest-analytics' );
+
+			case self::REASON_APIS_DISABLED_ADMIN:
+				return __( 'The Google Analytics Admin API is not switched on in your Google Cloud project yet. Enable it, then try again. Nothing on this site has been changed.', 'honest-analytics' );
+
+			case self::REASON_APIS_DISABLED_DATA:
+				return __( 'The Google Analytics Data API is not switched on in your Google Cloud project yet. Enable it, then try again. Nothing on this site has been changed.', 'honest-analytics' );
+
+			case self::REASON_APIS_DISABLED:
+				return __( 'One of the two Google Analytics APIs is not switched on in your Google Cloud project yet. Check both are enabled, then try again. Nothing on this site has been changed.', 'honest-analytics' );
 		}
 
 		return __( 'We could not continue the Google Analytics import. Nothing already imported has been changed.', 'honest-analytics' );

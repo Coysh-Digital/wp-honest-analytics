@@ -225,18 +225,38 @@ final class GoogleClientProvider implements Ga4ProviderInterface {
 			return $decoded;
 		}
 
-		// Google answers a dead or revoked grant with 400 invalid_grant, which
-		// looks like a client error and is really "ask them to sign in again".
 		$error = isset( $decoded['error'] ) ? (string) $decoded['error'] : '';
 
-		if ( 401 === $code || 'invalid_grant' === $error ) {
-			throw new Ga4Exception( Ga4Exception::AUTH, 'Google rejected the grant: ' . ( '' !== $error ? $error : $code ) );
+		// Google answers a dead or revoked grant with 400 invalid_grant, which
+		// looks like a client error and is really "ask them to sign in again".
+		if ( 'invalid_grant' === $error ) {
+			throw new Ga4Exception( Ga4Exception::AUTH, 'Google rejected the grant: ' . $error );
+		}
+
+		// A wrong or unrecognised Client ID or secret also comes back as 401,
+		// which looks identical to a dead grant and is not: reconnecting with
+		// the same wrong secret fails the same way every time. That is "fix
+		// what is saved here", not "sign in again".
+		if ( 401 === $code || 'invalid_client' === $error || 'unauthorized_client' === $error ) {
+			throw new Ga4Exception(
+				Ga4Exception::FATAL,
+				'Google rejected the client: ' . ( '' !== $error ? $error : (string) $code ) . '.',
+				reason: Ga4Exception::REASON_INVALID_CLIENT
+			);
 		}
 
 		if ( 429 === $code || $code >= 500 ) {
 			throw new Ga4Exception(
 				429 === $code ? Ga4Exception::RATE_LIMIT : Ga4Exception::TRANSIENT,
 				'Google token endpoint responded ' . $code . '.'
+			);
+		}
+
+		if ( 'redirect_uri_mismatch' === $error ) {
+			throw new Ga4Exception(
+				Ga4Exception::FATAL,
+				'Google token endpoint responded ' . $code . ' (' . $error . ').',
+				reason: Ga4Exception::REASON_REDIRECT_MISMATCH
 			);
 		}
 

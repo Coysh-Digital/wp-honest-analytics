@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace HonestAnalytics\Gc;
 
 use DateTimeImmutable;
+use HonestAnalytics\Import\ImportSource;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Schema\Tables;
 use HonestAnalytics\Settings\Settings;
@@ -98,10 +99,13 @@ final class GcService {
 		$journeyDays   = max( 1, min( Settings::JOURNEY_MAX_RETENTION_DAYS, $this->settings->journeyRetentionDays ) );
 		$journeyCutoff = gmdate( 'Y-m-d H:i:s', $now - $journeyDays * 86400 );
 
+		$sourced = array_flip( Tables::sourcedRollups() );
 		$rollups = 0;
 
 		foreach ( Tables::expiringRollups() as $table ) {
-			$rollups += $this->countMatching( $table, 'date < %s', [ $rollupCutoff ] );
+			$rollups += isset( $sourced[ $table ] )
+				? $this->countMatching( $table, 'date < %s AND source = %s', [ $rollupCutoff, ImportSource::NATIVE ] )
+				: $this->countMatching( $table, 'date < %s', [ $rollupCutoff ] );
 		}
 
 		$result = [
@@ -157,14 +161,21 @@ final class GcService {
 	/**
 	 * Delete aggregates past the retention window.
 	 *
+	 * Rows imported from elsewhere are exempt: a table listed in
+	 * {@see Tables::sourcedRollups()} only loses its native rows here, because
+	 * imported history is kept regardless of the retention setting.
+	 *
 	 * @param int $now Timestamp.
 	 */
 	private function deleteExpiredRollups( int $now ): int {
 		$cutoff  = $this->retentionCutoff( $now );
+		$sourced = array_flip( Tables::sourcedRollups() );
 		$removed = 0;
 
 		foreach ( Tables::expiringRollups() as $table ) {
-			$removed += $this->deleteInBatches( $table, 'date < %s', [ $cutoff ] );
+			$removed += isset( $sourced[ $table ] )
+				? $this->deleteInBatches( $table, 'date < %s AND source = %s', [ $cutoff, ImportSource::NATIVE ] )
+				: $this->deleteInBatches( $table, 'date < %s', [ $cutoff ] );
 		}
 
 		return $removed;

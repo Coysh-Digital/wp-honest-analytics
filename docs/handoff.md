@@ -27,7 +27,7 @@ seeded traffic, not asserted from the code.
 A public pageview is snapshotted at `wp`, judged at `shutdown` after the
 response has been flushed, appended to a spool as one NDJSON line, drained in
 transactional batches by cron, and applied to hourly rollups that are compacted
-to daily and deleted at 26 months. No raw hit is ever stored. Storage grows with
+to daily and deleted at 36 months. No raw hit is ever stored. Storage grows with
 dimensions × time, not pageviews × time.
 
 Hybrid tracking is the default: the server counts what it sees, a 1.3 KB

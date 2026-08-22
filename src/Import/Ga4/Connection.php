@@ -374,7 +374,11 @@ final class Connection {
 		} catch ( Ga4Exception $e ) {
 			Log::error( 'Could not complete the Google Analytics connection: ' . $e->getMessage() );
 
-			self::back( 'failed' );
+			match ( $e->reason ) {
+				Ga4Exception::REASON_REDIRECT_MISMATCH => self::back( 'failed-redirect-mismatch' ),
+				Ga4Exception::REASON_INVALID_CLIENT => self::back( 'failed-invalid-client' ),
+				default => self::back( 'failed' ),
+			};
 		}
 
 		self::back( 'connected' );
@@ -439,7 +443,10 @@ final class Connection {
 		} catch ( Ga4Exception $e ) {
 			Log::error( 'Could not read the chosen Google Analytics property: ' . $e->getMessage() );
 
-			self::back( 'property-failed' );
+			match ( $e->reason ) {
+				Ga4Exception::REASON_APIS_DISABLED_ADMIN => self::back( 'property-failed-apis-disabled-admin' ),
+				default => self::back( 'property-failed' ),
+			};
 		}
 
 		self::back( 'property-chosen' );
@@ -547,7 +554,19 @@ final class Connection {
 
 			case 'failed':
 				return [
-					'message' => __( 'Google refused the connection. The two usual causes are a redirect address in your Google project that does not match the one on this screen character for character, and the two Analytics APIs not being switched on there yet. Nothing on this site has been changed.', 'honest-analytics' ),
+					'message' => __( 'Google refused the connection and did not say why in a way this site could read. Check the redirect address on this screen matches the one in your Google project character for character, and that both Analytics APIs are switched on there. Nothing on this site has been changed.', 'honest-analytics' ),
+					'problem' => true,
+				];
+
+			case 'failed-redirect-mismatch':
+				return [
+					'message' => Ga4Exception::reasonSentence( Ga4Exception::REASON_REDIRECT_MISMATCH ),
+					'problem' => true,
+				];
+
+			case 'failed-invalid-client':
+				return [
+					'message' => Ga4Exception::reasonSentence( Ga4Exception::REASON_INVALID_CLIENT ),
 					'problem' => true,
 				];
 
@@ -559,7 +578,13 @@ final class Connection {
 
 			case 'property-failed':
 				return [
-					'message' => __( 'The property list could not be fetched from Google. If this keeps happening, check that the Google Analytics Admin API is switched on in your Google project.', 'honest-analytics' ),
+					'message' => __( 'The property list could not be fetched from Google.', 'honest-analytics' ),
+					'problem' => true,
+				];
+
+			case 'property-failed-apis-disabled-admin':
+				return [
+					'message' => Ga4Exception::reasonSentence( Ga4Exception::REASON_APIS_DISABLED_ADMIN ),
 					'problem' => true,
 				];
 		}

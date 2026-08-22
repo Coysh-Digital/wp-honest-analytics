@@ -137,5 +137,5 @@ $ha_next = [] !== $screen->overlapping( $importer->id(), $ha_from, $ha_to ) ? 'o
 </div>
 
 <p class="ha-footnote">
-	<?php esc_html_e( 'Older history is subject to the same retention window as everything else: anything past the limit on your Settings screen is removed at the next tidy-up, whether it was imported or measured here.', 'honest-analytics' ); ?>
+	<?php esc_html_e( 'History you import is kept regardless of the retention window on your Settings screen - only what this plugin measures itself is subject to that limit.', 'honest-analytics' ); ?>
 </p>

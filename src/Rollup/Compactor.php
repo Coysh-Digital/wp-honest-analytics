@@ -343,14 +343,23 @@ final class Compactor {
 	 * (site, date, hour, path), so grouping by post as well would produce two
 	 * rows the index says are one, and the insert would collide.
 	 *
+	 * `source` is always part of the group, on every table that has the column.
+	 * Its absence here would fold an imported row into a native one sharing the
+	 * same date and path the first time a day inside the hourly window carries
+	 * both - silently merging two provenances into whichever `source` the merge
+	 * happened to keep, which breaks both the "native rows are never touched"
+	 * promise {@see \HonestAnalytics\Import\ImportSink} makes and the retention
+	 * exemption imported rows are supposed to have.
+	 *
 	 * @param string $table Unprefixed table name.
 	 *
 	 * @return string[]
 	 */
 	private static function groupColumns( string $table ): array {
 		return match ( $table ) {
-			Tables::PAGES_ROLLUP   => [ 'siteId', 'date', 'pathDimId' ],
-			Tables::SOURCES_ROLLUP => [ 'siteId', 'date', 'channel', 'refHostDimId' ],
+			Tables::PAGES_ROLLUP   => [ 'siteId', 'date', 'pathDimId', 'source' ],
+			Tables::SOURCES_ROLLUP => [ 'siteId', 'date', 'channel', 'refHostDimId', 'source' ],
+			Tables::SESSIONS_ROLLUP => [ 'siteId', 'date', 'source' ],
 			Tables::EVENTS_ROLLUP  => [ 'siteId', 'date', 'eventNameDimId', 'pathDimId' ],
 			default                => [ 'siteId', 'date' ],
 		};

@@ -17,6 +17,9 @@
 
 	--ha-views: var(--ha-primary);
 	--ha-uniques: #0f766e;
+	/* A muted echo of --ha-views, not a new hue: a comparison period is the
+	   same metric read at a different time, not a different metric. */
+	--ha-compare: var(--ha-muted);
 
 	--ha-series-1: var(--ha-primary);
 	--ha-series-2: #0f766e;
@@ -178,6 +181,16 @@
 	display: block;
 	width: 100%;
 	margin-top: 3px;
+}
+
+.ha-toolbar-group {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 2px;
+	padding: 2px;
+	background: var(--ha-well);
+	border: 1px solid var(--ha-border);
+	border-radius: var(--ha-radius);
 }
 
 .ha-range-note {
@@ -1185,6 +1198,11 @@ tr:hover .ha-row-edit,
 	color: var(--ha-muted);
 }
 
+.ha-field-hint {
+	color: #dba617;
+	font-size: 12px;
+}
+
 .ha-json {
 	margin: 0;
 	white-space: pre-wrap;
@@ -1266,6 +1284,20 @@ tr:hover .ha-row-edit,
 
 .ha-swatch.is-series-5 {
 	background: var(--ha-series-5);
+}
+
+.ha-swatch.is-compare {
+	background: var(--ha-compare);
+}
+
+.ha-swatch.is-dashed {
+	background: repeating-linear-gradient(
+		90deg,
+		var(--ha-compare) 0,
+		var(--ha-compare) 3px,
+		transparent 3px,
+		transparent 6px
+	);
 }
 
 /*

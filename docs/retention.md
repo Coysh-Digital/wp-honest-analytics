@@ -8,7 +8,7 @@ stage is a setting, every setting has a cap, and the caps are enforced in code.
 | Age | State |
 |---|---|
 | 0 to `hourlyWindowDays` (default 7) | One row per hour per dimension |
-| Up to `rollupRetentionMonths` (default 26, max 26) | Folded to one row per day (`hour = -1`) |
+| Up to `rollupRetentionMonths` (default 36, max 36) | Folded to one row per day (`hour = -1`) |
 | Beyond that | Deleted |
 
 Compaction is lossless for counts and merge-correct for uniqueness sketches. It
@@ -21,7 +21,7 @@ rows with views and unique visitors identical before and after.
 | Data | Setting | Default | Cap |
 |---|---|---|---|
 | Hourly detail | `hourlyWindowDays` | 7 days | - |
-| All rollups | `rollupRetentionMonths` | 26 months | 26 months |
+| All rollups | `rollupRetentionMonths` | 36 months | 36 months |
 | Journeys (Pro, consented) | `journeyRetentionDays` | 90 days | 790 days |
 | Consent records | `consentLogRetentionDays` | 0 = keep | - |
 | Sessions | `sessionWindow` | 30 minutes idle | - |
@@ -34,9 +34,16 @@ Consent records default to being kept indefinitely on purpose: a consent record
 is the evidence that consent was given, and deleting it destroys the ability to
 demonstrate compliance. Set a number of days if your policy requires one.
 
-Twenty-six months is the cap because it is the outer limit most data protection
+Thirty-six months is the cap because it is the outer limit most data protection
 guidance treats as proportionate for analytics, and because a hard limit that
 cannot be edited away is worth more than a default that can.
+
+Rows brought in by an import are exempt from this window entirely, on every
+table that carries a `source` column - `GcService` deletes only
+`source = 'native'` rows past the cutoff there. History somebody imported is
+kept for as long as the import itself is, which is indefinitely, regardless of
+what `rollupRetentionMonths` is set to. See
+[`import-architecture.md`](import-architecture.md).
 
 ## Growth
 

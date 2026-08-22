@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Import\Sources;
 
+use DateTimeImmutable;
 use HonestAnalytics\Import\DetectionResult;
 use HonestAnalytics\Capture\PathNormalizer;
 use HonestAnalytics\Import\Ga4\Client;
@@ -193,6 +194,10 @@ final class Ga4Importer implements ImporterInterface {
 			);
 		}
 
+		if ( '' !== $from && $from < self::retentionCutoff() ) {
+			$notes[] = __( 'Some of this history is older than your current retention setting. It will be kept regardless - imported history is exempt from the retention window.', 'honest-analytics' );
+		}
+
 		return new ImportSummary(
 			$from,
 			$to,
@@ -274,6 +279,16 @@ final class Ga4Importer implements ImporterInterface {
 			__( 'You may see a noticeable change in visitor and session numbers around the day you switched. Nothing is wrong - the way traffic is measured has changed.', 'honest-analytics' ),
 			__( 'Your Google Analytics account is not modified, and nothing is sent to Google beyond the requests needed to read your reports.', 'honest-analytics' ),
 		];
+	}
+
+	/**
+	 * The oldest date this site's own retention setting would otherwise keep.
+	 */
+	private static function retentionCutoff(): string {
+		return ( new DateTimeImmutable( '@' . time() ) )
+			->setTimezone( Timezone::site() )
+			->modify( '-' . Plugin::instance()->settings()->rollupRetentionMonths . ' months' )
+			->format( 'Y-m-d' );
 	}
 
 	/**

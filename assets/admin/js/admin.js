@@ -186,6 +186,41 @@
 		} );
 	} );
 
+	/**
+	 * Flag an obvious paste mistake before it round-trips through a Google
+	 * error nobody can read. Never blocks submission - the format checked
+	 * here is common, not guaranteed.
+	 */
+	Array.prototype.forEach.call( document.querySelectorAll( '[data-ha-format]' ), function ( field ) {
+		var hint = field.parentElement ? field.parentElement.querySelector( '[data-ha-format-hint]' ) : null;
+
+		if ( ! hint ) {
+			return;
+		}
+
+		var pattern;
+
+		try {
+			pattern = new RegExp( field.getAttribute( 'data-ha-format' ) );
+		} catch ( error ) {
+			return;
+		}
+
+		var sync = function () {
+			var value = field.value.trim();
+			var matches = '' === value || pattern.test( value );
+
+			hint.hidden = matches;
+
+			if ( ! matches ) {
+				hint.textContent = field.getAttribute( 'data-ha-format-warning' ) || '';
+			}
+		};
+
+		field.addEventListener( 'input', sync );
+		field.addEventListener( 'blur', sync );
+	} );
+
 	syncScrollables();
 
 	if ( window.ResizeObserver ) {

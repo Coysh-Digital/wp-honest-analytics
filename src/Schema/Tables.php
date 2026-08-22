@@ -172,6 +172,30 @@ final class Tables {
 	}
 
 	/**
+	 * Expiring rollups that carry a `source` column, and can therefore tell
+	 * native rows from imported ones at retention time.
+	 *
+	 * A table missing from here is one no importer has ever written to; the
+	 * nightly tidy-up deletes everything past the cutoff in it unconditionally,
+	 * because there is nothing else a row in it could be. A table listed here
+	 * is only swept for its native rows - imported history is exempt from the
+	 * retention window on purpose, so that history brought in from elsewhere
+	 * outlives whatever window this site's own measurements are kept for.
+	 *
+	 * @return string[]
+	 */
+	public static function sourcedRollups(): array {
+		return [
+			self::PAGES_ROLLUP,
+			self::PAGE_SOURCES_ROLLUP,
+			self::SESSIONS_ROLLUP,
+			self::SOURCES_ROLLUP,
+			self::DEVICES_ROLLUP,
+			self::GEO_ROLLUP,
+		];
+	}
+
+	/**
 	 * Date-keyed tables with a deliberately different rule, and what it is.
 	 *
 	 * @return array<string,string>

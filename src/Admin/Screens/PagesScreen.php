@@ -15,6 +15,7 @@ use HonestAnalytics\Charts\ChartData;
 use HonestAnalytics\Dimensions\DimensionType;
 use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Plugin;
+use HonestAnalytics\Stats\Granularity;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -91,6 +92,15 @@ final class PagesScreen extends Screen {
 		$compare      = $params->validatedComparePaths( $rows );
 		$compareChart = [] !== $compare ? $this->compareChart( $siteId, $compare ) : null;
 
+		// Site-wide totals, deliberately - not a sum of the table below, which
+		// may be filtered or capped. A card that mirrored the filtered rows
+		// would disagree with Dashboard's numbers the moment a filter is
+		// active; mirroring the site total instead keeps every screen honest
+		// about the same period.
+		$previousRange = $params->comparisonRange() ?? $params->range->previous();
+		$totals        = $stats->totals( $siteId, $params->range );
+		$totalsBefore  = $stats->totals( $siteId, $previousRange );
+
 		View::render(
 			'admin/pages',
 			[
@@ -98,6 +108,7 @@ final class PagesScreen extends Screen {
 				'rows'         => $rows,
 				'compare'      => $compare,
 				'compareChart' => $compareChart,
+				'kpis'         => DashboardScreen::kpis( $totals, $totalsBefore, $plugin->settings(), DashboardScreen::compareNote( $params->comparePeriod ) ),
 				'editUrls'     => PostLinks::editUrls( array_column( $rows, 'postId' ) ),
 				'dimensionCap' => $plugin->settings()->dimensionCap,
 				'maxViews'     => $rows ? max( array_column( $rows, 'views' ) ) : 0,
@@ -128,10 +139,15 @@ final class PagesScreen extends Screen {
 			);
 		}
 
-		$range    = $params->range;
-		$totals   = $stats->pageTotals( $siteId, $range, $pathDimId );
-		$previous = $stats->pageTotals( $siteId, $range->previous(), $pathDimId );
-		$isPro    = Edition::isPro();
+		$range         = $params->range;
+		$comparison    = $params->comparisonRange();
+		$previousRange = $comparison ?? $range->previous();
+		$totals        = $stats->pageTotals( $siteId, $range, $pathDimId );
+		$previous      = $stats->pageTotals( $siteId, $previousRange, $pathDimId );
+		$isPro         = Edition::isPro();
+
+		$trend           = $stats->trend( $siteId, $range, $pathDimId, $params->granularity );
+		$comparisonTrend = null !== $comparison ? $stats->trend( $siteId, $comparison, $pathDimId, $params->granularity ) : null;
 
 		View::render(
 			'admin/page',
@@ -140,8 +156,9 @@ final class PagesScreen extends Screen {
 				'path'         => $path,
 				'totals'       => $totals,
 				'previous'     => $previous,
+				'compareNote'  => DashboardScreen::compareNote( $params->comparePeriod ),
 				'accuracy'     => $stats->uniquesAccuracy(),
-				'trendChart'   => ChartData::trend( $stats->trend( $siteId, $range, $pathDimId ) ),
+				'trendChart'   => ChartData::trend( $trend, $comparisonTrend, $comparison?->label ),
 				'sources'      => $stats->pageSources( $siteId, $range, $pathDimId ),
 				'sourcesSince' => $stats->pageSourcesSince( $siteId ),
 				'editUrl'      => $totals['postId'] > 0 ? PostLinks::editUrl( (int) $totals['postId'] ) : null,
@@ -166,24 +183,30 @@ final class PagesScreen extends Screen {
 	 * @return array<string,mixed>
 	 */
 	private function compareChart( int $siteId, array $paths ): array {
-		$params = $this->params();
-		$stats  = Plugin::instance()->stats();
-		$dates  = $params->range->dates();
+		$params      = $this->params();
+		$stats       = Plugin::instance()->stats();
+		$granularity = $params->granularity;
+		$buckets     = $granularity->bucketsFor( $params->range );
 
-		$series = ChartData::pivot(
-			$stats->pathsTrend( $siteId, $params->range, $paths ),
-			$dates,
-			'path',
-			'views'
-		);
+		$rows = $stats->pathsTrend( $siteId, $params->range, $paths );
+
+		// Bucketing happens here rather than in a new query: the rows are
+		// already one per day, and every grain coarser than a day is a
+		// re-bucketing of rows that already exist.
+		foreach ( $rows as &$row ) {
+			$row['date'] = $granularity->bucketKeyFor( (string) $row['date'] );
+		}
+		unset( $row );
+
+		$series = ChartData::pivot( $rows, $buckets, 'path', 'views' );
 
 		$ordered = [];
 
 		foreach ( $paths as $path ) {
-			$ordered[ $path ] = $series[ $path ] ?? array_fill( 0, count( $dates ), 0 );
+			$ordered[ $path ] = $series[ $path ] ?? array_fill( 0, count( $buckets ), 0 );
 		}
 
-		$labels  = ChartData::axisLabels( $dates, false );
+		$labels  = ChartData::axisLabels( $buckets, false, $granularity );
 		$payload = ChartData::line( $labels['axis'], ChartData::datasets( $ordered ) );
 
 		$payload['full'] = $labels['full'];

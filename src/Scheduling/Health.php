@@ -115,7 +115,7 @@ final class Health {
 
 		$loopback = ( new Loopback( $this->settings ) )->result();
 
-		if ( Loopback::SPOOL_PUBLIC === $loopback['spool'] ) {
+		if ( $this->spoolPublic() ) {
 			$problems[] = __( 'The write spool can be read over the web. It holds no addresses, but it is not public data. On nginx this needs a rule in the server config - the exact block is in docs/caching.md. On Apache or IIS, check that the .htaccess or web.config in the spool directory has not been removed.', 'honest-analytics' );
 		}
 
@@ -186,6 +186,19 @@ final class Health {
 	 */
 	public function isHealthy(): bool {
 		return [] === $this->problems();
+	}
+
+	/**
+	 * Whether the write spool was just confirmed readable over the web.
+	 *
+	 * A live check, not a cached verdict about the past: {@see Loopback::result()}
+	 * re-probes daily, so this answers "is it public right now", which is what a
+	 * snoozed admin notice needs to know before it stays quiet.
+	 */
+	public function spoolPublic(): bool {
+		$loopback = ( new Loopback( $this->settings ) )->result();
+
+		return Loopback::SPOOL_PUBLIC === $loopback['spool'];
 	}
 
 	/**

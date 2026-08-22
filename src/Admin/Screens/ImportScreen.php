@@ -467,18 +467,26 @@ final class ImportScreen extends Screen {
 	/**
 	 * The dates a source could give us, as a range the wizard can offer.
 	 *
+	 * Asks inspect() rather than detect(): detect() only reads whatever is
+	 * already cached, and reading a range that has never been discovered
+	 * yet - true the first time anybody reaches this step for a freshly
+	 * chosen property - fell back to today on each side independently. That
+	 * read as "we found one day of analytics" for a property with years of
+	 * it. inspect() is allowed to cost a request, and callers of this method
+	 * are already on a step dedicated to the one chosen source.
+	 *
 	 * @param ImporterInterface $importer The source.
 	 *
 	 * @return array{from:string,to:string}
 	 */
 	public function availableRange( ImporterInterface $importer ): array {
-		$detected = $importer->detect();
+		$summary = $importer->inspect();
 
 		$today = Timezone::at( time() )->format( 'Y-m-d' );
 
 		return [
-			'from' => (string) ( $detected->dateFrom ?? $today ),
-			'to'   => (string) ( $detected->dateTo ?? $today ),
+			'from' => '' !== $summary->dateFrom ? $summary->dateFrom : $today,
+			'to'   => '' !== $summary->dateTo ? $summary->dateTo : $today,
 		];
 	}
 

@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Charts;
 
+use HonestAnalytics\Stats\Granularity;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -91,14 +93,25 @@ final class ChartData {
 	}
 
 	/**
-	 * The traffic trend.
+	 * The traffic trend, optionally overlaid with a comparison period.
 	 *
-	 * @param array{labels:string[],views:int[],uniques:int[],hourly:bool} $trend Trend data.
+	 * The comparison series is aligned by position, not by calendar date: both
+	 * ranges have the same bucket count by construction ({@see
+	 * \HonestAnalytics\Stats\DateRange::previous()} and {@see
+	 * \HonestAnalytics\Stats\DateRange::sameLastYear()} both preserve the
+	 * span), so point *N* of one sits directly under point *N* of the other
+	 * even though the two fall on different real dates. The axis shown is
+	 * always the primary range's.
+	 *
+	 * @param array{labels:string[],views:int[],uniques:int[],hourly:bool,granularity?:string}      $trend           Trend data.
+	 * @param array{labels:string[],views:int[],uniques:int[],hourly:bool,granularity?:string}|null $comparisonTrend The comparison period's trend, at the same grain.
+	 * @param string|null                                                                           $comparisonLabel What to call the comparison series, e.g. "Previous period".
 	 *
 	 * @return array<string,mixed>
 	 */
-	public static function trend( array $trend ): array {
-		$labels = self::axisLabels( $trend['labels'], $trend['hourly'] );
+	public static function trend( array $trend, ?array $comparisonTrend = null, ?string $comparisonLabel = null ): array {
+		$granularity = Granularity::fromParam( $trend['granularity'] ?? null );
+		$labels      = self::axisLabels( $trend['labels'], $trend['hourly'], $granularity );
 
 		$datasets = [
 			[
@@ -120,16 +133,82 @@ final class ChartData {
 			];
 		}
 
+		$hasComparison = null !== $comparisonTrend;
+
+		if ( $hasComparison ) {
+			$points = count( $trend['views'] );
+
+			$datasets[] = [
+				'label'  => $comparisonLabel ?? __( 'Comparison period', 'honest-analytics' ),
+				'data'   => self::alignedTo( array_values( $comparisonTrend['views'] ), $points ),
+				'token'  => 'compare',
+				'fill'   => false,
+				'dashed' => true,
+			];
+		}
+
 		$payload = self::line(
 			$labels['axis'],
 			$datasets,
-			[ 'maxTicks' => $trend['hourly'] ? 8 : 6 ]
+			[ 'maxTicks' => self::maxTicks( $trend['hourly'], $granularity ) ]
 		);
 
 		$payload['full']       = $labels['full'];
 		$payload['hasUniques'] = $hasUniques;
 
+		if ( $hasComparison ) {
+			$compareLabels          = self::axisLabels( $comparisonTrend['labels'], $comparisonTrend['hourly'], $granularity );
+			$payload['compareFull'] = self::alignedTo( $compareLabels['full'], count( $labels['full'] ), '' );
+		}
+
 		return $payload;
+	}
+
+	/**
+	 * Pad or trim a series to an exact length.
+	 *
+	 * The comparison range is built to have the same bucket count as the
+	 * primary one, so this is a safety net for the one thing that could break
+	 * that guarantee - a leap day landing differently in the two spans - not
+	 * the normal path.
+	 *
+	 * @param array<int,mixed> $values Values.
+	 * @param int              $length Target length.
+	 * @param mixed            $pad    Fill value.
+	 *
+	 * @return array<int,mixed>
+	 */
+	private static function alignedTo( array $values, int $length, mixed $pad = 0 ): array {
+		$values = array_slice( array_values( $values ), 0, $length );
+
+		while ( count( $values ) < $length ) {
+			$values[] = $pad;
+		}
+
+		return $values;
+	}
+
+	/**
+	 * How many x-axis ticks a trend chart shows before Chart.js starts
+	 * skipping labels.
+	 *
+	 * Enough buckets to read as a trend, few enough that the labels never
+	 * overlap - a judgement call tuned per grain, not a derived number.
+	 *
+	 * @param bool        $hourly      Whether the axis is hours.
+	 * @param Granularity $granularity The bucket size.
+	 */
+	private static function maxTicks( bool $hourly, Granularity $granularity ): int {
+		if ( $hourly ) {
+			return 8;
+		}
+
+		return match ( $granularity ) {
+			Granularity::Day   => 6,
+			Granularity::Week  => 12,
+			Granularity::Month => 12,
+			Granularity::Year  => 10,
+		};
 	}
 
 	/**
@@ -138,12 +217,19 @@ final class ChartData {
 	 * Built together because they were previously derived in two places that
 	 * could - and did - disagree about what day it was.
 	 *
-	 * @param string[] $labels Raw labels.
-	 * @param bool     $hourly Whether the axis is hours.
+	 * The year is added to the short form only when the label set itself spans
+	 * more than one calendar year - derived from the labels rather than passed
+	 * in, so this stays stateless and every existing call site gets the fix
+	 * for free the moment it upgrades to pass a real `$granularity`.
+	 *
+	 * @param string[]    $labels      Raw labels - dates, or bucket keys at a
+	 *                                 coarser grain (see {@see Granularity::bucketKeyFor()}).
+	 * @param bool        $hourly      Whether the axis is hours.
+	 * @param Granularity $granularity The bucket size the labels are keyed at.
 	 *
 	 * @return array{axis:string[],full:string[]}
 	 */
-	public static function axisLabels( array $labels, bool $hourly ): array {
+	public static function axisLabels( array $labels, bool $hourly, Granularity $granularity = Granularity::Day ): array {
 		if ( $hourly ) {
 			return [
 				'axis' => $labels,
@@ -151,11 +237,25 @@ final class ChartData {
 			];
 		}
 
+		$timestamps = array_map(
+			static fn ( $label ): int|false => self::bucketTimestamp( (string) $label, $granularity ),
+			$labels
+		);
+
+		$years = array_unique(
+			array_map(
+				static fn ( $timestamp ) => false === $timestamp ? null : (int) gmdate( 'Y', $timestamp ),
+				array_filter( $timestamps, static fn ( $timestamp ): bool => false !== $timestamp )
+			)
+		);
+
+		$spansYears = count( $years ) > 1;
+
 		$axis = [];
 		$full = [];
 
-		foreach ( $labels as $label ) {
-			$timestamp = strtotime( (string) $label );
+		foreach ( $labels as $index => $label ) {
+			$timestamp = $timestamps[ $index ];
 
 			if ( false === $timestamp ) {
 				$axis[] = (string) $label;
@@ -164,14 +264,74 @@ final class ChartData {
 				continue;
 			}
 
-			$axis[] = wp_date( 'j M', $timestamp );
-			$full[] = wp_date( 'j M Y', $timestamp );
+			[ $axisFormat, $fullFormat ] = self::labelFormats( $granularity, $spansYears );
+
+			$axis[]   = wp_date( $axisFormat, $timestamp );
+			$fullDate = wp_date( $fullFormat, $timestamp );
+
+			$full[] = Granularity::Week === $granularity
+				? sprintf(
+					/* translators: %s: the date a week starts on. */
+					__( 'Week of %s', 'honest-analytics' ),
+					$fullDate
+				)
+				: $fullDate;
 		}
 
 		return [
 			'axis' => $axis,
 			'full' => $full,
 		];
+	}
+
+	/**
+	 * The date format pair for a grain, short (axis) and long (full/tooltip).
+	 *
+	 * The full form for Week is a plain date format here - {@see axisLabels()}
+	 * wraps it in the translatable "Week of %s" itself, rather than putting
+	 * English words inside a format string a translator would have to leave
+	 * untouched to keep working.
+	 *
+	 * @param Granularity $granularity The bucket size.
+	 * @param bool        $spansYears  Whether the label set spans more than one calendar year.
+	 *
+	 * @return array{0:string,1:string}
+	 */
+	private static function labelFormats( Granularity $granularity, bool $spansYears ): array {
+		return match ( $granularity ) {
+			Granularity::Day   => [ $spansYears ? 'j M Y' : 'j M', 'j M Y' ],
+			Granularity::Week  => [ $spansYears ? 'j M Y' : 'j M', 'j M Y' ],
+			Granularity::Month => [ $spansYears ? 'M Y' : 'M', 'F Y' ],
+			Granularity::Year  => [ 'Y', 'Y' ],
+		};
+	}
+
+	/**
+	 * Resolve one bucket label to a real timestamp, for formatting.
+	 *
+	 * @param string      $label       A `Y-m-d` date, or a coarser bucket key.
+	 * @param Granularity $granularity The grain the label is keyed at.
+	 */
+	private static function bucketTimestamp( string $label, Granularity $granularity ): int|false {
+		if ( Granularity::Week === $granularity ) {
+			if ( 1 !== preg_match( '/^(\d{4})W(\d{2})$/', $label, $matches ) ) {
+				return false;
+			}
+
+			$date = ( new \DateTimeImmutable() )->setISODate( (int) $matches[1], (int) $matches[2] )->setTime( 0, 0 );
+
+			return $date->getTimestamp();
+		}
+
+		if ( Granularity::Month === $granularity ) {
+			return strtotime( $label . '-01' );
+		}
+
+		if ( Granularity::Year === $granularity ) {
+			return strtotime( $label . '-01-01' );
+		}
+
+		return strtotime( $label );
 	}
 
 	/**
@@ -330,10 +490,13 @@ final class ChartData {
 
 		foreach ( array_values( $datasets ) as $index => $dataset ) {
 			$prepared[] = [
-				'label' => (string) ( $dataset['label'] ?? '' ),
-				'data'  => array_values( (array) ( $dataset['data'] ?? [] ) ),
-				'token' => (string) ( $dataset['token'] ?? self::seriesToken( $index ) ),
-				'fill'  => (bool) ( $dataset['fill'] ?? false ),
+				'label'  => (string) ( $dataset['label'] ?? '' ),
+				'data'   => array_values( (array) ( $dataset['data'] ?? [] ) ),
+				'token'  => (string) ( $dataset['token'] ?? self::seriesToken( $index ) ),
+				'fill'   => (bool) ( $dataset['fill'] ?? false ),
+				// Dashed rather than a new hue: a comparison series reads as
+				// "the same metric, a different period", not a different metric.
+				'dashed' => (bool) ( $dataset['dashed'] ?? false ),
 			];
 		}
 
