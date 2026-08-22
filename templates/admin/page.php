@@ -16,29 +16,39 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// null exactly when no comparison is active, never merely when the baseline
+// was zero - so every delta below is absent rather than showing a change
+// against a period the toggle says is off. Copied to a real local variable
+// so a static analyser can see it defined; $previous itself only exists here
+// because View::render() extract()s it in.
+$ha_previous = $previous;
+
+$ha_delta = static fn ( int|float $current, string $key ): ?float =>
+	null !== $ha_previous ? DashboardScreen::delta( $current, $ha_previous[ $key ] ) : null;
+
 $ha_kpis = [
 	[
 		'label' => __( 'Views', 'honest-analytics' ),
 		'value' => Format::count( $totals['views'] ),
-		'delta' => DashboardScreen::delta( $totals['views'], $previous['views'] ),
+		'delta' => $ha_delta( $totals['views'], 'views' ),
 		'note'  => $compareNote,
 	],
 	[
 		'label' => __( 'Unique visitors', 'honest-analytics' ),
 		'value' => Format::count( $totals['uniques'] ),
-		'delta' => DashboardScreen::delta( $totals['uniques'], $previous['uniques'] ),
+		'delta' => $ha_delta( $totals['uniques'], 'uniques' ),
 		'note'  => sprintf( /* translators: %s: accuracy. */ __( 'daily uniques, %s', 'honest-analytics' ), $accuracy ),
 	],
 	[
 		'label' => __( 'Entrances', 'honest-analytics' ),
 		'value' => Format::count( $totals['entrances'] ),
-		'delta' => DashboardScreen::delta( $totals['entrances'], $previous['entrances'] ),
+		'delta' => $ha_delta( $totals['entrances'], 'entrances' ),
 		'note'  => __( 'sessions starting here', 'honest-analytics' ),
 	],
 	[
 		'label'   => __( 'Bounce rate', 'honest-analytics' ),
 		'value'   => $totals['entrances'] > 0 ? Format::percent( (float) $totals['bounceRate'] ) : '-',
-		'delta'   => $totals['entrances'] > 0 ? DashboardScreen::delta( $totals['bounceRate'], $previous['bounceRate'] ) : null,
+		'delta'   => $totals['entrances'] > 0 ? $ha_delta( $totals['bounceRate'], 'bounceRate' ) : null,
 		'inverse' => true,
 		'note'    => $totals['entrances'] > 0
 			? __( 'of entrances', 'honest-analytics' )
@@ -47,7 +57,7 @@ $ha_kpis = [
 	[
 		'label' => __( 'Avg time on page', 'honest-analytics' ),
 		'value' => $beacon ? Format::duration( (int) $totals['avgDwellMs'] ) : '-',
-		'delta' => $beacon ? DashboardScreen::delta( $totals['avgDwellMs'], $previous['avgDwellMs'] ) : null,
+		'delta' => $beacon ? $ha_delta( $totals['avgDwellMs'], 'avgDwellMs' ) : null,
 		'note'  => $beacon ? __( 'needs the beacon', 'honest-analytics' ) : __( 'needs hybrid or client mode', 'honest-analytics' ),
 	],
 ];

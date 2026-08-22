@@ -7,6 +7,23 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-22
+
+Two problems with the comparison feature added in 0.2.0.
+
+### Fixed
+
+- **"No comparison" still showed a comparison.** Every headline figure on
+  Dashboard and on a page's own report kept its percentage change against
+  the previous period even with the toggle set to no comparison at all. Every
+  card is now silent about change when no comparison is active, not just the
+  ones whose note named a period.
+- **The comparison line's tooltip and legend named only the period being
+  compared - "Same period last year" - which read as a fourth metric sitting
+  next to Pageviews and Unique visitors rather than as Pageviews measured at
+  a different time.** It now says which: "Pageviews vs same period last
+  year".
+
 ## [0.2.0] - 2026-08-22
 
 Reports can now be read at a glance across years, not just days, and figures

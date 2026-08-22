@@ -137,11 +137,10 @@ final class DashboardScreen extends Screen {
 		$siteId     = $this->siteId();
 		$range      = $params->range;
 		$comparison = $params->comparisonRange();
-		$previous   = $comparison ?? $range->previous();
 		$isPro      = Edition::isPro();
 
 		$totals       = $stats->totals( $siteId, $range );
-		$totalsBefore = $stats->totals( $siteId, $previous );
+		$totalsBefore = null !== $comparison ? $stats->totals( $siteId, $comparison ) : null;
 
 		$trend           = $stats->trend( $siteId, $range, null, $params->granularity );
 		$comparisonTrend = null !== $comparison ? $stats->trend( $siteId, $comparison, null, $params->granularity ) : null;
@@ -153,7 +152,7 @@ final class DashboardScreen extends Screen {
 			'accuracy'    => $stats->uniquesAccuracy(),
 			'realtime'    => $plugin->realtime()->snapshot( $siteId, null, 0 ),
 			'kpis'        => self::kpis( $totals, $totalsBefore, $plugin->settings(), self::compareNote( $params->comparePeriod ) ),
-			'trendChart'  => ChartData::trend( $trend, $comparisonTrend, $comparison?->label ),
+			'trendChart'  => ChartData::trend( $trend, $comparisonTrend, self::seriesLabel( $params->comparePeriod ) ),
 			'heatmap'     => Heatmap::grid( $stats->hourOfWeek( $siteId, $range ) ),
 			'heatmapFrom' => $stats->hourlyWindowFrom(),
 			'hourlyDays'  => $plugin->settings()->hourlyWindowDays,
@@ -179,27 +178,37 @@ final class DashboardScreen extends Screen {
 	/**
 	 * The seven headline figures, with their comparisons.
 	 *
-	 * @param array<string,int|float> $totals      This period.
-	 * @param array<string,int|float> $previous    The period being compared against.
-	 * @param Settings                $settings    Settings.
-	 * @param string                  $compareNote What to call the comparison period.
+	 * `$previous` is null exactly when no comparison is active - not merely
+	 * when the baseline was zero, which {@see Comparison::delta()} already
+	 * handles on its own. Every delta badge is absent in that case, not just
+	 * the ones whose note names the comparison: a card that kept showing a
+	 * change against a period the toggle says is off would be showing the
+	 * one thing "No comparison" was chosen to turn off.
+	 *
+	 * @param array<string,int|float>      $totals      This period.
+	 * @param array<string,int|float>|null $previous    The period being compared against, or null for no comparison.
+	 * @param Settings                     $settings    Settings.
+	 * @param string                       $compareNote What to call the comparison period.
 	 *
 	 * @return array<int,array<string,mixed>>
 	 */
-	public static function kpis( array $totals, array $previous, Settings $settings, string $compareNote ): array {
+	public static function kpis( array $totals, ?array $previous, Settings $settings, string $compareNote ): array {
 		$beacon = $settings->usesBeacon();
+		$delta  = static fn ( int|float $current, string $key ): ?float =>
+			null !== $previous ? Comparison::delta( $current, $previous[ $key ] ) : null;
+		$note   = null !== $previous ? $compareNote : '';
 
 		return [
 			[
 				'label' => __( 'Pageviews', 'honest-analytics' ),
 				'value' => Format::count( $totals['views'] ),
-				'delta' => Comparison::delta( $totals['views'], $previous['views'] ),
-				'note'  => $compareNote,
+				'delta' => $delta( $totals['views'], 'views' ),
+				'note'  => $note,
 			],
 			[
 				'label' => __( 'Unique visitors', 'honest-analytics' ),
 				'value' => Format::count( $totals['uniques'] ),
-				'delta' => Comparison::delta( $totals['uniques'], $previous['uniques'] ),
+				'delta' => $delta( $totals['uniques'], 'uniques' ),
 				'note'  => sprintf(
 					/* translators: %s: accuracy, e.g. "±1.6%". */
 					__( 'daily uniques, %s', 'honest-analytics' ),
@@ -209,32 +218,32 @@ final class DashboardScreen extends Screen {
 			[
 				'label' => __( 'Sessions', 'honest-analytics' ),
 				'value' => Format::count( $totals['sessions'] ),
-				'delta' => Comparison::delta( $totals['sessions'], $previous['sessions'] ),
-				'note'  => $compareNote,
+				'delta' => $delta( $totals['sessions'], 'sessions' ),
+				'note'  => $note,
 			],
 			[
 				'label'   => __( 'Bounce rate', 'honest-analytics' ),
 				'value'   => Format::percent( (float) $totals['bounceRate'] ),
-				'delta'   => Comparison::delta( $totals['bounceRate'], $previous['bounceRate'] ),
+				'delta'   => $delta( $totals['bounceRate'], 'bounceRate' ),
 				'inverse' => true,
 				'note'    => __( 'lower is better', 'honest-analytics' ),
 			],
 			[
 				'label' => __( 'Pages / session', 'honest-analytics' ),
 				'value' => number_format_i18n( (float) $totals['avgViewsPerSession'], 2 ),
-				'delta' => Comparison::delta( $totals['avgViewsPerSession'], $previous['avgViewsPerSession'] ),
-				'note'  => $compareNote,
+				'delta' => $delta( $totals['avgViewsPerSession'], 'avgViewsPerSession' ),
+				'note'  => $note,
 			],
 			[
 				'label' => __( 'Avg session', 'honest-analytics' ),
 				'value' => Format::duration( (int) $totals['avgDurationMs'] ),
-				'delta' => Comparison::delta( $totals['avgDurationMs'], $previous['avgDurationMs'] ),
+				'delta' => $delta( $totals['avgDurationMs'], 'avgDurationMs' ),
 				'note'  => __( 'closed sessions only', 'honest-analytics' ),
 			],
 			[
 				'label' => __( 'Avg time on page', 'honest-analytics' ),
 				'value' => $beacon ? Format::duration( (int) $totals['avgDwellMs'] ) : '-',
-				'delta' => $beacon ? Comparison::delta( $totals['avgDwellMs'], $previous['avgDwellMs'] ) : null,
+				'delta' => $beacon ? $delta( $totals['avgDwellMs'], 'avgDwellMs' ) : null,
 				'note'  => $beacon
 					? __( 'measured by the tracker', 'honest-analytics' )
 					: __( 'needs hybrid or client mode', 'honest-analytics' ),
@@ -289,5 +298,19 @@ final class DashboardScreen extends Screen {
 		return 'year' === $comparePeriod
 			? __( 'vs same period last year', 'honest-analytics' )
 			: __( 'vs previous period', 'honest-analytics' );
+	}
+
+	/**
+	 * The comparison line's own legend and tooltip label.
+	 *
+	 * Naming just the period - "Same period last year" - reads as a fourth
+	 * metric sitting alongside Pageviews and Unique visitors rather than as
+	 * Pageviews measured at a different time, which is what it actually is.
+	 * Naming the metric too removes the ambiguity.
+	 *
+	 * @param string $comparePeriod {@see \HonestAnalytics\Admin\RequestParams::$comparePeriod}.
+	 */
+	public static function seriesLabel( string $comparePeriod ): string {
+		return __( 'Pageviews', 'honest-analytics' ) . ' ' . self::compareNote( $comparePeriod );
 	}
 }

@@ -97,9 +97,9 @@ final class PagesScreen extends Screen {
 		// would disagree with Dashboard's numbers the moment a filter is
 		// active; mirroring the site total instead keeps every screen honest
 		// about the same period.
-		$previousRange = $params->comparisonRange() ?? $params->range->previous();
-		$totals        = $stats->totals( $siteId, $params->range );
-		$totalsBefore  = $stats->totals( $siteId, $previousRange );
+		$comparison   = $params->comparisonRange();
+		$totals       = $stats->totals( $siteId, $params->range );
+		$totalsBefore = null !== $comparison ? $stats->totals( $siteId, $comparison ) : null;
 
 		View::render(
 			'admin/pages',
@@ -139,12 +139,11 @@ final class PagesScreen extends Screen {
 			);
 		}
 
-		$range         = $params->range;
-		$comparison    = $params->comparisonRange();
-		$previousRange = $comparison ?? $range->previous();
-		$totals        = $stats->pageTotals( $siteId, $range, $pathDimId );
-		$previous      = $stats->pageTotals( $siteId, $previousRange, $pathDimId );
-		$isPro         = Edition::isPro();
+		$range      = $params->range;
+		$comparison = $params->comparisonRange();
+		$totals     = $stats->pageTotals( $siteId, $range, $pathDimId );
+		$previous   = null !== $comparison ? $stats->pageTotals( $siteId, $comparison, $pathDimId ) : null;
+		$isPro      = Edition::isPro();
 
 		$trend           = $stats->trend( $siteId, $range, $pathDimId, $params->granularity );
 		$comparisonTrend = null !== $comparison ? $stats->trend( $siteId, $comparison, $pathDimId, $params->granularity ) : null;
@@ -156,9 +155,9 @@ final class PagesScreen extends Screen {
 				'path'         => $path,
 				'totals'       => $totals,
 				'previous'     => $previous,
-				'compareNote'  => DashboardScreen::compareNote( $params->comparePeriod ),
+				'compareNote'  => null !== $comparison ? DashboardScreen::compareNote( $params->comparePeriod ) : '',
 				'accuracy'     => $stats->uniquesAccuracy(),
-				'trendChart'   => ChartData::trend( $trend, $comparisonTrend, $comparison?->label ),
+				'trendChart'   => ChartData::trend( $trend, $comparisonTrend, DashboardScreen::seriesLabel( $params->comparePeriod ) ),
 				'sources'      => $stats->pageSources( $siteId, $range, $pathDimId ),
 				'sourcesSince' => $stats->pageSourcesSince( $siteId ),
 				'editUrl'      => $totals['postId'] > 0 ? PostLinks::editUrl( (int) $totals['postId'] ) : null,

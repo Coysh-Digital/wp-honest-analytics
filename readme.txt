@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 0.2.0
+Stable tag: 0.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,10 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.2.1 =
+* Fixed: "No comparison" still showed a percentage change against the previous period on every headline figure. It is now silent about change when no comparison is active.
+* Fixed: the comparison line's tooltip and legend named only the period, which read as its own metric. It now names the metric too, e.g. "Pageviews vs same period last year".
 
 = 0.2.0 =
 * Added: a date range spanning more than one year now shows the year on the chart.
