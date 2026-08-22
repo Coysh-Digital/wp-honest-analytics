@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 0.3.0
+Stable tag: 0.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,9 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.4.0 =
+* Changed: Search Console now has the same hosted-broker groundwork Google Analytics already had. Neither broker filter is set anywhere, so every site keeps connecting with its own Google Cloud client exactly as before.
 
 = 0.3.0 =
 * Added: Pro only: client-shareable reports - a link an administrator creates showing a rolling window of the overview, with no WordPress account needed, individually revocable, with an optional expiry.

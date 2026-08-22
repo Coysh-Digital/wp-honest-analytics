@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Import\Ga4;
 
+use HonestAnalytics\Settings\SettingsRepository;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -27,6 +29,22 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * There is no broker yet. `isConfigured()` answers false until somebody filters
  * a URL in, and the screen says so rather than pretending to connect.
+ *
+ * `exchangeCode()`, `refresh()` and `revoke()` send this site's licence key
+ * alongside `site`. `authorizationUrl()` does not and cannot: it is a bare
+ * browser GET, so a key there would sit in the query string of every proxy
+ * access log between here and the broker, the same reason StripeProvider's
+ * key never travels there either. The broker treats the same-origin match
+ * between `site` and `redirect` as the security boundary for that leg.
+ *
+ * The key is read straight from {@see SettingsRepository} rather than through
+ * `HonestAnalytics\Licensing\LicenceService::key()`. GA4 import ships in Lite,
+ * where the whole of `src/Licensing/` does not exist, so this class cannot
+ * depend on anything in it - the same reason {@see \HonestAnalytics\Import\GoogleCloudCredentials}
+ * lives outside that namespace too. Sent unnormalised: the broker normalises
+ * on receipt the same way `StripeProvider`'s server side already does, so a
+ * second normalisation here would only be a second implementation of that
+ * rule to disagree with the first.
  */
 final class BrokerProvider implements Ga4ProviderInterface {
 
@@ -89,6 +107,7 @@ final class BrokerProvider implements Ga4ProviderInterface {
 		$body = $this->post(
 			self::baseUrl() . '/exchange',
 			[
+				'key'      => SettingsRepository::get()->licenceKey,
 				'code'     => $code,
 				'redirect' => $redirectUri,
 				'site'     => home_url( '/' ),
@@ -113,6 +132,7 @@ final class BrokerProvider implements Ga4ProviderInterface {
 		$body = $this->post(
 			self::baseUrl() . '/refresh',
 			[
+				'key'           => SettingsRepository::get()->licenceKey,
 				'refresh_token' => $tokens->refreshToken,
 				'site'          => home_url( '/' ),
 			]
@@ -129,6 +149,7 @@ final class BrokerProvider implements Ga4ProviderInterface {
 			$this->post(
 				self::baseUrl() . '/revoke',
 				[
+					'key'           => SettingsRepository::get()->licenceKey,
 					'refresh_token' => $tokens->refreshToken,
 					'site'          => home_url( '/' ),
 				]
@@ -166,25 +187,46 @@ final class BrokerProvider implements Ga4ProviderInterface {
 			throw new Ga4Exception( Ga4Exception::TRANSIENT, 'Broker request failed: ' . $response->get_error_message() );
 		}
 
-		$code = (int) wp_remote_retrieve_response_code( $response );
+		$code   = (int) wp_remote_retrieve_response_code( $response );
+		$detail = self::errorDetail( $response );
 
 		if ( 401 === $code || 403 === $code ) {
-			throw new Ga4Exception( Ga4Exception::AUTH, 'Broker rejected the grant with ' . $code . '.' );
+			throw new Ga4Exception( Ga4Exception::AUTH, 'Broker rejected the grant with ' . $code . $detail . '.' );
 		}
 
 		if ( 429 === $code || $code >= 500 ) {
 			throw new Ga4Exception(
 				429 === $code ? Ga4Exception::RATE_LIMIT : Ga4Exception::TRANSIENT,
-				'Broker responded ' . $code . '.'
+				'Broker responded ' . $code . $detail . '.'
 			);
 		}
 
 		if ( 200 !== $code ) {
-			throw new Ga4Exception( Ga4Exception::FATAL, 'Broker responded ' . $code . '.' );
+			throw new Ga4Exception( Ga4Exception::FATAL, 'Broker responded ' . $code . $detail . '.' );
 		}
 
 		$decoded = json_decode( (string) wp_remote_retrieve_body( $response ), true );
 
 		return is_array( $decoded ) ? $decoded : [];
+	}
+
+	/**
+	 * The broker's own `error` slug, where the body carries one - for the log
+	 * message only.
+	 *
+	 * Deliberately not turned into a REASON_* constant the way the direct
+	 * provider's `invalid_client`/`redirect_uri_mismatch` are: those sentences
+	 * tell somebody to open their Google Cloud OAuth client and check it, and a
+	 * site connected through the broker has no such client to open. A
+	 * broker-side failure is something to diagnose from the log, not something
+	 * this site's admin screen can act on by itself.
+	 *
+	 * @param array<string,mixed>|\WP_Error $response The response from wp_remote_post().
+	 */
+	private static function errorDetail( $response ): string {
+		$decoded = json_decode( (string) wp_remote_retrieve_body( $response ), true );
+		$error   = is_array( $decoded ) && isset( $decoded['error'] ) ? (string) $decoded['error'] : '';
+
+		return '' !== $error ? ' (' . $error . ')' : '';
 	}
 }

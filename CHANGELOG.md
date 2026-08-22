@@ -7,6 +7,21 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-22
+
+Groundwork for a hosted Google connection, not switched on for anybody yet.
+
+### Changed
+
+- **Search Console now has the same hosted-broker groundwork Google
+  Analytics already had.** A `Gsc\BrokerProvider` mirrors the existing GA4
+  one exactly, and `Gsc\Connection` prefers it the moment
+  `honest_analytics_gsc_broker_url` is filtered to a real address, the same
+  way GA4's already does. Neither filter is set anywhere, so every site
+  keeps connecting with its own Google Cloud client exactly as before.
+  Rolling a hosted broker out to real installs is a separate decision, not
+  part of this release.
+
 ## [0.3.0] - 2026-08-22
 
 Four Pro reports: a link to hand a client with no account of their own, an
