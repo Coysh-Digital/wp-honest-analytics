@@ -57,12 +57,14 @@ final class DateRange {
 	 */
 	public static function presets(): array {
 		return [
-			'today'     => __( 'Today', 'honest-analytics' ),
-			'yesterday' => __( 'Yesterday', 'honest-analytics' ),
-			'7d'        => __( 'Last 7 days', 'honest-analytics' ),
-			'30d'       => __( 'Last 30 days', 'honest-analytics' ),
-			'90d'       => __( 'Last 90 days', 'honest-analytics' ),
-			'12mo'      => __( 'Last 12 months', 'honest-analytics' ),
+			'today'      => __( 'Today', 'honest-analytics' ),
+			'yesterday'  => __( 'Yesterday', 'honest-analytics' ),
+			'7d'         => __( 'Last 7 days', 'honest-analytics' ),
+			'30d'        => __( 'Last 30 days', 'honest-analytics' ),
+			'90d'        => __( 'Last 90 days', 'honest-analytics' ),
+			'this-month' => __( 'This month', 'honest-analytics' ),
+			'last-month' => __( 'Last month', 'honest-analytics' ),
+			'12mo'       => __( 'Last 12 months', 'honest-analytics' ),
 		];
 	}
 
@@ -80,12 +82,17 @@ final class DateRange {
 		$labels = self::presets();
 
 		[ $from, $to ] = match ( $preset ) {
-			'today'     => [ $today, $today ],
-			'yesterday' => [ $today->modify( '-1 day' ), $today->modify( '-1 day' ) ],
-			'7d'        => [ $today->modify( '-6 days' ), $today ],
-			'90d'       => [ $today->modify( '-89 days' ), $today ],
-			'12mo'      => [ $today->modify( '-1 year' )->modify( '+1 day' ), $today ],
-			default     => [ $today->modify( '-29 days' ), $today ],
+			'today'      => [ $today, $today ],
+			'yesterday'  => [ $today->modify( '-1 day' ), $today->modify( '-1 day' ) ],
+			'7d'         => [ $today->modify( '-6 days' ), $today ],
+			'90d'        => [ $today->modify( '-89 days' ), $today ],
+			// The calendar month, not a rolling window - "This month" runs to
+			// today rather than to a future month-end, and "Last month" is the
+			// whole of the one before, because it is already over.
+			'this-month' => [ $today->modify( 'first day of this month' ), $today ],
+			'last-month' => [ $today->modify( 'first day of last month' ), $today->modify( 'last day of last month' ) ],
+			'12mo'       => [ $today->modify( '-1 year' )->modify( '+1 day' ), $today ],
+			default      => [ $today->modify( '-29 days' ), $today ],
 		};
 
 		$handle = isset( $labels[ $preset ] ) ? $preset : '30d';

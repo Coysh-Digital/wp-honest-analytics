@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 0.4.0
+Stable tag: 0.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,12 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.5.0 =
+* Added: Pro only: client-shareable reports are downloadable as a PDF, from the Shared reports screen or from the report itself.
+* Added: Pro only: a share link's content is now a choice - Trend, Top pages, Sources, Devices and Content can each be switched on or off per link, applied identically to the page and the PDF.
+* Added: Pro only: This month and Last month join the rolling windows a share link can show, for a report that names a real calendar month.
+* Added: Pro only: a client-shareable report can carry an agency's own name in place of the site's own, set once on Settings.
 
 = 0.4.0 =
 * Changed: Search Console now has the same hosted-broker groundwork Google Analytics already had. Neither broker filter is set anywhere, so every site keeps connecting with its own Google Cloud client exactly as before.

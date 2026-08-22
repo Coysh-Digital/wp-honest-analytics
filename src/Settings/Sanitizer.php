@@ -215,6 +215,9 @@ final class Sanitizer {
 			case 'licenceKey':
 				return substr( trim( sanitize_text_field( (string) $value ) ), 0, 128 );
 
+			case 'reportBrandName':
+				return substr( trim( sanitize_text_field( (string) $value ) ), 0, 191 );
+
 			case 'siteSearchParam':
 				$param = preg_replace( '/[^A-Za-z0-9_\-]/', '', (string) $value );
 				$param = is_string( $param ) ? substr( $param, 0, 64 ) : '';

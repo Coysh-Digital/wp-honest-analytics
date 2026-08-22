@@ -36,7 +36,7 @@ final class Schema {
 	 * `Upgrader` compares it with the stored version and re-runs dbDelta, which
 	 * is additive: new tables and new columns appear, nothing is dropped.
 	 */
-	public const VERSION = 4;
+	public const VERSION = 5;
 
 	/**
 	 * Every CREATE TABLE statement, in dbDelta's dialect.
@@ -461,7 +461,8 @@ final class Schema {
 	tokenHash char(64) NOT NULL,
 	label varchar(191) NOT NULL default '',
 	scope varchar(24) NOT NULL default 'overview',
-	windowPreset varchar(8) NOT NULL default '7d',
+	windowPreset varchar(16) NOT NULL default '7d',
+	sections varchar(191) NOT NULL default 'pages,sources',
 	createdAt datetime NOT NULL,
 	lastViewedAt datetime NULL,
 	expiresAt datetime NULL,

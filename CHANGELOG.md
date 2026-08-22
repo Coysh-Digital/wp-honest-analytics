@@ -7,6 +7,30 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-22
+
+Client-shareable reports can now be downloaded as a PDF, with a choice of
+what goes into them and a real calendar month as well as a rolling window.
+
+### Added
+
+- **Pro only: client-shareable reports are downloadable as a PDF.** A
+  Download PDF button on the Shared reports screen for an administrator, and
+  the same button on the report itself for whoever holds the link - both
+  render from the exact same figures as the page, so the two can never
+  disagree.
+- **Pro only: a share link's content is now a choice, not a fixed set.**
+  Trend, Top pages, Where visitors came from, Devices and Content can each be
+  switched on or off per link - the KPI totals always show - and the choice
+  applies identically to the live page and the PDF.
+- **Pro only: This month and Last month join the rolling windows a share
+  link can show.** Last month is the whole of the calendar month before,
+  useful for a report that is meant to say "August 2026" rather than
+  whichever thirty days happen to end today.
+- **Pro only: a client-shareable report can carry a name of the agency's
+  own choosing**, in place of the site's own name - set once on Settings,
+  it applies to the live page and the PDF alike.
+
 ## [0.4.0] - 2026-08-22
 
 Groundwork for a hosted Google connection, not switched on for anybody yet.

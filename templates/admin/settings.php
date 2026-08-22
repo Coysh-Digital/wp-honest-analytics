@@ -178,6 +178,7 @@ $ha_submitted = [
 	'enableAlerts',
 	'alertSensitivity',
 	'alertRecipients',
+	'reportBrandName',
 	'keepDataOnUninstall',
 ];
 ?>
@@ -858,6 +859,20 @@ $ha_submitted = [
 					__( 'Recipients', 'honest-analytics' ),
 					$ha_list( 'alertRecipients', $settings->alertRecipients, $overrides( 'alertRecipients' ), get_option( 'admin_email' ) ),
 					__( 'One email address per line. Left empty, alerts go to the site\'s admin email.', 'honest-analytics' )
+				);
+				?>
+			</div>
+		</div>
+
+		<div class="ha-card">
+			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Client reports', 'honest-analytics' ); ?></h2></div>
+			<div class="ha-settings-body">
+				<?php
+				$ha_row(
+					'reportBrandName',
+					__( 'Report name', 'honest-analytics' ),
+					$ha_text( 'reportBrandName', $settings->reportBrandName, $overrides( 'reportBrandName' ), get_bloginfo( 'name' ) ),
+					__( 'Shown instead of this site\'s own name on a shared report and its PDF - an agency\'s own name, for a report handed to a client. Left empty, the report uses this site\'s name.', 'honest-analytics' )
 				);
 				?>
 			</div>

@@ -36,6 +36,7 @@ use HonestAnalytics\Rest\Routes;
 use HonestAnalytics\Schema\Installer;
 use HonestAnalytics\Scheduling\Cron;
 use HonestAnalytics\Settings\SettingsRepository;
+use HonestAnalytics\Sharing\SharePdfHandler;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -151,6 +152,14 @@ final class Bootstrap {
 
 		Notices::register();
 		ExportHandler::register();
+
+		// Stripped from Lite along with the rest of src/Sharing/, and inert on a
+		// Pro build with no active licence, the same reason front() guards
+		// ReportEndpoint this way.
+		if ( Edition::isPro() && class_exists( SharePdfHandler::class ) ) {
+			SharePdfHandler::register();
+		}
+
 		GeoHandler::register();
 		MaintenanceHandler::register();
 		OverviewWidget::register();

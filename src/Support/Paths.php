@@ -100,6 +100,23 @@ final class Paths {
 	}
 
 	/**
+	 * Where dompdf caches the font subsets it builds while rendering a
+	 * client-shareable report to PDF.
+	 *
+	 * @param bool $create Whether to create it if missing.
+	 */
+	public static function pdfCacheDir( bool $create = false ): string {
+		$dir = self::baseDir( $create ) . '/pdf-cache';
+
+		if ( $create && ! is_dir( $dir ) ) {
+			wp_mkdir_p( $dir );
+			self::protect( $dir );
+		}
+
+		return $dir;
+	}
+
+	/**
 	 * The MaxMind-format geo database.
 	 */
 	public static function geoDatabase(): string {

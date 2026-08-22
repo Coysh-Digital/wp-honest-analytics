@@ -161,6 +161,17 @@ final class Settings {
 	/** @var string[] */
 	public array $alertRecipients = [];
 
+	/**
+	 * The name shown on a client-shareable report and its PDF, in place of
+	 * this site's own name.
+	 *
+	 * Empty by default, which falls back to the site's own name - the same as
+	 * before this existed. Set once, an agency's own name replaces it
+	 * everywhere a client-facing report identifies itself, on the live page
+	 * and in the PDF alike.
+	 */
+	public string $reportBrandName = '';
+
 	// Licence and lifecycle.
 	public string $licenceKey = '';
 
