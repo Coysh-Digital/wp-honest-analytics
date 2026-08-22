@@ -139,6 +139,7 @@ class ComposerStaticInit60d78dfd625e10b67fd73270f6c41d95
         'HonestAnalytics\\Import\\Ga4\\Reports' => __DIR__ . '/../..' . '/src/Import/Ga4/Reports.php',
         'HonestAnalytics\\Import\\Ga4\\ResponseMapper' => __DIR__ . '/../..' . '/src/Import/Ga4/ResponseMapper.php',
         'HonestAnalytics\\Import\\Ga4\\TokenStore' => __DIR__ . '/../..' . '/src/Import/Ga4/TokenStore.php',
+        'HonestAnalytics\\Import\\GoogleCloudCredentials' => __DIR__ . '/../..' . '/src/Import/GoogleCloudCredentials.php',
         'HonestAnalytics\\Import\\ImportBatchResult' => __DIR__ . '/../..' . '/src/Import/ImportBatchResult.php',
         'HonestAnalytics\\Import\\ImportConfiguration' => __DIR__ . '/../..' . '/src/Import/ImportConfiguration.php',
         'HonestAnalytics\\Import\\ImportJob' => __DIR__ . '/../..' . '/src/Import/ImportJob.php',

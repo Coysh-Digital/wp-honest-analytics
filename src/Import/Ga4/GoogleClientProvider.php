@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Import\Ga4;
 
+use HonestAnalytics\Import\GoogleCloudCredentials;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -25,14 +27,17 @@ if ( ! defined( 'ABSPATH' ) ) {
  * that is a preference worth supporting properly rather than treating as an
  * escape hatch.
  *
- * The client secret lives in a non-autoloaded option and never leaves the
- * server. It is not exposed by any REST route, not printed on any screen, and
- * not written to the log.
+ * The client id and secret are shared with the Search Console connection via
+ * {@see GoogleCloudCredentials}: they are one Google Cloud client asked to
+ * cover two scopes, not two clients somebody has to set up separately. The
+ * secret lives in a non-autoloaded option and never leaves the server. It is
+ * not exposed by any REST route, not printed on any screen, and not written to
+ * the log.
  */
 final class GoogleClientProvider implements Ga4ProviderInterface {
 
-	/** Where the client id and secret live. Not autoloaded. */
-	public const OPTION = 'honest_analytics_ga4_client';
+	/** Kept for anything still referring to the option by its old name. */
+	public const OPTION = GoogleCloudCredentials::OPTION;
 
 	private const AUTH_ENDPOINT   = 'https://accounts.google.com/o/oauth2/v2/auth';
 	private const TOKEN_ENDPOINT  = 'https://oauth2.googleapis.com/token';
@@ -47,9 +52,7 @@ final class GoogleClientProvider implements Ga4ProviderInterface {
 	}
 
 	public function isConfigured(): bool {
-		$credentials = self::credentials();
-
-		return '' !== $credentials['id'] && '' !== $credentials['secret'];
+		return GoogleCloudCredentials::isConfigured();
 	}
 
 	public function configurationHint(): string {
@@ -62,45 +65,17 @@ final class GoogleClientProvider implements Ga4ProviderInterface {
 	 * @return array{id:string,secret:string}
 	 */
 	public static function credentials(): array {
-		$stored = get_option( self::OPTION, [] );
-
-		return [
-			'id'     => is_array( $stored ) && isset( $stored['id'] ) ? (string) $stored['id'] : '',
-			'secret' => is_array( $stored ) && isset( $stored['secret'] ) ? (string) $stored['secret'] : '',
-		];
+		return GoogleCloudCredentials::get();
 	}
 
 	/**
 	 * Save a client id and secret.
 	 *
-	 * Added with autoload off, deliberately: a secret has no business being
-	 * loaded into memory on every request on the site, including the front end.
-	 *
 	 * @param string $id     Client id.
 	 * @param string $secret Client secret.
 	 */
 	public static function saveCredentials( string $id, string $secret ): void {
-		$id     = trim( $id );
-		$secret = trim( $secret );
-
-		if ( '' === $id || '' === $secret ) {
-			delete_option( self::OPTION );
-
-			return;
-		}
-
-		if ( false === get_option( self::OPTION, false ) ) {
-			add_option( self::OPTION, [], '', false );
-		}
-
-		update_option(
-			self::OPTION,
-			[
-				'id'     => $id,
-				'secret' => $secret,
-			],
-			false
-		);
+		GoogleCloudCredentials::save( $id, $secret );
 	}
 
 	/**

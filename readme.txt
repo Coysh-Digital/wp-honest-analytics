@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 0.2.3
+Stable tag: 0.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -131,6 +131,13 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.3.0 =
+* Added: Pro only: client-shareable reports - a link an administrator creates showing a rolling window of the overview, with no WordPress account needed, individually revocable, with an optional expiry.
+* Added: Pro only: traffic spike and drop alerts, off by default - once a day, yesterday is compared against a typical figure for that weekday, with the real numbers stated in the email.
+* Added: Pro only: click tracking on any element, marked with a data-honest-event attribute or a configured CSS selector, recording only the event name.
+* Added: Pro only: Search Console query data - what people searched to reach a page, imported through its own narrowly scoped Google connection and shown apart from this plugin's own figures.
+* Fixed: the "See what Pro adds" link on a locked report went to the wrong domain and landed on a parking page instead of the pricing page.
 
 = 0.2.3 =
 * Added: comparison now shows on the Devices and Sources screens, and every ranked table (Pages, Devices, Sources) shows a per-row change alongside the headline figures.

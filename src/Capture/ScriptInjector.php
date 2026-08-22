@@ -156,12 +156,15 @@ final class ScriptInjector {
 		}
 
 		if ( self::HANDLE_PRO === $handle ) {
-			$attributes['data-endpoint']   = $this->collectUrl();
-			$attributes['data-events']     = $this->settings->enableEvents ? '1' : '0';
-			$attributes['data-outbound']   = $this->settings->enableEvents && $this->settings->trackOutbound ? '1' : '0';
-			$attributes['data-downloads']  = $this->settings->enableEvents && $this->settings->trackDownloads ? '1' : '0';
-			$attributes['data-scroll']     = $this->settings->enableEvents && $this->settings->trackScroll ? '1' : '0';
-			$attributes['data-extensions'] = implode( ',', $this->settings->downloadExtensions );
+			$attributes['data-endpoint']        = $this->collectUrl();
+			$attributes['data-events']          = $this->settings->enableEvents ? '1' : '0';
+			$attributes['data-outbound']        = $this->settings->enableEvents && $this->settings->trackOutbound ? '1' : '0';
+			$attributes['data-downloads']       = $this->settings->enableEvents && $this->settings->trackDownloads ? '1' : '0';
+			$attributes['data-scroll']          = $this->settings->enableEvents && $this->settings->trackScroll ? '1' : '0';
+			$attributes['data-extensions']      = implode( ',', $this->settings->downloadExtensions );
+			$attributes['data-clicks']          = $this->settings->enableEvents && $this->settings->trackClicks ? '1' : '0';
+			$attributes['data-click-attribute'] = 'data-honest-event';
+			$attributes['data-click-selectors'] = self::encodeClickSelectors( $this->settings->clickSelectors );
 		}
 
 		if ( self::HANDLE_CONSENT === $handle ) {
@@ -175,6 +178,24 @@ final class ScriptInjector {
 		}
 
 		return (string) preg_replace( '/<script\s/', '<script' . $rendered . ' ', $tag, 1 );
+	}
+
+	/**
+	 * Pack the configured selectors into one attribute value.
+	 *
+	 * "=>" separates a pair and "||" separates pairs - neither sequence is
+	 * valid CSS, so there is nothing a configured selector could contain that
+	 * would be mistaken for the packing itself.
+	 *
+	 * @param array<int,array{selector:string,eventName:string}> $pairs Configured selectors.
+	 */
+	private static function encodeClickSelectors( array $pairs ): string {
+		$encoded = array_map(
+			static fn ( array $pair ): string => $pair['selector'] . '=>' . $pair['eventName'],
+			$pairs
+		);
+
+		return implode( '||', $encoded );
 	}
 
 	/**

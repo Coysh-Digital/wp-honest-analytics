@@ -36,8 +36,13 @@ final class LockedScreen extends Screen {
 
 	/**
 	 * Where somebody who wants the paid edition should go.
+	 *
+	 * With the hyphen. The unhyphenated spelling belongs to somebody else and
+	 * has been parked since 2015, and this link ships in the free edition, so
+	 * getting it wrong sends every Lite site that clicks a locked report to a
+	 * stranger's parking page instead of to the pricing page.
 	 */
-	private const HOME = 'https://honestanalytics.com/pricing';
+	private const HOME = 'https://honest-analytics.com/pricing';
 
 	/**
 	 * Which report this stands in for.
@@ -162,7 +167,7 @@ final class LockedScreen extends Screen {
 	 */
 	public static function features(): array {
 		return [
-			'campaigns' => [
+			'campaigns'      => [
 				'title' => __( 'Campaigns', 'honest-analytics' ),
 				'lede'  => __( 'Which tagged links brought people to the site, and what they did once they arrived.', 'honest-analytics' ),
 				'shows' => [
@@ -172,7 +177,7 @@ final class LockedScreen extends Screen {
 				],
 				'note'  => __( 'Campaign parameters are stripped from stored paths in both editions, so this does not change what the Pages report says.', 'honest-analytics' ),
 			],
-			'locations' => [
+			'locations'      => [
 				'title' => __( 'Locations', 'honest-analytics' ),
 				'lede'  => __( 'Which countries visits came from, resolved on your own server.', 'honest-analytics' ),
 				'shows' => [
@@ -182,7 +187,7 @@ final class LockedScreen extends Screen {
 				],
 				'note'  => __( 'The address is resolved in memory during the request that discards it, in this edition and in the paid one alike.', 'honest-analytics' ),
 			],
-			'events'    => [
+			'events'         => [
 				'title' => __( 'Events', 'honest-analytics' ),
 				'lede'  => __( 'What people did besides look at pages.', 'honest-analytics' ),
 				'shows' => [
@@ -193,7 +198,7 @@ final class LockedScreen extends Screen {
 				],
 				'note'  => __( 'Events ride the pageview beacon rather than adding requests of their own.', 'honest-analytics' ),
 			],
-			'goals'     => [
+			'goals'          => [
 				'title' => __( 'Goals', 'honest-analytics' ),
 				'lede'  => __( 'Whether the things you care about are actually happening.', 'honest-analytics' ),
 				'shows' => [
@@ -203,7 +208,7 @@ final class LockedScreen extends Screen {
 				],
 				'note'  => '',
 			],
-			'funnels'   => [
+			'funnels'        => [
 				'title' => __( 'Funnels', 'honest-analytics' ),
 				'lede'  => __( 'Where people give up on their way through the site.', 'honest-analytics' ),
 				'shows' => [
@@ -213,7 +218,7 @@ final class LockedScreen extends Screen {
 				],
 				'note'  => '',
 			],
-			'crawlers'  => [
+			'crawlers'       => [
 				'title' => __( 'Crawlers', 'honest-analytics' ),
 				'lede'  => __( 'What is hitting the site that is not a person.', 'honest-analytics' ),
 				'shows' => [
@@ -221,6 +226,26 @@ final class LockedScreen extends Screen {
 					__( 'Search engines, monitoring services, scrapers and AI crawlers, named individually.', 'honest-analytics' ),
 				],
 				'note'  => __( 'Crawler traffic is already excluded from every visitor figure in this edition. Only the breakdown of who they were is part of Pro.', 'honest-analytics' ),
+			],
+			'share'          => [
+				'title' => __( 'Shared reports', 'honest-analytics' ),
+				'lede'  => __( 'A link you can hand to a client, with no WordPress account and no login of any kind.', 'honest-analytics' ),
+				'shows' => [
+					__( 'A read-only overview at its own address, showing the figures for a rolling window you choose.', 'honest-analytics' ),
+					__( 'Nothing else: no settings, no licence details, no other report, and no way back into this dashboard.', 'honest-analytics' ),
+					__( 'Every link revocable on its own, with an optional expiry and a record of when it was last opened.', 'honest-analytics' ),
+				],
+				'note'  => __( 'If a link ever leaks, the worst it gives away is the aggregate traffic figures it was made to show.', 'honest-analytics' ),
+			],
+			'search-console' => [
+				'title' => __( 'Search Console', 'honest-analytics' ),
+				'lede'  => __( 'What people searched to find the site - the one report here whose figures come from Google rather than from this plugin.', 'honest-analytics' ),
+				'shows' => [
+					__( 'The search terms that brought people to each page, with clicks, impressions and average position.', 'honest-analytics' ),
+					__( 'A daily sync that keeps the last week current, because Google keeps revising its own recent figures for a few days after the fact.', 'honest-analytics' ),
+					__( 'Up to sixteen months of history, brought across once and kept from there.', 'honest-analytics' ),
+				],
+				'note'  => __( 'Search Console clicks are Google\'s own count, on Google\'s own rules - shown next to this plugin\'s figures, never added into them.', 'honest-analytics' ),
 			],
 		];
 	}

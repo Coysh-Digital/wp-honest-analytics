@@ -182,6 +182,7 @@ final class PagesScreen extends Screen {
 				'scroll'       => $isPro ? ( $plugin->proStats()->scrollDepth( $siteId, $range, 1, $pathDimId )[0] ?? null ) : null,
 				'events'       => $isPro ? $plugin->proStats()->events( $siteId, $range, 20, $pathDimId ) : [],
 				'outbound'     => $isPro ? $plugin->proStats()->outbound( $siteId, $range, 20, $pathDimId ) : [],
+				'queries'      => $isPro ? $plugin->proStats()->searchConsoleQueries( $siteId, $range, 20, $pathDimId ) : [],
 			]
 		);
 	}

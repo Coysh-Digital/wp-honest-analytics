@@ -24,7 +24,14 @@
 	var trackOutbound = '1' === script.getAttribute( 'data-outbound' );
 	var trackDownloads = '1' === script.getAttribute( 'data-downloads' );
 	var trackScroll = '1' === script.getAttribute( 'data-scroll' );
+	var trackClicks = '1' === script.getAttribute( 'data-clicks' );
 	var extensions = ( script.getAttribute( 'data-extensions' ) || '' ).split( ',' ).filter( Boolean );
+	var clickAttribute = script.getAttribute( 'data-click-attribute' ) || 'data-honest-event';
+	var clickSelectors = ( script.getAttribute( 'data-click-selectors' ) || '' ).split( '||' ).filter( Boolean ).map( function ( pair ) {
+		var at = pair.indexOf( '=>' );
+
+		return { selector: pair.slice( 0, at ), eventName: pair.slice( at + 2 ) };
+	} );
 
 	var api = window.honestAnalytics = window.honestAnalytics || {};
 
@@ -102,7 +109,7 @@
 		}
 	}
 
-	if ( trackOutbound || trackDownloads ) {
+	if ( trackOutbound || trackDownloads || trackClicks ) {
 		function isDownload( url ) {
 			var pathname = url.pathname.toLowerCase();
 			var dot = pathname.lastIndexOf( '.' );
@@ -117,7 +124,36 @@
 		// Capture phase, so a click is recorded even when the page's own
 		// handlers stop propagation or navigate away immediately.
 		addEventListener( 'click', function ( event ) {
-			var anchor = event.target && event.target.closest ? event.target.closest( 'a[href]' ) : null;
+			var target = event.target;
+
+			if ( trackClicks && target && target.closest ) {
+				// Independent of the outbound/download check below - a click can
+				// legitimately be both (an outbound link an author also marked
+				// with the attribute), and neither write should stop the other.
+				var named = target.closest( '[' + clickAttribute + ']' );
+
+				if ( named ) {
+					var name = named.getAttribute( clickAttribute );
+
+					if ( name ) {
+						send( { k: 'event', en: name.slice( 0, 120 ) } );
+					}
+				}
+
+				for ( var i = 0; i < clickSelectors.length; i++ ) {
+					try {
+						if ( clickSelectors[ i ].selector && target.closest( clickSelectors[ i ].selector ) ) {
+							send( { k: 'event', en: clickSelectors[ i ].eventName.slice( 0, 120 ) } );
+						}
+					} catch ( error ) {
+						// An invalid selector throws rather than simply failing to
+						// match - caught here so one bad line does not stop the
+						// rest of the list, or the outbound/download check below.
+					}
+				}
+			}
+
+			var anchor = target && target.closest ? target.closest( 'a[href]' ) : null;
 
 			if ( ! anchor ) {
 				return;

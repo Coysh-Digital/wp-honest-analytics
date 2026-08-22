@@ -21,6 +21,7 @@ use HonestAnalytics\Capture\RequestContext;
 use HonestAnalytics\Capture\ShutdownRunner;
 use HonestAnalytics\Cli\CommandRegistrar;
 use HonestAnalytics\Distribution\Coexistence;
+use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Export\ExportHandler;
 use HonestAnalytics\Geo\GeoHandler;
 use HonestAnalytics\Integrations\Hooks;
@@ -29,6 +30,7 @@ use HonestAnalytics\Privacy\PersonalData;
 use HonestAnalytics\Privacy\PolicyContent;
 use HonestAnalytics\Rest\NoContent;
 use HonestAnalytics\Rest\PlainEndpoint;
+use HonestAnalytics\Rest\ReportEndpoint;
 use HonestAnalytics\Rest\RestUnlock;
 use HonestAnalytics\Rest\Routes;
 use HonestAnalytics\Schema\Installer;
@@ -114,6 +116,13 @@ final class Bootstrap {
 	private static function front(): void {
 		if ( PlainEndpoint::isEnabled() ) {
 			PlainEndpoint::register();
+		}
+
+		// Stripped from Lite along with the rest of src/Sharing/, and inert on a
+		// Pro build with no active licence: a link nobody can currently create
+		// or manage should not go on quietly answering requests.
+		if ( Edition::isPro() && class_exists( ReportEndpoint::class ) ) {
+			ReportEndpoint::register();
 		}
 
 		// Snapshotted at the last hook before a plugin can redirect and exit,

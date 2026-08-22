@@ -9,9 +9,11 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Scheduling;
 
+use HonestAnalytics\Alerts\AlertChecker;
 use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Email\ReportMailer;
 use HonestAnalytics\Gc\GcService;
+use HonestAnalytics\Import\Gsc\DailySync;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Support\Log;
 use HonestAnalytics\Support\Timezone;
@@ -32,9 +34,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class Cron {
 
-	public const DRAIN_HOOK = 'honest_analytics_drain';
-	public const GC_HOOK    = 'honest_analytics_gc';
-	public const SALT_HOOK  = 'honest_analytics_rotate_salt';
+	public const DRAIN_HOOK    = 'honest_analytics_drain';
+	public const GC_HOOK       = 'honest_analytics_gc';
+	public const SALT_HOOK     = 'honest_analytics_rotate_salt';
+	public const GSC_SYNC_HOOK = 'honest_analytics_gsc_daily_sync';
 
 	public const DRAIN_INTERVAL = 'honest_analytics_five_minutes';
 	public const SALT_INTERVAL  = 'hourly';
@@ -51,6 +54,7 @@ final class Cron {
 		add_action( self::DRAIN_HOOK, [ self::class, 'runDrain' ] );
 		add_action( self::GC_HOOK, [ self::class, 'runDaily' ] );
 		add_action( self::SALT_HOOK, [ self::class, 'runSaltRotation' ] );
+		add_action( self::GSC_SYNC_HOOK, [ self::class, 'runGscSync' ] );
 	}
 
 	/**
@@ -114,6 +118,15 @@ final class Cron {
 			// not anyone visits.
 			wp_schedule_event( time() + 300, self::SALT_INTERVAL, self::SALT_HOOK );
 		}
+
+		if ( ! wp_next_scheduled( self::GSC_SYNC_HOOK ) ) {
+			// Scheduled unconditionally, on every site, the same way the other
+			// three are - Lite included. runGscSync() is what actually gates on
+			// the edition and on class_exists(), so this event is cheap and
+			// silent everywhere it is not applicable rather than being a second
+			// thing that has to agree with the licence state.
+			wp_schedule_event( time() + 600, 'daily', self::GSC_SYNC_HOOK );
+		}
 	}
 
 	/**
@@ -131,7 +144,7 @@ final class Cron {
 	 * @return string[]
 	 */
 	public static function hooks(): array {
-		return [ self::DRAIN_HOOK, self::GC_HOOK, self::SALT_HOOK ];
+		return [ self::DRAIN_HOOK, self::GC_HOOK, self::SALT_HOOK, self::GSC_SYNC_HOOK ];
 	}
 
 	/**
@@ -173,6 +186,34 @@ final class Cron {
 				ReportMailer::maybeSend();
 			} catch ( \Throwable $e ) {
 				Log::error( 'The scheduled report could not be sent: ' . $e->getMessage() );
+			}
+		}
+
+		// Same reasoning, same guard: alerts are Pro, and the free build is
+		// packaged without the checker at all.
+		if ( Edition::isPro() && class_exists( AlertChecker::class ) ) {
+			try {
+				AlertChecker::maybeCheck();
+			} catch ( \Throwable $e ) {
+				Log::error( 'The traffic alert check failed: ' . $e->getMessage() );
+			}
+		}
+	}
+
+	/**
+	 * Re-pull the last week of Search Console data, if this site is connected.
+	 *
+	 * Search Console is Pro, and the free build is packaged without
+	 * {@see DailySync} at all - guarded the same way the nightly summary and
+	 * the traffic alert check are, so this event is scheduled on every site but
+	 * does nothing on a Lite one or an unlicensed Pro one.
+	 */
+	public static function runGscSync(): void {
+		if ( Edition::isPro() && class_exists( DailySync::class ) ) {
+			try {
+				DailySync::run();
+			} catch ( \Throwable $e ) {
+				Log::error( 'The Search Console daily sync failed: ' . $e->getMessage() );
 			}
 		}
 	}

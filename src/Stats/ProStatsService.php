@@ -362,4 +362,174 @@ final class ProStatsService {
 
 		return array_slice( array_values( $byPath ), 0, max( 1, $limit ) );
 	}
+
+	/**
+	 * The search terms that brought people to one page, from Search Console.
+	 *
+	 * Position is read back as a weighted average - {@see \HonestAnalytics\Import\Gsc\GscRollupWriter}
+	 * stores the summable click-weighted... no, impressions-weighted sum rather
+	 * than a daily average, precisely so a multi-day range can be divided back
+	 * into one honest average here rather than averaging several daily
+	 * averages together, which is not the same number.
+	 *
+	 * @param int       $siteId    Site ID.
+	 * @param DateRange $range     Period.
+	 * @param int       $limit     Maximum rows.
+	 * @param int       $pathDimId The page.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function searchConsoleQueries( int $siteId, DateRange $range, int $limit, int $pathDimId ): array {
+		global $wpdb;
+
+		$table = Tables::name( Tables::SEARCHCONSOLE_ROLLUP );
+		$dims  = Tables::name( Tables::DIMENSIONS );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT d.value AS query,
+					COALESCE(SUM(s.clicks),0) AS clicks,
+					COALESCE(SUM(s.impressions),0) AS impressions,
+					COALESCE(SUM(s.sumPosition),0) AS sumPosition
+				FROM `$table` s
+				INNER JOIN `$dims` d ON d.id = s.queryDimId
+				WHERE s.siteId = %d AND s.date BETWEEN %s AND %s AND s.pathDimId = %d
+				GROUP BY d.value ORDER BY clicks DESC LIMIT %d",
+				$siteId,
+				$range->from,
+				$range->to,
+				$pathDimId,
+				max( 1, $limit )
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return self::withAveragePosition( (array) $rows );
+	}
+
+	/**
+	 * The search terms that brought people to the site, across every page.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param DateRange $range  Period.
+	 * @param int       $limit  Maximum rows.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function searchConsoleTopQueries( int $siteId, DateRange $range, int $limit = 200 ): array {
+		global $wpdb;
+
+		$table = Tables::name( Tables::SEARCHCONSOLE_ROLLUP );
+		$dims  = Tables::name( Tables::DIMENSIONS );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT d.value AS query,
+					COALESCE(SUM(s.clicks),0) AS clicks,
+					COALESCE(SUM(s.impressions),0) AS impressions,
+					COALESCE(SUM(s.sumPosition),0) AS sumPosition
+				FROM `$table` s
+				INNER JOIN `$dims` d ON d.id = s.queryDimId
+				WHERE s.siteId = %d AND s.date BETWEEN %s AND %s
+				GROUP BY d.value ORDER BY clicks DESC LIMIT %d",
+				$siteId,
+				$range->from,
+				$range->to,
+				max( 1, $limit )
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return self::withAveragePosition( (array) $rows );
+	}
+
+	/**
+	 * The pages that earned the most Search Console clicks.
+	 *
+	 * @param int       $siteId Site ID.
+	 * @param DateRange $range  Period.
+	 * @param int       $limit  Maximum rows.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function searchConsoleTopPages( int $siteId, DateRange $range, int $limit = 200 ): array {
+		global $wpdb;
+
+		$table = Tables::name( Tables::SEARCHCONSOLE_ROLLUP );
+		$dims  = Tables::name( Tables::DIMENSIONS );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT d.value AS path,
+					COALESCE(SUM(s.clicks),0) AS clicks,
+					COALESCE(SUM(s.impressions),0) AS impressions,
+					COALESCE(SUM(s.sumPosition),0) AS sumPosition
+				FROM `$table` s
+				INNER JOIN `$dims` d ON d.id = s.pathDimId
+				WHERE s.siteId = %d AND s.date BETWEEN %s AND %s
+				GROUP BY d.value ORDER BY clicks DESC LIMIT %d",
+				$siteId,
+				$range->from,
+				$range->to,
+				max( 1, $limit )
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return self::withAveragePosition( (array) $rows );
+	}
+
+	/**
+	 * The most recent date this site has any Search Console data for.
+	 *
+	 * The honest "data through" date every Search Console surface shows -
+	 * Google itself reports two to three days behind, so this is never today,
+	 * and stating it plainly is what stops the gap from reading as a bug.
+	 *
+	 * @param int $siteId Site ID.
+	 */
+	public function searchConsoleDataThrough( int $siteId ): ?string {
+		global $wpdb;
+
+		$table = Tables::name( Tables::SEARCHCONSOLE_ROLLUP );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; the identifier comes from Schema\Tables and every value is a placeholder.
+		$date = $wpdb->get_var( $wpdb->prepare( "SELECT MAX(date) FROM `$table` WHERE siteId = %d", $siteId ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return null === $date ? null : (string) $date;
+	}
+
+	/**
+	 * Turn a summed `sumPosition` back into an average, and drop the running
+	 * total once it has done its job.
+	 *
+	 * @param array<int,array<string,mixed>> $rows Rows with clicks, impressions and sumPosition.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private static function withAveragePosition( array $rows ): array {
+		$out = [];
+
+		foreach ( $rows as $row ) {
+			$impressions = (int) $row['impressions'];
+			$sumPosition = (float) $row['sumPosition'];
+
+			$out[] = [
+				'query'       => (string) ( $row['query'] ?? '' ),
+				'path'        => (string) ( $row['path'] ?? '' ),
+				'clicks'      => (int) $row['clicks'],
+				'impressions' => $impressions,
+				'position'    => $impressions > 0 ? $sumPosition / $impressions : 0.0,
+			];
+		}
+
+		return $out;
+	}
 }

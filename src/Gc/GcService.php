@@ -71,6 +71,7 @@ final class GcService {
 			'sweptKeyValues'        => ( new DbKeyValueStore() )->sweep(),
 			'closedSessions'        => $this->pruneAbandonedSessions( $now ),
 			'orphanedDimensions'    => $this->deleteOrphanedDimensions(),
+			'expiredShareLinks'     => $this->deleteExpiredShareLinks( $now ),
 		];
 
 		update_option( 'honest_analytics_last_gc', array_merge( $result, [ 'at' => $now ] ), false );
@@ -225,6 +226,25 @@ final class GcService {
 		$cutoff = gmdate( 'Y-m-d H:i:s', $now - $this->settings->consentLogRetentionDays * 86400 );
 
 		return $this->deleteInBatches( Tables::CONSENT_LOG, 'recordedAt < %s', [ $cutoff ] );
+	}
+
+	/**
+	 * Delete share links that have been revoked or expired for a month.
+	 *
+	 * Not swept the moment they lapse: an administrator who just revoked a
+	 * link, or watched one expire, should still be able to see it listed as
+	 * revoked or expired for a while rather than have it vanish outright.
+	 *
+	 * @param int $now Timestamp.
+	 */
+	private function deleteExpiredShareLinks( int $now ): int {
+		$cutoff = gmdate( 'Y-m-d H:i:s', $now - 30 * DAY_IN_SECONDS );
+
+		return $this->deleteInBatches(
+			Tables::SHARE_LINKS,
+			'(revokedAt IS NOT NULL AND revokedAt < %s) OR (expiresAt IS NOT NULL AND expiresAt < %s)',
+			[ $cutoff, $cutoff ]
+		);
 	}
 
 	/**

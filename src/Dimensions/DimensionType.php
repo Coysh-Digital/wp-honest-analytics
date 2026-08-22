@@ -36,6 +36,7 @@ enum DimensionType: int {
 	case OutboundUrl     = 13;
 	case Region          = 14;
 	case Crawler         = 15;
+	case SearchQuery     = 16;
 
 	/**
 	 * The reserved value everything past the daily cardinality cap folds into.
@@ -65,6 +66,7 @@ enum DimensionType: int {
 			self::OutboundUrl     => __( 'Outbound link', 'honest-analytics' ),
 			self::Region          => __( 'Region', 'honest-analytics' ),
 			self::Crawler         => __( 'Crawler', 'honest-analytics' ),
+			self::SearchQuery     => __( 'Search query', 'honest-analytics' ),
 		};
 	}
 }

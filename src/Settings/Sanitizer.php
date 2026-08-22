@@ -126,6 +126,9 @@ final class Sanitizer {
 			case 'reportPeriod':
 				return self::choice( $value, [ 'today', 'yesterday', '7d', '30d', '90d', '12mo' ], $default );
 
+			case 'alertSensitivity':
+				return self::choice( $value, [ 'cautious', 'balanced', 'sensitive' ], $default );
+
 			case 'ipSource':
 				return self::choice( $value, [ 'auto', 'remote_addr', 'cf_connecting_ip', 'x_forwarded_for', 'x_real_ip' ], $default );
 
@@ -234,7 +237,11 @@ final class Sanitizer {
 				return self::cidrList( $value, $errors );
 
 			case 'reportRecipients':
-				return self::emailList( $value, $errors );
+			case 'alertRecipients':
+				return self::emailList( $key, $value, $errors );
+
+			case 'clickSelectors':
+				return Settings::toPairs( self::parseClickSelectors( $value ) );
 
 			case 'disabledIntegrations':
 				return self::slugList( $value );
@@ -282,6 +289,7 @@ final class Sanitizer {
 			$values['trackOutbound']  = false;
 			$values['trackDownloads'] = false;
 			$values['trackScroll']    = false;
+			$values['trackClicks']    = false;
 		}
 
 		return $values;
@@ -451,12 +459,13 @@ final class Sanitizer {
 	/**
 	 * Email addresses, allowing an environment placeholder through untouched.
 	 *
+	 * @param string               $key    Field name, for the error it may raise.
 	 * @param mixed                $value  Raw value.
 	 * @param array<string,string> $errors Collected errors, by reference.
 	 *
 	 * @return string[]
 	 */
-	private static function emailList( mixed $value, array &$errors ): array {
+	private static function emailList( string $key, mixed $value, array &$errors ): array {
 		$out = [];
 
 		foreach ( Settings::toList( $value ) as $email ) {
@@ -469,7 +478,7 @@ final class Sanitizer {
 			$clean = sanitize_email( $email );
 
 			if ( '' === $clean || ! is_email( $clean ) ) {
-				$errors['reportRecipients'] = __( 'Report recipients must be email addresses, one per line.', 'honest-analytics' );
+				$errors[ $key ] = __( 'Recipients must be email addresses, one per line.', 'honest-analytics' );
 
 				continue;
 			}
@@ -478,5 +487,42 @@ final class Sanitizer {
 		}
 
 		return array_values( array_unique( $out ) );
+	}
+
+	/**
+	 * Split the click-selectors textarea into selector/event-name pairs.
+	 *
+	 * CSS selector syntax cannot be validated in PHP, so a malformed selector
+	 * is kept rather than rejected - it simply never matches anything once it
+	 * reaches the browser. A line with no "=>" is dropped: it names neither a
+	 * selector nor an event, so there is nothing to record it under.
+	 *
+	 * @param mixed $value Raw textarea content.
+	 *
+	 * @return array<int,array{selector:string,eventName:string}>
+	 */
+	private static function parseClickSelectors( mixed $value ): array {
+		if ( ! is_string( $value ) ) {
+			return [];
+		}
+
+		$out = [];
+
+		foreach ( preg_split( '/[\r\n]+/', $value ) ?: [] as $line ) {
+			$line = trim( $line );
+
+			if ( '' === $line || ! str_contains( $line, '=>' ) ) {
+				continue;
+			}
+
+			[ $selector, $eventName ] = array_map( 'trim', explode( '=>', $line, 2 ) );
+
+			$out[] = [
+				'selector'  => sanitize_text_field( mb_substr( $selector, 0, 200 ) ),
+				'eventName' => sanitize_text_field( mb_substr( $eventName, 0, 120 ) ),
+			];
+		}
+
+		return $out;
 	}
 }

@@ -36,7 +36,7 @@ final class Schema {
 	 * `Upgrader` compares it with the stored version and re-runs dbDelta, which
 	 * is additive: new tables and new columns appear, nothing is dropped.
 	 */
-	public const VERSION = 2;
+	public const VERSION = 4;
 
 	/**
 	 * Every CREATE TABLE statement, in dbDelta's dialect.
@@ -286,6 +286,19 @@ final class Schema {
 	UNIQUE KEY term (siteId,date,termDimId)
 ) ENGINE=InnoDB $charset;";
 
+		$out[] = "CREATE TABLE {$p}honest_searchconsole_rollup (
+	id bigint(20) unsigned NOT NULL auto_increment,
+	siteId bigint(20) unsigned NOT NULL,
+	date date NOT NULL,
+	pathDimId bigint(20) unsigned NOT NULL,
+	queryDimId bigint(20) unsigned NOT NULL,
+	clicks int(11) NOT NULL default 0,
+	impressions int(11) NOT NULL default 0,
+	sumPosition decimal(14,2) NOT NULL default 0,
+	PRIMARY KEY  (id),
+	UNIQUE KEY bucket (siteId,date,pathDimId,queryDimId)
+) ENGINE=InnoDB $charset;";
+
 		$out[] = "CREATE TABLE {$p}honest_outbound_rollup (
 	id bigint(20) unsigned NOT NULL auto_increment,
 	siteId bigint(20) unsigned NOT NULL,
@@ -438,6 +451,24 @@ final class Schema {
 	KEY visitor (visitorId,occurredAt),
 	KEY wp_user (userId),
 	KEY site_time (siteId,occurredAt)
+) ENGINE=InnoDB $charset;";
+
+		// -------------------------------------------------------------- sharing
+
+		$out[] = "CREATE TABLE {$p}honest_share_links (
+	id bigint(20) unsigned NOT NULL auto_increment,
+	siteId bigint(20) unsigned NOT NULL,
+	tokenHash char(64) NOT NULL,
+	label varchar(191) NOT NULL default '',
+	scope varchar(24) NOT NULL default 'overview',
+	windowPreset varchar(8) NOT NULL default '7d',
+	createdAt datetime NOT NULL,
+	lastViewedAt datetime NULL,
+	expiresAt datetime NULL,
+	revokedAt datetime NULL,
+	PRIMARY KEY  (id),
+	UNIQUE KEY token (tokenHash),
+	KEY by_site (siteId,revokedAt)
 ) ENGINE=InnoDB $charset;";
 
 		return $out;

@@ -24,7 +24,9 @@ use HonestAnalytics\Admin\Screens\LocationsScreen;
 use HonestAnalytics\Admin\Screens\PagesScreen;
 use HonestAnalytics\Admin\Screens\PrivacyScreen;
 use HonestAnalytics\Admin\Screens\RealtimeScreen;
+use HonestAnalytics\Admin\Screens\SearchConsoleScreen;
 use HonestAnalytics\Admin\Screens\SettingsScreen;
+use HonestAnalytics\Admin\Screens\ShareScreen;
 use HonestAnalytics\Admin\Screens\SourcesScreen;
 use HonestAnalytics\Capabilities\Capabilities;
 use HonestAnalytics\Edition\Edition;
@@ -79,6 +81,8 @@ final class Menu {
 		GoalsScreen::class,
 		FunnelsScreen::class,
 		CrawlersScreen::class,
+		ShareScreen::class,
+		SearchConsoleScreen::class,
 		PrivacyScreen::class,
 		SettingsScreen::class,
 		ImportScreen::class,
@@ -96,12 +100,14 @@ final class Menu {
 	 * @var array<class-string,string>
 	 */
 	private const STAND_INS = [
-		CampaignsScreen::class => 'campaigns',
-		LocationsScreen::class => 'locations',
-		EventsScreen::class    => 'events',
-		GoalsScreen::class     => 'goals',
-		FunnelsScreen::class   => 'funnels',
-		CrawlersScreen::class  => 'crawlers',
+		CampaignsScreen::class     => 'campaigns',
+		LocationsScreen::class     => 'locations',
+		EventsScreen::class        => 'events',
+		GoalsScreen::class         => 'goals',
+		FunnelsScreen::class       => 'funnels',
+		CrawlersScreen::class      => 'crawlers',
+		ShareScreen::class         => 'share',
+		SearchConsoleScreen::class => 'search-console',
 	];
 
 

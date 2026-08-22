@@ -47,6 +47,13 @@ final class Tables {
 	public const SEARCH_ROLLUP    = 'honest_search_rollup';
 	public const OUTBOUND_ROLLUP  = 'honest_outbound_rollup';
 
+	/**
+	 * Search Console query data. Deliberately distinct from SEARCH_ROLLUP,
+	 * which is this site's own on-site search box - a different concept
+	 * entirely, not a second copy of the same one.
+	 */
+	public const SEARCHCONSOLE_ROLLUP = 'honest_searchconsole_rollup';
+
 	public const GOALS              = 'honest_goals';
 	public const GOALS_ROLLUP       = 'honest_goals_rollup';
 	public const FUNNELS            = 'honest_funnels';
@@ -59,6 +66,8 @@ final class Tables {
 	public const IMPORT_COVERAGE = 'honest_import_coverage';
 	public const IMPORT_LOG      = 'honest_import_log';
 	public const JOURNEYS        = 'honest_journeys';
+
+	public const SHARE_LINKS = 'honest_share_links';
 
 	/**
 	 * Reserved for a future segments rollup; not created, never queried.
@@ -109,6 +118,7 @@ final class Tables {
 	 */
 	public static function all(): array {
 		return [
+			self::SHARE_LINKS,
 			self::FUNNEL_STEP_ROLLUP,
 			self::FUNNEL_STEPS,
 			self::FUNNELS,
@@ -124,6 +134,7 @@ final class Tables {
 			self::EVENTS_ROLLUP,
 			self::SCROLL_ROLLUP,
 			self::SEARCH_ROLLUP,
+			self::SEARCHCONSOLE_ROLLUP,
 			self::OUTBOUND_ROLLUP,
 			self::SEGMENTS_PLACEHOLDER,
 			self::CRAWLERS_ROLLUP,
@@ -165,6 +176,7 @@ final class Tables {
 			self::EVENTS_ROLLUP,
 			self::SCROLL_ROLLUP,
 			self::SEARCH_ROLLUP,
+			self::SEARCHCONSOLE_ROLLUP,
 			self::OUTBOUND_ROLLUP,
 			self::GOALS_ROLLUP,
 			self::FUNNEL_STEP_ROLLUP,
@@ -207,6 +219,7 @@ final class Tables {
 			self::IMPORTS         => 'A record of what was imported and when. Kept, because deleting it would make a completed import look like one that never ran, and the next one would offer to do it again.',
 			self::IMPORT_COVERAGE => 'One row per imported day. This is what stops a second import doubling the first, so it outlives the rollups it describes on purpose.',
 			self::IMPORT_LOG      => 'Trimmed by row count per import rather than by date: a log of the last few hundred batches is useful for support and an unbounded one is a liability.',
+			self::SHARE_LINKS     => 'Not date-keyed at all: a row is kept until it is revoked or expires, then swept by GcService thirty days later so a just-expired link can still be seen as "expired" rather than simply vanishing.',
 		];
 	}
 
@@ -238,6 +251,8 @@ final class Tables {
 			[ self::EVENTS_ROLLUP, 'pathDimId' ],
 			[ self::SCROLL_ROLLUP, 'pathDimId' ],
 			[ self::SEARCH_ROLLUP, 'termDimId' ],
+			[ self::SEARCHCONSOLE_ROLLUP, 'pathDimId' ],
+			[ self::SEARCHCONSOLE_ROLLUP, 'queryDimId' ],
 			[ self::OUTBOUND_ROLLUP, 'targetHostDimId' ],
 			[ self::OUTBOUND_ROLLUP, 'targetDimId' ],
 			[ self::OUTBOUND_ROLLUP, 'pathDimId' ],

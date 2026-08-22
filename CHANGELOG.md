@@ -7,6 +7,43 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-22
+
+Four Pro reports: a link to hand a client with no account of their own, an
+email when traffic breaks its own pattern, tracking for anything a click can
+land on, and what people searched to find a page.
+
+### Added
+
+- **Pro only: client-shareable reports.** A link an administrator creates
+  from the new Shared reports screen, showing a rolling window of the
+  overview to whoever holds it - no WordPress account, no settings, no other
+  report, and no way back into wp-admin. Individually revocable, with an
+  optional expiry, rate limited, and marked noindex so a leaked link cannot
+  end up in a search index.
+- **Pro only: traffic spike and drop alerts.** Off by default. Once a day,
+  yesterday's session total is compared against the typical figure for that
+  weekday, drawn from the site's own last four occurrences of it, and an
+  email states the real numbers rather than a bare percentage. A drop to
+  zero - tracking having quietly broken - is the case this is built for.
+- **Pro only: click tracking on any element.** A `data-honest-event`
+  attribute an author can add in the block editor, or a short list of CSS
+  selectors configured on Settings, each recording a named event with
+  nothing else about the element it was attached to.
+- **Pro only: Search Console query data.** A separate, narrowly scoped
+  Google connection imports what people searched to reach each page -
+  queries, clicks, impressions and average position - onto a new Search
+  Console screen and as a panel on every page's detail view, always shown
+  apart from this plugin's own figures rather than added to them.
+
+### Fixed
+
+- **The "See what Pro adds" link on a locked report went to the wrong
+  domain.** It named the unhyphenated spelling of the site, which belongs to
+  somebody else and has been parked since 2015, so anybody clicking through
+  from a locked report landed on a parking page rather than the pricing page.
+  It ships in the free edition, so this was every Lite site.
+
 ## [0.2.3] - 2026-08-22
 
 Comparison finishes reaching the screens it was missing from, and Locations

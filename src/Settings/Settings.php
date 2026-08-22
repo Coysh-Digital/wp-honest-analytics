@@ -49,6 +49,9 @@ final class Settings {
 	/** Aggregates may never be kept longer than 36 months. */
 	public const ROLLUP_MAX_RETENTION_MONTHS = 36;
 
+	/** Configured click selectors beyond this many are dropped, not stored. */
+	public const MAX_CLICK_SELECTORS = 20;
+
 	// Capture.
 	public string $trackingMode    = self::TRACKING_HYBRID;
 	public bool $injectScript      = true;
@@ -105,6 +108,17 @@ final class Settings {
 	public bool $trackScroll         = true;
 	public bool $trackSiteSearch     = false;
 	public string $siteSearchParam   = 's';
+	public bool $trackClicks         = true;
+	/**
+	 * Configured selectors and the event name each records.
+	 *
+	 * Capped at MAX_CLICK_SELECTORS - each one is one more `closest()` check
+	 * on every click a visitor makes, so an unbounded list is a performance
+	 * problem nobody watching the reports would ever see coming.
+	 *
+	 * @var array<int,array{selector:string,eventName:string}>
+	 */
+	public array $clickSelectors = [];
 
 	// Consent and durable tracking.
 	public bool $enableConsent        = false;
@@ -140,6 +154,12 @@ final class Settings {
 	/** @var string[] */
 	public array $reportRecipients = [];
 	public string $reportPeriod    = '7d';
+
+	// Traffic alerts.
+	public bool $enableAlerts       = false;
+	public string $alertSensitivity = 'balanced';
+	/** @var string[] */
+	public array $alertRecipients = [];
 
 	// Licence and lifecycle.
 	public string $licenceKey = '';
@@ -190,7 +210,7 @@ final class Settings {
 		}
 
 		if ( is_array( $current ) ) {
-			$this->{$key} = self::toList( $value );
+			$this->{$key} = 'clickSelectors' === $key ? self::toPairs( $value ) : self::toList( $value );
 
 			return;
 		}
@@ -316,5 +336,48 @@ final class Settings {
 		}
 
 		return array_values( array_unique( $out ) );
+	}
+
+	/**
+	 * Coerce a stored value to a list of configured click selectors.
+	 *
+	 * Unlike {@see toList()} each entry is a pair, not a scalar, so it cannot
+	 * share that method's flattening - a selector and the event name it
+	 * records are two different things and neither is dispensable.
+	 *
+	 * @param mixed $value Raw value.
+	 *
+	 * @return array<int,array{selector:string,eventName:string}>
+	 */
+	public static function toPairs( mixed $value ): array {
+		if ( ! is_array( $value ) ) {
+			return [];
+		}
+
+		$out = [];
+
+		foreach ( $value as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+
+			$selector  = isset( $item['selector'] ) && is_scalar( $item['selector'] ) ? trim( (string) $item['selector'] ) : '';
+			$eventName = isset( $item['eventName'] ) && is_scalar( $item['eventName'] ) ? trim( (string) $item['eventName'] ) : '';
+
+			if ( '' === $selector || '' === $eventName ) {
+				continue;
+			}
+
+			$out[] = [
+				'selector'  => $selector,
+				'eventName' => $eventName,
+			];
+
+			if ( count( $out ) >= self::MAX_CLICK_SELECTORS ) {
+				break;
+			}
+		}
+
+		return $out;
 	}
 }

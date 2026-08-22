@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Scheduling;
 
+use HonestAnalytics\Alerts\AlertChecker;
+use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Gc\GcService;
 use HonestAnalytics\Import\ImportJob;
 use HonestAnalytics\Import\ImportRepository;
@@ -32,8 +34,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * So nothing here depends on a schedule. The drain already runs from ordinary
  * traffic (see Write\AutoDrain) and the identity salt already rotates when it
- * is next read. This covers the two that were left: the nightly tidy-up, and
- * advancing an import whose progress screen has been closed.
+ * is next read. This covers what was left: the nightly tidy-up, the traffic
+ * alert check that rides along with it, and advancing an import whose
+ * progress screen has been closed.
  *
  * Two rules make it safe to hang off a page load. Everything is throttled
  * through the key-value store, so a burst of traffic causes one run rather than
@@ -121,6 +124,17 @@ final class Fallback {
 			( new GcService( Plugin::instance()->settings() ) )->run();
 		} catch ( \Throwable $e ) {
 			Log::warning( 'The tidy-up could not finish from a page request: ' . $e->getMessage() );
+		}
+
+		// Rides the same daily throttle as the tidy-up above, so a site with no
+		// WP-Cron still gets checked once a day from whatever admin page happens
+		// to load first.
+		if ( Edition::isPro() && class_exists( AlertChecker::class ) ) {
+			try {
+				AlertChecker::maybeCheck();
+			} catch ( \Throwable $e ) {
+				Log::warning( 'The traffic alert check could not run from a page request: ' . $e->getMessage() );
+			}
 		}
 	}
 

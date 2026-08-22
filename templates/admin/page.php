@@ -241,6 +241,50 @@ $ha_kpis = [
 		</div>
 
 		<div class="ha-card">
+			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Search Console queries', 'honest-analytics' ); ?></h2></div>
+
+			<div class="ha-card-body">
+				<?php
+				$ha_rows = [];
+
+				foreach ( $queries as $ha_query ) {
+					$ha_isOther = \HonestAnalytics\Dimensions\DimensionType::OTHER_VALUE === $ha_query['query'];
+
+					$ha_rows[] = [
+						'label'  => $ha_isOther ? __( 'Other search terms', 'honest-analytics' ) : (string) $ha_query['query'],
+						'clicks' => Format::count( (int) $ha_query['clicks'] ),
+						'_bar'   => (int) $ha_query['clicks'],
+					];
+				}
+
+				View::render(
+					'admin/partials/ranked-table',
+					[
+						'rows'    => $ha_rows,
+						'max'     => $queries ? max( array_column( $queries, 'clicks' ) ) : 1,
+						'empty'   => __( 'No Search Console clicks recorded for this page in this period.', 'honest-analytics' ),
+						'columns' => [
+							[
+								'key'   => 'label',
+								'label' => __( 'Search term', 'honest-analytics' ),
+							],
+							[
+								'key'     => 'clicks',
+								'label'   => __( 'Clicks', 'honest-analytics' ),
+								'numeric' => true,
+							],
+						],
+					]
+				);
+				?>
+
+				<p class="ha-muted ha-fine">
+					<?php esc_html_e( 'From Google Search Console, on Google\'s own count - shown here on its own, never added to the views above.', 'honest-analytics' ); ?>
+				</p>
+			</div>
+		</div>
+
+		<div class="ha-card">
 			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Outbound links and downloads', 'honest-analytics' ); ?></h2></div>
 
 			<div class="ha-card-body">
@@ -293,6 +337,14 @@ $ha_kpis = [
 			[
 				'title'       => __( 'Events and outbound clicks', 'honest-analytics' ),
 				'description' => __( 'Would tell you which buttons were pressed on this page and which links took people away from it.', 'honest-analytics' ),
+			]
+		);
+
+		View::render(
+			'admin/partials/pro-placeholder',
+			[
+				'title'       => __( 'Search Console queries', 'honest-analytics' ),
+				'description' => __( 'Would tell you what people searched on Google to find this page.', 'honest-analytics' ),
 			]
 		);
 		?>

@@ -58,6 +58,10 @@ final class ImporterRegistry {
 			// a build without it should list the other two rather than fail to
 			// load this file.
 			'HonestAnalytics\\Import\\Sources\\Ga4Importer',
+			// Search Console is Pro-only and stripped from Lite along with the
+			// rest of src/Import/Gsc/, so the same string-name-and-class_exists()
+			// treatment applies.
+			'HonestAnalytics\\Import\\Sources\\GscImporter',
 		];
 
 		$built = [];

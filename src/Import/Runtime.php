@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Import;
 
+use HonestAnalytics\Edition\Edition;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -44,9 +46,21 @@ final class Runtime {
 			add_action( 'honest_analytics_deactivated', [ Scheduler::class, 'unschedule' ] );
 		}
 
-		// Google Analytics: the OAuth callback and the token store.
+		// Google Analytics: the OAuth callback and the token store. Ships in
+		// Lite, so this is a plain class_exists() guard rather than an edition
+		// check - GA4 import is not Pro.
 		if ( class_exists( Ga4\Connection::class ) ) {
 			Ga4\Connection::register();
+		}
+
+		// Search Console: the OAuth callback and the token store. This one is
+		// Pro, and stripped from Lite entirely, so a Lite build never reaches
+		// class_exists() finding anything here. A Pro build with no active
+		// licence still has the class, which is why Gsc\Connection also checks
+		// Edition::isPro() itself on every action rather than relying on this
+		// registration guard alone.
+		if ( Edition::isPro() && class_exists( Gsc\Connection::class ) ) {
+			Gsc\Connection::register();
 		}
 	}
 }

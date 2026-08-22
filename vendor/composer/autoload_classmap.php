@@ -96,6 +96,7 @@ return array(
     'HonestAnalytics\\Import\\Ga4\\Reports' => $baseDir . '/src/Import/Ga4/Reports.php',
     'HonestAnalytics\\Import\\Ga4\\ResponseMapper' => $baseDir . '/src/Import/Ga4/ResponseMapper.php',
     'HonestAnalytics\\Import\\Ga4\\TokenStore' => $baseDir . '/src/Import/Ga4/TokenStore.php',
+    'HonestAnalytics\\Import\\GoogleCloudCredentials' => $baseDir . '/src/Import/GoogleCloudCredentials.php',
     'HonestAnalytics\\Import\\ImportBatchResult' => $baseDir . '/src/Import/ImportBatchResult.php',
     'HonestAnalytics\\Import\\ImportConfiguration' => $baseDir . '/src/Import/ImportConfiguration.php',
     'HonestAnalytics\\Import\\ImportJob' => $baseDir . '/src/Import/ImportJob.php',

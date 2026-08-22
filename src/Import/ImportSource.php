@@ -30,12 +30,22 @@ final class ImportSource {
 	public const GA4                   = 'ga4';
 
 	/**
+	 * Search Console. Not written by {@see ImportSink} - that writer's tables
+	 * hold pages, sessions, sources, devices and countries, and Search Console
+	 * query data has no place in any of them - but the string still belongs
+	 * here, since it is what every job, coverage row and log line under this
+	 * source is stamped with, and this is the one place that turns it into a
+	 * name a person would recognise.
+	 */
+	public const GSC = 'gsc';
+
+	/**
 	 * Every source that can be imported from.
 	 *
 	 * @return string[]
 	 */
 	public static function importable(): array {
-		return [ self::WP_STATISTICS, self::INDEPENDENT_ANALYTICS, self::GA4 ];
+		return [ self::WP_STATISTICS, self::INDEPENDENT_ANALYTICS, self::GA4, self::GSC ];
 	}
 
 	/**
@@ -53,6 +63,9 @@ final class ImportSource {
 
 			case self::GA4:
 				return __( 'Google Analytics', 'honest-analytics' );
+
+			case self::GSC:
+				return __( 'Google Search Console', 'honest-analytics' );
 
 			case self::NATIVE:
 				return __( 'Honest Analytics', 'honest-analytics' );

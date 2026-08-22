@@ -158,6 +158,8 @@ $ha_submitted = [
 	'trackOutbound',
 	'trackDownloads',
 	'trackScroll',
+	'trackClicks',
+	'clickSelectors',
 	'downloadExtensions',
 	'trackSiteSearch',
 	'siteSearchParam',
@@ -173,6 +175,9 @@ $ha_submitted = [
 	'enableScheduledReports',
 	'reportRecipients',
 	'reportPeriod',
+	'enableAlerts',
+	'alertSensitivity',
+	'alertRecipients',
 	'keepDataOnUninstall',
 ];
 ?>
@@ -626,7 +631,7 @@ $ha_submitted = [
 				$ha_row(
 					'enableEvents',
 					__( 'Events and interactions', 'honest-analytics' ),
-					$ha_switch( 'enableEvents', $settings->enableEvents, __( 'Record custom events, outbound clicks, downloads and scroll depth', 'honest-analytics' ), $overrides( 'enableEvents' ), '[data-ha-events]' ),
+					$ha_switch( 'enableEvents', $settings->enableEvents, __( 'Record custom events, outbound clicks, downloads, scroll depth and marked clicks', 'honest-analytics' ), $overrides( 'enableEvents' ), '[data-ha-events]' ),
 					__( 'Loads a small extra script. Left off, none of these are recorded and the core tracker stays smaller.', 'honest-analytics' )
 				);
 				?>
@@ -659,6 +664,29 @@ $ha_submitted = [
 						__( 'Scroll depth', 'honest-analytics' ),
 						$ha_switch( 'trackScroll', $settings->trackScroll, __( 'Record how far down each page people read', 'honest-analytics' ), $overrides( 'trackScroll' ) ),
 						__( 'Rides the existing pageview beacon, so it adds no extra request.', 'honest-analytics' )
+					);
+
+					$ha_row(
+						'trackClicks',
+						__( 'Clicks on anything else', 'honest-analytics' ),
+						$ha_switch( 'trackClicks', $settings->trackClicks, __( 'Count clicks on elements marked to be tracked', 'honest-analytics' ), $overrides( 'trackClicks' ) ),
+						__( 'Two ways to mark an element: add a data-honest-event="name" attribute in the block editor, or list a CSS selector below. Only the event name you choose is ever recorded - never the element\'s text, its id, or anything a visitor typed.', 'honest-analytics' )
+					);
+
+					$ha_clickSelectorLines = array_map(
+						static fn ( array $pair ): string => $pair['selector'] . ' => ' . $pair['eventName'],
+						$settings->clickSelectors
+					);
+
+					$ha_row(
+						'clickSelectors',
+						__( 'Selectors', 'honest-analytics' ),
+						$ha_list( 'clickSelectors', $ha_clickSelectorLines, $overrides( 'clickSelectors' ), ".pricing-cta => pricing-click\n#newsletter-form button => newsletter-click" ),
+						sprintf(
+							/* translators: %d: maximum number of selectors. */
+							__( 'One per line, as "selector => event name". Up to %d; anything past that is not stored. An invalid selector simply never matches - it will not break the others.', 'honest-analytics' ),
+							Settings::MAX_CLICK_SELECTORS
+						)
 					);
 					?>
 				</div>
@@ -759,6 +787,79 @@ $ha_submitted = [
 					);
 					?>
 				</div>
+			</div>
+		</div>
+
+		<div class="ha-card">
+			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Scheduled reports', 'honest-analytics' ); ?></h2></div>
+			<div class="ha-settings-body">
+				<?php
+				$ha_row(
+					'enableScheduledReports',
+					__( 'Email summary', 'honest-analytics' ),
+					$ha_switch( 'enableScheduledReports', $settings->enableScheduledReports, __( 'Send a plain-text summary on a schedule', 'honest-analytics' ), $overrides( 'enableScheduledReports' ) ),
+					__( 'No images and no tracking of any kind in the email itself. Needs at least one recipient below to actually send anything.', 'honest-analytics' )
+				);
+
+				$ha_row(
+					'reportPeriod',
+					__( 'Period', 'honest-analytics' ),
+					$ha_select(
+						'reportPeriod',
+						$settings->reportPeriod,
+						[
+							'7d'  => __( 'Weekly', 'honest-analytics' ),
+							'30d' => __( 'Monthly', 'honest-analytics' ),
+						],
+						$overrides( 'reportPeriod' )
+					),
+					__( 'A weekly report goes out on a Monday and a monthly one on the first, each covering the whole period that just finished.', 'honest-analytics' )
+				);
+
+				$ha_row(
+					'reportRecipients',
+					__( 'Recipients', 'honest-analytics' ),
+					$ha_list( 'reportRecipients', $settings->reportRecipients, $overrides( 'reportRecipients' ), 'person@example.com' ),
+					__( 'One email address per line.', 'honest-analytics' )
+				);
+				?>
+			</div>
+		</div>
+
+		<div class="ha-card">
+			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Traffic alerts', 'honest-analytics' ); ?></h2></div>
+			<div class="ha-settings-body">
+				<?php
+				$ha_row(
+					'enableAlerts',
+					__( 'Spike and drop alerts', 'honest-analytics' ),
+					$ha_switch( 'enableAlerts', $settings->enableAlerts, __( 'Email somebody when traffic departs from its own recent baseline', 'honest-analytics' ), $overrides( 'enableAlerts' ) ),
+					__( 'Compares the last six hours against the same six hours on recent weeks of the same weekday. Below roughly twenty sessions in that window, nothing fires - traffic that quiet is too noisy to alert on either way.', 'honest-analytics' )
+				);
+
+				$ha_row(
+					'alertSensitivity',
+					__( 'Sensitivity', 'honest-analytics' ),
+					$ha_select(
+						'alertSensitivity',
+						$settings->alertSensitivity,
+						[
+							'cautious'  => __( 'Cautious - only a large move', 'honest-analytics' ),
+							'balanced'  => __( 'Balanced', 'honest-analytics' ),
+							'sensitive' => __( 'Sensitive - a smaller move is enough', 'honest-analytics' ),
+						],
+						$overrides( 'alertSensitivity' )
+					),
+					__( 'How far traffic has to move from its baseline before an email goes out. A drop to zero always clears every threshold, because tracking silently breaking is worth knowing about regardless.', 'honest-analytics' )
+				);
+
+				$ha_row(
+					'alertRecipients',
+					__( 'Recipients', 'honest-analytics' ),
+					$ha_list( 'alertRecipients', $settings->alertRecipients, $overrides( 'alertRecipients' ), get_option( 'admin_email' ) ),
+					__( 'One email address per line. Left empty, alerts go to the site\'s admin email.', 'honest-analytics' )
+				);
+				?>
 			</div>
 		</div>
 	<?php endif; ?>
