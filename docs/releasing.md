@@ -96,19 +96,65 @@ submission page before review starts. Only one plugin may be in the queue at a
 time. If the reviewers find something, reply on the same email thread rather
 than submitting again.
 
-Once accepted, add to the **public** repository:
+## Git to SVN
 
-| | |
-|---|---|
-| Secret `SVN_USERNAME` | the wordpress.org account |
-| Secret `SVN_PASSWORD` | its password |
-| Variable `DEPLOY_TO_WORDPRESS_ORG` | `true` |
+The directory is an SVN repository, and nothing is ever committed to it by
+hand. Two workflows in the public repository do it, and both stay dormant
+until the switch below is thrown, so a release made before the plugin is
+accepted does not fail.
 
-After that every tag deploys itself. The banner and icon go in
-`.wordpress-org/`; see the README there for the sizes.
+Edit them at `bin/templates/release-lite.yml` and
+`bin/templates/assets-lite.yml`. **Never in the public repository** - the next
+`publish-lite.sh` overwrites whatever is there.
 
-`Stable tag` in `readme.txt` is what the directory actually serves. A release
-whose stable tag was not updated is a release nobody receives.
+| Workflow | Fires on | Puts in SVN |
+|---|---|---|
+| `release.yml` | a `v*` tag, or by hand naming a tag | the plugin, into `trunk/` and `tags/<version>/` |
+| `listing.yml` | `readme.txt` or `.wordpress-org/**` changing on `main` | the readme, and the icon, banner and screenshots |
+
+Both use [10up's actions](https://github.com/10up/action-wordpress-plugin-deploy),
+which is worth preferring over a hand-rolled `svn` script: it respects
+`.distignore`, copies `ASSETS_DIR` into the directory's separate `assets/`
+folder, and **removes from SVN anything deleted here** - the step a script
+written by hand almost always forgets, leaving files the directory keeps
+serving after they were deleted.
+
+The listing workflow exists because the directory serves `readme.txt` and the
+images from SVN and neither needs a version bump. Without it, fixing a typo in
+the description means shipping an update to every site that has the plugin.
+
+### Switching it on
+
+Once the plugin is accepted, add to the **public** repository
+(`Coysh-Digital/wp-honest-analytics`) under Settings > Secrets and variables >
+Actions:
+
+| | Where | Value |
+|---|---|---|
+| `SVN_USERNAME` | Secrets | the wordpress.org account name, not the email |
+| `SVN_PASSWORD` | Secrets | its password |
+| `DEPLOY_TO_WORDPRESS_ORG` | Variables | `true` |
+
+The account must have commit access to the plugin, which the account that
+submitted it has by default. There is no separate SVN password: it is the
+wordpress.org login. If two-factor is ever enabled on that account, SVN needs
+an application password instead.
+
+After that, `bash bin/publish-lite.sh --push --tag` is the whole release, and
+the first tag is what makes the listing public. Have the images in
+`.wordpress-org/` before then.
+
+### The two things that break a release
+
+`Stable tag` in `readme.txt` is what the directory actually serves, not the
+newest tag in SVN. A release whose stable tag was not updated is a release
+nobody receives, and a stable tag naming a version that was never released
+takes the listing down to a "not found". Both workflows refuse to run if the
+stable tag and the plugin header disagree.
+
+The directory rebuilds every few minutes but can take some hours when the
+queue is long. Six hours is the point at which it is worth asking rather than
+assuming something is wrong.
 
 ## Versioning
 

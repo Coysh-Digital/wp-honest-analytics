@@ -9,6 +9,10 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re)publish, e.g. v1.0.0'
+        required: true
 
 permissions:
   contents: write
@@ -20,10 +24,24 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
+      # On a tag push the ref is the tag. On a manual run it is whatever branch
+      # the button was pressed from, which would silently produce a version
+      # like "main", so the tag is asked for and used instead.
       - name: Work out the version
         id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: |
+          ref="${{ inputs.tag || github.ref_name }}"
+          version="${ref#v}"
+
+          if ! printf '%s' "$version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "\"$ref\" is not a version tag. Expected something like v1.0.0." >&2
+            exit 1
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - name: Check the tag matches the plugin header
         run: |
@@ -64,7 +82,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
+      # Deploys the repository root, filtered by .distignore, into both
+      # trunk/ and tags/<version>/, and syncs ASSETS_DIR into the directory's
+      # own assets/ folder. It also removes from SVN anything deleted here,
+      # which is the step a hand-rolled svn script usually forgets.
       - name: Deploy
         uses: 10up/action-wordpress-plugin-deploy@stable
         env:

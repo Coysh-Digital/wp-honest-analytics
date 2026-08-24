@@ -1,0 +1,63 @@
+name: Directory listing
+
+# The plugin directory serves two things that are not the plugin: the readme
+# that fills the listing page, and the icon, banner and screenshots beside it.
+# Neither needs a new version - the directory FAQ is explicit that a readme or
+# an image change is not something to make users download an update for.
+#
+# So this deploys those, and only those, when they change on main. Releases go
+# through release.yml and are the only thing that ever moves code.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'readme.txt'
+      - '.wordpress-org/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  listing:
+    name: Update the readme and the directory images
+    runs-on: ubuntu-latest
+    # Same guard as the release workflow: dormant until the plugin is accepted
+    # and the credentials exist, so this never fails on a repository that has
+    # nothing to deploy to yet.
+    if: ${{ vars.DEPLOY_TO_WORDPRESS_ORG == 'true' }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # The directory serves whatever version Stable tag names, so a readme
+      # pushed to trunk with a stable tag naming a version that was never
+      # released takes the listing down to a "not found". Cheap to check here,
+      # expensive to notice from the outside.
+      - name: Check the stable tag names a released version
+        run: |
+          stable="$(grep -m1 '^Stable tag:' readme.txt | awk '{print $3}')"
+          header="$(grep -m1 '^ \* Version:' honest-analytics.php | awk '{print $3}')"
+
+          if [ -z "$stable" ]; then
+            echo "readme.txt has no Stable tag." >&2
+            exit 1
+          fi
+
+          if [ "$stable" != "$header" ]; then
+            echo "readme.txt says Stable tag: $stable and the plugin header says $header." >&2
+            echo "The directory would serve a version that this commit is not." >&2
+            exit 1
+          fi
+
+      # Pushes readme.txt to trunk and the images to the directory's assets/
+      # folder. It touches nothing else, so it cannot ship code by accident.
+      - name: Update the listing
+        uses: 10up/action-wordpress-plugin-asset-update@stable
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          SLUG: honest-analytics
+          ASSETS_DIR: .wordpress-org

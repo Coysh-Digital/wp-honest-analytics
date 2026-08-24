@@ -9,6 +9,24 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [0.8.4] - 2026-08-24
 
+### Added
+
+- **The plugin directory has an icon and a banner.** `.wordpress-org/` held a
+  to-do list and nothing else, and a listing with no icon reads as abandoned
+  before anybody has read a word of it. They are drawn by
+  `bin/directory-assets.py` from the marketing site's own palette rather than
+  exported by hand, so the listing and the site cannot drift apart, and a
+  change to either is a diff. Screenshots are still outstanding, and are noted
+  there as needing to come from a Lite install rather than from the demo,
+  which runs this tree and so behaves as Pro.
+- **A second workflow keeps the listing up to date without a release.** The
+  directory serves `readme.txt` and the images from SVN, and neither needs a
+  version bump - but the only path to SVN was the release job, so correcting a
+  typo meant shipping an update to every site. `listing.yml` deploys the readme
+  and the images alone when they change on `main`, and refuses to run if the
+  stable tag and the plugin header disagree, since a readme in trunk naming a
+  version that was never released takes the listing down to a "not found".
+
 ### Changed
 
 - **The readme said the free edition makes no outbound request at all, and it
@@ -29,6 +47,13 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
   0.5.0 while the stable tag said 0.8.4, so seven releases were missing from
   the only changelog most people read. Upgrade Notice was seven releases stale
   as well.
+- **The release workflow can be run by hand without inventing a version.**
+  `workflow_dispatch` derived the version from the ref, which on a manual run
+  is a branch name, so it would have published something called `main`. It now
+  asks which tag to publish and refuses anything that is not a version.
+- **The short description leads with what people search for.** It is the one
+  line shown under the plugin name in search results, and it said "in your
+  WordPress admin" where the phrase people use is "dashboard".
 
 ### Fixed
 

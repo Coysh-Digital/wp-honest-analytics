@@ -8,7 +8,7 @@ Stable tag: 0.8.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Cookieless analytics that live in your WordPress admin. No third-party service, no IP addresses stored, no per-visitor rows.
+Cookieless website analytics in your WordPress dashboard. No third-party service, no IP addresses stored, no per-visitor rows.
 
 == Description ==
 
