@@ -194,7 +194,7 @@ final class Notices {
 		printf(
 			'<div class="notice notice-warning"><p><strong>%s</strong> %s</p><p><a href="%s">%s</a></p></div>',
 			esc_html__( 'Honest Analytics:', 'honest-analytics' ),
-			esc_html__( 'The write spool can be read over the web. It holds no addresses, but it is not public data. On nginx this needs a rule in the server config - the exact block is in docs/caching.md. On Apache or IIS, check that the .htaccess or web.config in the spool directory has not been removed.', 'honest-analytics' ),
+			esc_html__( 'The write spool can be read over the web. It holds no addresses, but it is not public data. On nginx this needs a rule in the server config - the exact block is in the caching guide at https://github.com/Coysh-Digital/wp-honest-analytics/blob/main/docs/caching.md. On Apache or IIS, check that the .htaccess or web.config in the spool directory has not been removed.', 'honest-analytics' ),
 			esc_url( $dismiss ),
 			esc_html__( 'Remind me again in 30 days', 'honest-analytics' )
 		);

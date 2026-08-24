@@ -28,9 +28,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * telling anybody, and the `.htaccess` written at activation does nothing at
  * all on nginx.
  *
- * Both requests go to this site and nowhere else. The plugin makes no other
- * outbound request under any circumstance, and neither of these leaves the
- * server it runs on.
+ * Both requests go to this site and nowhere else, and neither leaves the
+ * server it runs on. Nothing in the measuring path makes an outbound request
+ * at all; the only calls that reach a third party are the ones an
+ * administrator starts - a Google Analytics import, or a geo database fetched
+ * from an address they typed.
  */
 final class Loopback {
 

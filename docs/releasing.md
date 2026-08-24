@@ -72,15 +72,29 @@ package a free build that still reaches for something it removed.
 
 ## Where things stand
 
-Both repositories exist and 0.1.0 is released on each: the paid zip on the
-private one, the free zip on the public one. The plugin directory submission
-has not been made yet, which is the next step below.
+Both repositories exist and 0.8.3 is released on each: the paid zip on the
+private one, the free zip on the public one. 0.8.4 is the first release
+prepared for the directory. The plugin directory submission has not been made
+yet, which is the next step below.
 
 ## The plugin directory
 
 The first submission is by hand, at
 <https://wordpress.org/plugins/developers/add/>, with the zip from
-`build/honest-analytics-0.1.0.zip`. Review takes a few weeks.
+`build/honest-analytics-0.8.4.zip`. Review takes one to ten days, sometimes
+longer.
+
+Before uploading, paste `readme.txt` into the
+[readme validator](https://wordpress.org/plugins/developers/readme-validator/),
+and install the zip on a clean site with `WP_DEBUG` and `WP_DEBUG_LOG` on and
+click every screen. Not testing with `WP_DEBUG` is on the directory's own list
+of common reasons for refusing a plugin.
+
+The slug is derived from the Plugin Name header, so it will be
+`honest-analytics`. It is permanent once approved, and changeable once from the
+submission page before review starts. Only one plugin may be in the queue at a
+time. If the reviewers find something, reply on the same email thread rather
+than submitting again.
 
 Once accepted, add to the **public** repository:
 

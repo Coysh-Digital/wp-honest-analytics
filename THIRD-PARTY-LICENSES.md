@@ -47,6 +47,12 @@ Installed into `vendor/` and included in the distributed zip.
   reporting is enabled. The database is a file you install yourself; the reader
   makes no network request, and no address is retained after the lookup.
 
+Apache-2.0 is compatible with GPLv3 and not with GPLv2 on its own. The plugin
+is licensed **GPL-2.0-or-later**, so the combination is distributed under
+GPLv3 by anybody who needs GPLv3 terms, and the question does not arise. This
+is the only Apache-2.0 component, and it is the only one worth stating
+explicitly, since it ships in the free edition as well as the paid one.
+
 ---
 
 ## Development-only

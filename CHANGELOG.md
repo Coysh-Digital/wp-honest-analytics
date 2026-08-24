@@ -7,6 +7,56 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-08-24
+
+### Changed
+
+- **The readme said the free edition makes no outbound request at all, and it
+  does.** The measuring path does not, and never has - but the Google
+  Analytics import talks to `accounts.google.com`, `oauth2.googleapis.com` and
+  the Analytics APIs, and the geo installer fetches whatever HTTPS address an
+  administrator types. Three categorical claims, in `readme.txt`, `README.md`
+  and the `Loopback` docblock, are now the accurate narrower ones: nothing
+  leaves the server while it counts, and the only third-party calls are the
+  ones somebody starts. A plugin whose whole argument is that it tells you
+  what it does cannot afford to be wrong about this one.
+- **`readme.txt` gained an External services section**, naming every endpoint
+  the two optional features contact, what is sent to each, and whose terms
+  govern it - and saying plainly that the daily loopback probe is the site
+  calling itself, so that a reader who greps for `wp_remote_get` has already
+  been answered.
+- **The readme changelog covers every released version again.** It stopped at
+  0.5.0 while the stable tag said 0.8.4, so seven releases were missing from
+  the only changelog most people read. Upgrade Notice was seven releases stale
+  as well.
+
+### Fixed
+
+- **The `Plugin URI` header pointed at a page that does not exist.**
+  `coysh.digital/plugins/honest-analytics` returns 404, and that header is
+  what the plugin directory renders as the plugin's homepage and what a
+  reviewer clicks first. Both editions now point at `honest-analytics.com`,
+  and `bin/build.sh` fails the build rather than silently skipping the Pro
+  rewrite if that line ever stops matching - a miss there would ship Pro with
+  no `Update URI`, and WordPress would offer the directory's free plugin as an
+  update to a paid install.
+- **A warning told the user to read a file that is not in the plugin.** The
+  write-spool notice named `docs/caching.md`, which `.distignore` strips from
+  the zip, so it exists on no installed site. It now gives the URL in the
+  public repository.
+
+- **The Settings screen understated the tracker by half a kilobyte.** It has
+  said "a 1.3 KB first-party script" since that was true, and route tracking
+  took the file to 1.9 KB without anything connecting the sentence to the file.
+  The readme on wordpress.org and the handoff notes carried the same number.
+  All three are corrected, and `composer budgets` now gzips the tracker and
+  fails if any of them disagrees with it - a figure a visitor could check for
+  themselves is not one to leave wrong.
+- **Screenshots of the block editor had a modal across the middle of them.**
+  The capture runs as an administrator created for the run, so WordPress showed
+  it the welcome guide every time, over the analytics panel that is the only
+  reason the screen is photographed. The script dismisses it.
+
 ## [0.8.3] - 2026-08-24
 
 ### Changed

@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.8.3
+Stable tag: 0.8.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,7 +21,7 @@ Honest Analytics counts your traffic and shows it in the WordPress admin. Nothin
 * **No full user-agent strings.** Parsed into browser, operating system and device type, then discarded.
 * **No raw pageview records.** Reports are built from aggregate rollups.
 * **No cookies** in the default configuration.
-* **No third parties.** No telemetry, no CDN, no fonts, no map tiles. The free edition makes no outbound request at all.
+* **No third parties in the counting.** No telemetry, no CDN, no fonts, no map tiles, no licence check, no update check. Measuring a visit never leaves your server. The only requests that go anywhere else are the ones you start yourself - importing your history from Google Analytics, or fetching a geo database from an address you type. Both are described under External services below.
 
 = How it counts people without identifying them =
 
@@ -33,7 +33,7 @@ This is why **unique visitors are daily estimates**, not people, and why the plu
 
 = It works behind a page cache =
 
-The server counts the requests it sees. A 1.3 KB first-party script confirms the rest from the browser. A nonce reconciles the two - consumed once per *visitor*, not once per nonce - so one piece of cached HTML served to a thousand people counts a thousand times.
+The server counts the requests it sees. A 1.9 KB first-party script confirms the rest from the browser. A nonce reconciles the two - consumed once per *visitor*, not once per nonce - so one piece of cached HTML served to a thousand people counts a thousand times.
 
 No cache exclusions. No hole punching. No cache-plugin add-on. Tested with WP Rocket, W3 Total Cache, LiteSpeed, WP Super Cache, Cache Enabler, SG Optimizer, NitroPack and Cloudflare.
 
@@ -72,9 +72,40 @@ This plugin is **cookieless by default** and is **designed not to require an ana
 
 1. Upload the plugin and activate it.
 2. Visit **Analytics** in the admin menu.
-3. If your site is behind a full-page cache, read the Scheduling documentation - WP-Cron barely runs on a cached site, and aggregation needs a real schedule.
+3. If your site is behind a full-page cache, read [Scheduling](https://github.com/Coysh-Digital/wp-honest-analytics/blob/main/docs/cron.md) - WP-Cron barely runs on a cached site, and aggregation needs a real schedule.
 
 Requires WordPress 6.4+, PHP 8.1+, MySQL 5.7+ or MariaDB 10.4+.
+
+== External services ==
+
+This plugin makes no outbound request in the course of measuring your traffic. Nothing about your site or your visitors is sent to us or to anybody else, and there is no telemetry, licence check or update check in the free edition.
+
+Two features do contact somewhere else. Both are optional, both are started by an administrator, and neither runs unless you use it.
+
+= Google Analytics, when you import your history =
+
+If you choose to bring your history over from Google Analytics, the plugin talks to Google on your behalf, using a Google Cloud client that belongs to you and credentials you enter yourself. Nothing happens until you connect an account on the Import screen, and disconnecting revokes the token.
+
+What it contacts:
+
+* `accounts.google.com` - to send you to Google's own sign-in screen so you can grant access.
+* `oauth2.googleapis.com` - to exchange that grant for an access token, and to revoke it when you disconnect.
+* `analyticsadmin.googleapis.com` - to list the Analytics properties your account can see, so you can pick one.
+* `analyticsdata.googleapis.com` - to read the historical figures for the property and date range you choose.
+
+What is sent: your own OAuth credentials, the property identifier you picked, and the date range and metrics being requested. No data about your WordPress site, its visitors or its content is sent. The access is read-only - the plugin asks for the `analytics.readonly` scope and nothing more.
+
+This is Google's service, governed by Google's terms and privacy policy, not ours: [terms](https://policies.google.com/terms), [privacy policy](https://policies.google.com/privacy). The API is documented at [Google Analytics Data API](https://developers.google.com/analytics/devguides/reporting/data/v1).
+
+= A geo database, if you install one =
+
+Country and region reporting needs a MaxMind-format database, which is not bundled with the plugin. You can upload a file, or give the plugin an HTTPS address to fetch it from.
+
+No address is built into the plugin and nothing downloads on its own. The request goes only to the URL you type, sends nothing but the request for that file, and is refused unless it is HTTPS and the response is a valid database. Common sources are [MaxMind GeoLite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) and [DB-IP Lite](https://db-ip.com/db/lite.php), each under its own terms; whichever you choose, the terms are between you and them.
+
+= What is not a third party =
+
+Once a day the plugin asks *your own site* two questions: whether the collection endpoint still answers, and whether the write spool is readable over the web. Those are HTTP requests, so they show up in a search for `wp_remote_get`, but they go to your own address and nowhere else. They exist because neither fact can be settled any other way - a security plugin can disable the REST API without saying so, and the rule written at activation does nothing on nginx.
 
 == Frequently Asked Questions ==
 
@@ -110,7 +141,9 @@ Yes. Each site gets its own tables, settings and reports.
 
 = Does it phone home? =
 
-No. The free edition makes no outbound request, for any reason.
+No. Nothing about your site, your traffic or your use of the plugin is ever sent anywhere, and there is nothing in it that reports back - no telemetry, no licence check, no update check, no remote configuration.
+
+The plugin does make outbound requests in two situations, both of which you start and neither of which sends us anything: importing your history from Google Analytics, and downloading a geo database from an address you supply. It also calls *your own site* once a day to check that the collection endpoint answers and that the write spool is not readable over the web. External services below says exactly what each one is.
 
 = What happens to my data if I upgrade to the paid edition? =
 
@@ -131,6 +164,132 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.8.4 =
+* Changed: The readme said the free edition makes no outbound request at all, and it does - the optional Google Analytics import and the geo installer both reach a third party. The claims now say what is true: nothing leaves your server while it counts.
+* Changed: A new External services section names every endpoint those two optional features contact, what is sent, and whose terms govern it.
+* Changed: The changelog and the upgrade notices cover every released version again, rather than stopping at 0.5.0.
+* Fixed: The Plugin URI header pointed at a page that does not exist.
+* Fixed: A warning told the user to read a file that is not shipped inside the plugin. It now links to it.
+* Fixed: The Settings screen understated the tracker by half a kilobyte.
+* Fixed: Screenshots of the block editor had a modal across the middle of them.
+
+= 0.8.3 =
+* Changed: Nine reports stopped sorting half a kilobyte per row to produce an eight-byte answer.
+* Changed: The per-page trend finds its pages by id rather than by matching their text.
+
+= 0.8.2 =
+* Changed: Finished periods are worked out once rather than on every render.
+
+= 0.8.1 =
+* Fixed: Translations were four versions out of date.
+* Fixed: Dates in sentences ignored the format set in Settings > General.
+* Fixed: Compact numbers and percentages could not be translated.
+* Fixed: Two rows of the privacy table could have silently become one.
+* Fixed: A different copy of the charting library broke the charts instead of standing down.
+* Fixed: A drain that threw on one site of a network wrote the rest into it.
+* Fixed: Pro only: Uninstalling a network where every site kept its data still deleted the licence.
+
+= 0.8.0 =
+* Added: A count of the views that were dropped, on the Settings screen.
+* Changed: The drain reads the sessions it needs in one query rather than one each.
+* Changed: A health probe left behind by a request that was killed is cleared up.
+* Changed: The first step of the import wizard asks the database once instead of six times.
+* Fixed: A broken coverage table read as "nothing has been imported yet".
+* Fixed: Stopping an import left the progress bar moving underneath the message.
+* Fixed: An import started without JavaScript waited five minutes for its first batch.
+* Fixed: A day cut short by the size of a Google Analytics report was recorded only in the debug log.
+* Fixed: Google imports ignored their time budget.
+* Fixed: Native rows and imported rows could be written to each other's row.
+* Fixed: A repeating value the cardinality cap had refused cost a query every time it appeared.
+
+= 0.7.0 =
+* Changed: "How many visitors" is one row a day rather than every row in the range.
+* Changed: The reports on Pages, Sources, Devices, Content and Crawlers are cached.
+* Changed: Content by post type, taxonomy and author reduces the traffic to one row per post before joining.
+* Changed: The spool file handling moved out of the drain into its own class.
+* Changed: The import wizard works out a date range in one place.
+
+= 0.6.0 =
+* Added: Pages on client-routed themes are counted.
+* Added: The Settings screen says when a day's page views have stopped being attributed.
+* Changed: Closing a batch of visits writes hundreds of rows rather than hundreds of thousands of statements.
+* Changed: The top-pages report groups on an eight-byte key rather than a five-hundred-byte one.
+* Changed: Scroll depth asks the database for the rows it is going to show.
+* Changed: The orphaned-dimension sweep runs weekly rather than nightly.
+* Changed: The health check asks the loopback question once per request.
+* Changed: Schema::tableExists() is memoised per request.
+* Changed: The live counter and the import progress figures use the site's locale.
+* Changed: Translations load on init rather than plugins_loaded.
+* Changed: Three public filter callbacks accept mixed.
+* Changed: Tested up to says 7.1.
+* Changed: The admin fallback no longer runs on background requests.
+* Changed: Indexes for the maintenance sweep and the single-page reports.
+* Changed: The Privacy export asks two indexed questions instead of one unindexed one.
+* Changed: Static analysis runs at level 8, and against the whole supported PHP range.
+* Changed: PHP compatibility is checked by something that knows about PHP after 8.0.
+* Changed: A second consent rate limit, on the address alone.
+* Changed: The Pages screen makes one query for its post links, not two hundred.
+* Changed: The auto-drain asks whether the write queue has a row rather than counting them all.
+* Changed: Removed assets/admin/js/settings.js, which was shipped in both builds and loaded by neither: nothing enqueued it, and none of the markup it enhances exists any more.
+* Changed: The key-value table is swept a little on every drain, in chunks.
+* Changed: Fewer writes per request on sites without an object cache.
+* Changed: A gzipped geo database upload is bounded on its decompressed size as well as its downloaded one.
+* Fixed: Pro only: Every site but one on a network was told its licence had been removed.
+* Fixed: A wizard step posting a nested option took the import screen down.
+* Fixed: Another plugin adding an inline script could stop tracking altogether.
+* Fixed: Pro only: The optimiser exclusions did nothing at all on the paid edition.
+* Fixed: On a network, whichever edition loaded first silently won.
+* Fixed: Network activation and deactivation stopped at 200 sites.
+* Fixed: Every site in a --network command inherited the first site's edition.
+* Fixed: Loopback health checks failed on staging.
+* Fixed: "1 year, 1 months".
+* Fixed: A visitor's page load could drain the whole write queue.
+* Fixed: One unreadable row in the write queue blocked everything behind it, for ever.
+* Fixed: Closing idle visits could never finish on a site using an object cache.
+* Fixed: Orphaned sessions were cleared at five thousand a night whatever had piled up.
+* Fixed: An import batch killed outright was retried for ever.
+* Fixed: Two things could advance the same import at once.
+* Fixed: Compaction could run a site out of memory and then stall for good.
+* Fixed: A lost scheduled event was never put back.
+* Fixed: Health could never report a full write queue.
+* Fixed: A resumed spool file re-read everything it had already committed.
+* Fixed: A site upgraded without anybody visiting the admin dropped hits until somebody did.
+* Fixed: A failed migration was never retried, and could leave a table without its unique key.
+* Fixed: An import could commit a day it had emptied and never written.
+* Fixed: A replace that failed part way deleted history without putting any back.
+* Fixed: Compaction destroyed anything written while it was thinking.
+* Fixed: Two tidy-ups could run at once.
+* Fixed: A salt that could not be saved made every visitor a new visitor.
+* Fixed: Pro only: Imported Search Console history was deleted by retention.
+* Fixed: Only the last day's folded unique counters were ever discarded.
+* Fixed: Pro only: The same summary email could be sent twice.
+* Fixed: Declaring an Independent Analytics install to store UTC did nothing.
+* Fixed: A report table whose column had been renamed took the screen down with it.
+* Fixed: A date could disappear from a report with nothing to say why.
+* Fixed: Deleting the plugin could stop half way through and leave the tables behind.
+* Fixed: A stale or foreign transient could stop the Google connection screens drawing.
+* Fixed: Every date on every screen was a day early west of Greenwich.
+* Fixed: The orphaned-dimension sweep could delete dimensions that were in use.
+* Fixed: Two more writes inside the drain transaction were unchecked.
+* Fixed: The real-time figure on the Dashboard stopped counting at 200.
+* Fixed: A drain batch whose write failed was recorded as committed.
+* Fixed: A session staged for closing by a batch that never committed was never closed.
+* Fixed: Compaction zeroed the imported visitor count.
+* Fixed: Session deltas are applied inside the drain transaction.
+* Fixed: Uninstall with "keep data" off now removes everything.
+* Security: The geo database sat at a guessable, downloadable address.
+* Security: A directory that lost its guard files never got them back.
+* Security: The Google client secret is encrypted at rest.
+* Security: The connection broker address is pinned to https.
+* Security: Pro only: The update check pins download_link as well as package.
+* Security: The GA4 property is validated rather than sanitised.
+* Security: The user agent and the referrer are reduced in the request that saw them, not at the drain.
+* Security: The Cloudflare address source is verified rather than trusted.
+* Security: Pro only: An update is only installed from the licence server.
+* Security: Google refresh tokens are encrypted at rest.
+* Security: The geo database download refuses private addresses and has a size ceiling.
+* Security: A second beacon rate limit, on the address alone.
 
 = 0.5.0 =
 * Added: Pro only: client-shareable reports are downloadable as a PDF, from the Shared reports screen or from the report itself.
@@ -193,8 +352,8 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 
 == Upgrade Notice ==
 
-= 0.1.1 =
-Fixes the Google Analytics connection, which could not complete. Worth taking if you intend to import from GA4.
+= 0.8.4 =
+Corrects the stated size of the tracking script on the Settings screen. No change to how anything counts.
 
-= 0.1.0 =
-First release.
+= 0.8.0 =
+Several import and drain fixes, including native and imported rows that could be written to each other's row. Worth taking if you have imported history.

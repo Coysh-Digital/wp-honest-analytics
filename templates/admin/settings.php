@@ -340,7 +340,7 @@ $ha_submitted = [
 				'injectScript',
 				__( 'Inject tracker', 'honest-analytics' ),
 				$ha_switch( 'injectScript', $settings->injectScript, __( 'Add the tracker to public pages', 'honest-analytics' ), $overrides( 'injectScript' ) ),
-				__( 'Adds a 1.3 KB first-party script before the closing body tag on public pages. Nothing is loaded from a CDN.', 'honest-analytics' )
+				__( 'Adds a 1.9 KB first-party script before the closing body tag on public pages. Nothing is loaded from a CDN.', 'honest-analytics' )
 			);
 
 			$ha_row(

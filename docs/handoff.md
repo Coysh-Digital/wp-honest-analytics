@@ -30,7 +30,7 @@ transactional batches by cron, and applied to hourly rollups that are compacted
 to daily and deleted at 36 months. No raw hit is ever stored. Storage grows with
 dimensions × time, not pageviews × time.
 
-Hybrid tracking is the default: the server counts what it sees, a 1.3 KB
+Hybrid tracking is the default: the server counts what it sees, a 1.9 KB
 first-party tracker confirms the rest, and a nonce consumed **once per visitor**
 reconciles the two - which is what makes a full-page cache work without a single
 exclusion.

@@ -21,8 +21,10 @@ without JavaScript, in a reduced form. It works without paying for anything.
 
 ## What it does not do
 
-- Call a third party. Ever. Not for analytics, not for fonts, not for map
-  tiles, not for a licence check.
+- Call a third party while it counts. Not for analytics, not for fonts, not
+  for map tiles, not for telemetry. The only outbound calls in the plugin are
+  ones you start: importing your history from Google Analytics, or fetching a
+  geo database from an address you type.
 - Store an address. Not in a table, not in a log, not in a cache key, not in
   the write spool.
 - Store a full referrer URL or a full user-agent string. Both are reduced in
