@@ -38,6 +38,7 @@ final class Tables {
 	public const SOURCES_ROLLUP      = 'honest_sources_rollup';
 	public const DEVICES_ROLLUP      = 'honest_devices_rollup';
 	public const UNIQUE_MEMBERS      = 'honest_uniquemembers';
+	public const DAILY_UNIQUES       = 'honest_daily_uniques';
 	public const CRAWLERS_ROLLUP     = 'honest_crawlers_rollup';
 
 	public const CAMPAIGNS_ROLLUP = 'honest_campaigns_rollup';
@@ -138,6 +139,7 @@ final class Tables {
 			self::OUTBOUND_ROLLUP,
 			self::SEGMENTS_PLACEHOLDER,
 			self::CRAWLERS_ROLLUP,
+			self::DAILY_UNIQUES,
 			self::UNIQUE_MEMBERS,
 			self::DEVICES_ROLLUP,
 			self::SOURCES_ROLLUP,
@@ -165,6 +167,7 @@ final class Tables {
 	 */
 	public static function expiringRollups(): array {
 		return [
+			self::DAILY_UNIQUES,
 			self::PAGES_ROLLUP,
 			self::PAGE_SOURCES_ROLLUP,
 			self::SESSIONS_ROLLUP,
@@ -176,7 +179,6 @@ final class Tables {
 			self::EVENTS_ROLLUP,
 			self::SCROLL_ROLLUP,
 			self::SEARCH_ROLLUP,
-			self::SEARCHCONSOLE_ROLLUP,
 			self::OUTBOUND_ROLLUP,
 			self::GOALS_ROLLUP,
 			self::FUNNEL_STEP_ROLLUP,
@@ -187,17 +189,27 @@ final class Tables {
 	 * Expiring rollups that carry a `source` column, and can therefore tell
 	 * native rows from imported ones at retention time.
 	 *
-	 * A table missing from here is one no importer has ever written to; the
-	 * nightly tidy-up deletes everything past the cutoff in it unconditionally,
-	 * because there is nothing else a row in it could be. A table listed here
-	 * is only swept for its native rows - imported history is exempt from the
-	 * retention window on purpose, so that history brought in from elsewhere
-	 * outlives whatever window this site's own measurements are kept for.
+	 * A table listed here is only swept for its native rows - imported history
+	 * is exempt from the retention window on purpose, so that history brought
+	 * in from elsewhere outlives whatever window this site's own measurements
+	 * are kept for.
+	 *
+	 * A table in `expiringRollups()` but missing from here is one no importer
+	 * writes to, and the nightly tidy-up deletes everything past the cutoff in
+	 * it unconditionally because there is nothing else a row in it could be.
+	 * That used to be stated as "a table missing from here is one no importer
+	 * has ever written to", which was not true: `honest_searchconsole_rollup`
+	 * is written by GscRollupWriter, has no `source` column to be listed by,
+	 * and was therefore swept whole - deleting imported Search Console history
+	 * the moment it passed the site's own retention window, which is the exact
+	 * opposite of what `docs/import-architecture.md` promises. It is now exempt
+	 * by name in `retainedElsewhere()`.
 	 *
 	 * @return string[]
 	 */
 	public static function sourcedRollups(): array {
 		return [
+			self::DAILY_UNIQUES,
 			self::PAGES_ROLLUP,
 			self::PAGE_SOURCES_ROLLUP,
 			self::SESSIONS_ROLLUP,
@@ -214,12 +226,13 @@ final class Tables {
 	 */
 	public static function retainedElsewhere(): array {
 		return [
-			self::UNIQUE_MEMBERS  => 'Deleted two salt rotations after the day they cover: once the salt is destroyed the hashes match nothing.',
-			self::DIMENSIONS      => 'Reference counted. A dimension outlives the rollups that referenced it only until the next garbage collection.',
-			self::IMPORTS         => 'A record of what was imported and when. Kept, because deleting it would make a completed import look like one that never ran, and the next one would offer to do it again.',
-			self::IMPORT_COVERAGE => 'One row per imported day. This is what stops a second import doubling the first, so it outlives the rollups it describes on purpose.',
-			self::IMPORT_LOG      => 'Trimmed by row count per import rather than by date: a log of the last few hundred batches is useful for support and an unbounded one is a liability.',
-			self::SHARE_LINKS     => 'Not date-keyed at all: a row is kept until it is revoked or expires, then swept by GcService thirty days later so a just-expired link can still be seen as "expired" rather than simply vanishing.',
+			self::UNIQUE_MEMBERS       => 'Deleted two salt rotations after the day they cover: once the salt is destroyed the hashes match nothing.',
+			self::DIMENSIONS           => 'Reference counted. A dimension outlives the rollups that referenced it only until the next garbage collection.',
+			self::IMPORTS              => 'A record of what was imported and when. Kept, because deleting it would make a completed import look like one that never ran, and the next one would offer to do it again.',
+			self::IMPORT_COVERAGE      => 'One row per imported day. This is what stops a second import doubling the first, so it outlives the rollups it describes on purpose.',
+			self::IMPORT_LOG           => 'Trimmed by row count per import rather than by date: a log of the last few hundred batches is useful for support and an unbounded one is a liability.',
+			self::SHARE_LINKS          => 'Not date-keyed at all: a row is kept until it is revoked or expires, then swept by GcService thirty days later so a just-expired link can still be seen as "expired" rather than simply vanishing.',
+			self::SEARCHCONSOLE_ROLLUP => 'Imported history, and only ever imported: nothing native writes this table, so every row in it came from Search Console. Retention is a promise about what this plugin measures itself, not about history brought in from elsewhere, which is why it is exempt whole rather than by a source column that would read "gsc" on every row.',
 		];
 	}
 

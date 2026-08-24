@@ -75,7 +75,11 @@ final class StatsMetaBox {
 	public static function render( mixed $post ): void {
 		Assets::widget();
 
-		$postId = is_object( $post ) ? (int) $post->ID : 0;
+		// `isset()` rather than `is_object()`: the callback is handed whatever
+		// add_meta_box() was registered with, and an object without an ID is
+		// as useless here as a string is - asking for the property directly
+		// answers both questions at once and never warns.
+		$postId = isset( $post->ID ) ? (int) $post->ID : 0;
 
 		if ( $postId <= 0 ) {
 			return;

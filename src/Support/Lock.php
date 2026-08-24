@@ -83,11 +83,4 @@ final class Lock {
 
 		$this->held = false;
 	}
-
-	/**
-	 * Whether this instance currently holds the lock.
-	 */
-	public function isHeld(): bool {
-		return $this->held;
-	}
 }

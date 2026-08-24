@@ -79,10 +79,22 @@ final class Bootstrap {
 	}
 
 	/**
+	 * Load the plugin's own translations.
+	 */
+	public static function loadTextdomain(): void {
+		load_plugin_textdomain( 'honest-analytics', false, dirname( HONEST_ANALYTICS_BASENAME ) . '/languages' );
+	}
+
+	/**
 	 * Hooks that belong in every context.
 	 */
 	private static function always(): void {
-		load_plugin_textdomain( 'honest-analytics', false, dirname( HONEST_ANALYTICS_BASENAME ) . '/languages' );
+		// On `init`, not here. Called during `plugins_loaded` this resolved the
+		// locale before a multilingual plugin had had the chance to set it, and
+		// forced the current user to be resolved early in the admin. It is kept
+		// rather than dropped because the paid build is not hosted on
+		// wordpress.org and so gets no language pack of its own.
+		add_action( 'init', [ self::class, 'loadTextdomain' ], 1 );
 
 		Capabilities::register();
 		Cron::register();

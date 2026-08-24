@@ -15,6 +15,8 @@ use HonestAnalytics\Plugin;
 use HonestAnalytics\Schema\Tables;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Store\DbKeyValueStore;
+use HonestAnalytics\Support\Db;
+use HonestAnalytics\Support\Lock;
 use HonestAnalytics\Support\Log;
 use HonestAnalytics\Support\Timezone;
 
@@ -35,7 +37,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class GcService {
 
 	private const DELETE_CHUNK = 5000;
-	private const ORPHAN_CHUNK = 1000;
+
+	/** When the orphaned-dimension sweep last ran. Weekly, not nightly. */
+	private const ORPHAN_SWEEP_OPTION = 'honest_analytics_last_orphan_sweep';
+	private const ORPHAN_CHUNK        = 1000;
 
 	private Settings $settings;
 
@@ -49,13 +54,39 @@ final class GcService {
 	/**
 	 * Run everything.
 	 *
+	 * Under the drain's lock, because two of these run at once perfectly
+	 * ordinarily - cron, the fallback on an admin page load, the button on
+	 * Settings and the CLI command are four ways in, and none of them knew
+	 * about the others. Two runs compacting the same day both read it, both
+	 * delete it and both insert their own fold of it, and they race on the
+	 * counters the fold is meant to discard.
+	 *
 	 * @param int|null $now Timestamp.
+	 *
+	 * @return array<string,int> Empty when another run already holds the lock.
+	 */
+	public function run( ?int $now = null ): array {
+		$lock = new Lock( 'drain' );
+
+		if ( ! $lock->acquire() ) {
+			return [];
+		}
+
+		try {
+			return $this->sweep( $now ?? time() );
+		} finally {
+			$lock->release();
+		}
+	}
+
+	/**
+	 * Everything a run does, once the lock is held.
+	 *
+	 * @param int $now Timestamp.
 	 *
 	 * @return array<string,int>
 	 */
-	public function run( ?int $now = null ): array {
-		$now = $now ?? time();
-
+	private function sweep( int $now ): array {
 		$compactor = Plugin::instance()->compactor();
 		$days      = $compactor->run( $now );
 
@@ -70,7 +101,7 @@ final class GcService {
 			'prunedDrainLog'        => $this->pruneDrainLog( $now ),
 			'sweptKeyValues'        => ( new DbKeyValueStore() )->sweep(),
 			'closedSessions'        => $this->pruneAbandonedSessions( $now ),
-			'orphanedDimensions'    => $this->deleteOrphanedDimensions(),
+			'orphanedDimensions'    => $this->deleteOrphanedDimensions( $now ),
 			'expiredShareLinks'     => $this->deleteExpiredShareLinks( $now ),
 		];
 
@@ -270,11 +301,26 @@ final class GcService {
 		$cutoff = $now - max( 86400, $this->settings->sessionWindowSeconds() * 24 );
 		$table  = Tables::name( Tables::SESSIONS );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-		return (int) $wpdb->query(
-			$wpdb->prepare( "DELETE FROM `$table` WHERE lastSeenAt < %d LIMIT %d", $cutoff, self::DELETE_CHUNK )
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$removed = 0;
+
+		// Looped, like every other sweep here. A single chunked DELETE removed
+		// five thousand rows a night whatever had accumulated, so a site that
+		// orphaned two hundred thousand sessions - one crash during a busy
+		// afternoon - would have taken forty days to clear them, with the
+		// backlog sitting at the front of the idle query the whole time.
+		while ( true ) {
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+			$deleted = (int) $wpdb->query(
+				$wpdb->prepare( "DELETE FROM `$table` WHERE lastSeenAt < %d LIMIT %d", $cutoff, self::DELETE_CHUNK )
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+			$removed += $deleted;
+
+			if ( $deleted < self::DELETE_CHUNK ) {
+				return $removed;
+			}
+		}
 	}
 
 	/**
@@ -283,8 +329,50 @@ final class GcService {
 	 * Walked by primary key in chunks rather than by building one enormous NOT
 	 * IN list - which is exactly the shape that falls over on the cardinality
 	 * spike this exists to clean up after.
+	 *
+	 * @param int $now Timestamp.
 	 */
-	private function deleteOrphanedDimensions(): int {
+	private function deleteOrphanedDimensions( int $now ): int {
+		// Weekly, not nightly. This asks each of the twenty-four columns that
+		// point at the dimensions table which of a thousand candidate ids it
+		// still references, once per thousand - so a hundred thousand
+		// dimensions is 2,400 queries, and most of those columns lead no
+		// index. On a site that has taken a cardinality spike, which is
+		// precisely what this exists to clean up after, it is the most
+		// expensive thing the tidy-up does and the least urgent: an
+		// unreferenced dimension row is a few dozen bytes and harms nothing
+		// while it waits.
+		//
+		// Not inverted into one `SELECT DISTINCT` per table diffed in PHP,
+		// which is the other obvious shape. That would widen the gap between
+		// deciding a dimension is unused and deleting it, and a dimension
+		// deleted while a drain is referencing it takes the label every rollup
+		// row is read through with it - permanently, because no backup of the
+		// aggregates can put a name back. Cheaper is not worth looser here.
+		$last = (int) get_option( self::ORPHAN_SWEEP_OPTION, 0 );
+
+		if ( $last > 0 && ( $now - $last ) < WEEK_IN_SECONDS ) {
+			return 0;
+		}
+
+		update_option( self::ORPHAN_SWEEP_OPTION, $now, false );
+
+		try {
+			return $this->sweepOrphanedDimensions();
+		} catch ( \Throwable $e ) {
+			// Stop rather than guess. Everything swept before the failure is
+			// already gone and was genuinely unreferenced; what is left stays
+			// until a run that can read every reference table.
+			Log::error( 'The orphaned-dimension sweep stopped early: ' . $e->getMessage() );
+
+			return 0;
+		}
+	}
+
+	/**
+	 * The sweep itself.
+	 */
+	private function sweepOrphanedDimensions(): int {
 		global $wpdb;
 
 		$dimensions = Tables::name( Tables::DIMENSIONS );
@@ -322,16 +410,24 @@ final class GcService {
 				$candidates   = array_keys( $orphan );
 				$placeholders = implode( ',', array_fill( 0, count( $candidates ), '%d' ) );
 
-				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-				$used = $wpdb->get_col(
+				// Db::col(), not get_col(): a failed query and "nothing
+				// references these" are the same empty array, and here the
+				// difference is whether a thousand live dimensions are
+				// deleted. Contention with a running drain is the ordinary
+				// way that query fails, and the rows it would take are the
+				// labels every rollup row is read through - deleting them
+				// blanks the reports permanently and no backup of the
+				// aggregates can put a name back.
+				// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+				$used = Db::col(
 					$wpdb->prepare(
 						"SELECT DISTINCT `$column` FROM `$name` WHERE `$column` IN ($placeholders)",
 						$candidates
 					)
 				);
-				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+				// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 
-				foreach ( (array) $used as $id ) {
+				foreach ( $used as $id ) {
 					unset( $orphan[ (int) $id ] );
 				}
 			}

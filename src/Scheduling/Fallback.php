@@ -81,12 +81,50 @@ final class Fallback {
 
 	/**
 	 * Do whatever is due.
+	 *
+	 * Real admin page loads only. `admin_init` also fires on `admin-ajax.php`,
+	 * and Heartbeat ticks every fifteen seconds while the block editor is open
+	 * - so with a thirty-second throttle and a five-second import budget, an
+	 * active import stalled roughly every other autosave for up to five
+	 * seconds. A background request is not the clock this was reaching for.
 	 */
 	public static function run(): void {
+		if ( wp_doing_ajax() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) || wp_doing_cron() ) {
+			return;
+		}
+
 		$fallback = new self();
 
+		$fallback->repairSchedule();
 		$fallback->maybeTidyUp();
 		$fallback->maybeAdvanceImport();
+	}
+
+	/**
+	 * Put back any scheduled event that has gone missing.
+	 *
+	 * `Cron::schedule()` says in its own docblock that it runs "again whenever
+	 * the plugin notices an event has gone missing", and until now nothing did
+	 * the noticing: its only caller was `Installer::installSite()`. Health
+	 * reported the absence as a line of text and left it there.
+	 *
+	 * Losing an event is ordinary - a migration plugin that rebuilds
+	 * `wp_options`, a staging copy, a security tool that clears the cron array
+	 * - and three of the four jobs have a fallback that covers it. The Search
+	 * Console daily sync has none: `DailySync::run()` is reachable from that
+	 * event and from nothing else, so losing it stops query data arriving
+	 * silently and for ever.
+	 *
+	 * `schedule()` only fills gaps, so calling it when nothing is missing costs
+	 * one `wp_next_scheduled()` per hook against an array WordPress has already
+	 * autoloaded.
+	 */
+	public function repairSchedule(): void {
+		if ( Cron::isScheduled() ) {
+			return;
+		}
+
+		Cron::schedule();
 	}
 
 	/**
@@ -98,16 +136,24 @@ final class Fallback {
 	 * spend their database.
 	 */
 	public function maybeTidyUp(): void {
+		// The throttle first, and the option second. `honest_analytics_last_gc`
+		// is written with autoload = false - deliberately, it is a fat array
+		// nothing on a front-end request needs - so reading it costs an
+		// uncached wp_options query, and reading it before the throttle meant
+		// paying that on every single admin request all day to answer a
+		// question that is only interesting once. The throttle is a cache
+		// entry and costs nothing when the answer is "not yet".
+		//
+		// `add()` rather than `set()`, so a store outage fails open rather than
+		// never letting the tidy-up run at all.
+		if ( ! $this->store->add( self::GC_THROTTLE_KEY, 1, HOUR_IN_SECONDS ) ) {
+			return;
+		}
+
 		$last = get_option( 'honest_analytics_last_gc' );
 		$at   = is_array( $last ) ? (int) ( $last['at'] ?? 0 ) : 0;
 
 		if ( $at > 0 && ( time() - $at ) < DAY_IN_SECONDS ) {
-			return;
-		}
-
-		// `add()` rather than `set()`, so a store outage fails open rather than
-		// never letting the tidy-up run at all.
-		if ( ! $this->store->add( self::GC_THROTTLE_KEY, 1, HOUR_IN_SECONDS ) ) {
 			return;
 		}
 

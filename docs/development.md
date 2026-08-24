@@ -41,7 +41,7 @@ dev/                   the integration runner and the importer fixtures
 ```bash
 composer test:unit          # no WordPress, no database, fast
 composer cs                 # PHPCS: WPCS plus the security sniffs
-composer stan               # PHPStan level 6
+composer stan               # PHPStan level 8
 composer budgets            # tracker size and vendor checksums
 ```
 
@@ -93,7 +93,7 @@ registered would accumulate forever without anyone noticing.
 
 ## Coding standards
 
-PSR-12 layout, WordPress security and database sniffs, PHPStan level 6.
+PSR-12 layout, WordPress security and database sniffs, PHPStan level 8.
 
 ```bash
 composer cs

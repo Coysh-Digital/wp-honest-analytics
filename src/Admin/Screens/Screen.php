@@ -15,7 +15,6 @@ use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Capabilities\Capabilities;
 use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Plugin;
-use HonestAnalytics\Schema\Upgrader;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -171,8 +170,11 @@ abstract class Screen {
 			Edition::requirePro();
 		}
 
-		Upgrader::maybeUpgrade();
-
+		// No migration here. This used to be the only place `maybeUpgrade()` ran
+		// from, which made an ALTER against a table of millions the price of
+		// opening a report - and left a site nobody had signed into running its
+		// drain against a schema it could not write to. Cron and the CLI
+		// bootstrap do it now, and Health says so while it is outstanding.
 		$this->params = new RequestParams( $this->slug() );
 	}
 

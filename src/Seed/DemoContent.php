@@ -193,7 +193,16 @@ final class DemoContent {
 			}
 		}
 
-		return $created;
+		// Named back out one key at a time rather than returned whole: the
+		// counters travel through ensureAuthors() and ensureTerms() by
+		// reference, so by here the array is only known to hold ints under
+		// string keys, and the four the caller reads are worth stating.
+		return [
+			'posts'   => $created['posts'],
+			'pages'   => $created['pages'],
+			'authors' => $created['authors'],
+			'terms'   => $created['terms'],
+		];
 	}
 
 	/**

@@ -11,6 +11,7 @@ namespace HonestAnalytics\Admin\Screens;
 
 use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Plugin;
+use HonestAnalytics\Support\Format;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -79,7 +80,7 @@ final class ContentScreen extends Screen {
 				'tabs'     => $tabs,
 				'tab'      => $tab,
 				'rows'     => $rows,
-				'maxViews' => $rows ? max( array_column( $rows, 'views' ) ) : 0,
+				'maxViews' => Format::largest( $rows, 'views' ),
 				'heading'  => match ( $tab ) {
 					'taxonomy' => __( 'Views by term', 'honest-analytics' ),
 					'author'   => __( 'Views by author', 'honest-analytics' ),

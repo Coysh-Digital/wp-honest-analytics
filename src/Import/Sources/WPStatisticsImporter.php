@@ -116,11 +116,17 @@ final class WPStatisticsImporter implements ImporterInterface {
 		$map        = $this->map();
 
 		if ( null !== $map['pagesDate'] ) {
-			$totals[ __( 'page views', 'honest-analytics' ) ] = $this->sum( self::T_PAGES, (string) $map['pagesCount'], (string) $map['pagesDate'] );
+			$totals[] = [
+				'label' => __( 'page views', 'honest-analytics' ),
+				'count' => $this->sum( self::T_PAGES, (string) $map['pagesCount'], (string) $map['pagesDate'] ),
+			];
 		}
 
 		if ( null !== $map['visitorDate'] ) {
-			$totals[ __( 'visits', 'honest-analytics' ) ] = $this->countRows( self::T_VISITOR, (string) $map['visitorDate'] );
+			$totals[] = [
+				'label' => __( 'visits', 'honest-analytics' ),
+				'count' => $this->countRows( self::T_VISITOR, (string) $map['visitorDate'] ),
+			];
 
 			$dimensions[] = __( 'Visitors', 'honest-analytics' );
 		}

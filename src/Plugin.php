@@ -15,6 +15,7 @@ use HonestAnalytics\Capture\NonceRegistry;
 use HonestAnalytics\Capture\PathNormalizer;
 use HonestAnalytics\Capture\ScriptInjector;
 use HonestAnalytics\Capture\Trackability;
+use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Channels\ChannelClassifier;
 use HonestAnalytics\Consent\ConsentService;
 use HonestAnalytics\Devices\DeviceParser;
@@ -98,6 +99,15 @@ final class Plugin {
 		self::$instance = null;
 
 		SettingsRepository::flush();
+
+		// The edition verdict and the licence state are memoised statics too,
+		// and both are per-site questions. Flushing only the settings meant
+		// every site after the first in a `--network` CLI run, or after any
+		// `switch_to_blog()`, inherited the first site's answer - so a network
+		// where one site is licensed and the others are not reported Pro
+		// everywhere, or the reverse. `Edition::flush()` has existed all along
+		// and was called from the Licence screen and from tests, never here.
+		Edition::flush();
 	}
 
 	/**
@@ -279,7 +289,6 @@ final class Plugin {
 				$this->capper(),
 				$this->uniques(),
 				$this->channels(),
-				$this->devices(),
 				$this->proRollups()
 			)
 		);
@@ -408,7 +417,8 @@ final class Plugin {
 				$this->geo(),
 				$this->consent(),
 				$this->writer(),
-				$this->clientIp()
+				$this->clientIp(),
+				$this->devices()
 			)
 		);
 	}

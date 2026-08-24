@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Import\Ga4;
 
+use HonestAnalytics\Support\Secret;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -79,9 +81,13 @@ final class Ga4Tokens {
 	 * @return array<string,mixed>
 	 */
 	public function toArray(): array {
+		// Encrypted going in, and only here. One refresh token is read access
+		// to somebody's Google account until it is revoked, and wp_options is
+		// reachable from any read-only database exposure. See Support\Secret,
+		// including what happens when a site's salts are rotated.
 		return [
-			'accessToken'  => $this->accessToken,
-			'refreshToken' => $this->refreshToken,
+			'accessToken'  => Secret::encrypt( $this->accessToken ),
+			'refreshToken' => Secret::encrypt( $this->refreshToken ),
 			'expiresAt'    => $this->expiresAt,
 			'scope'        => $this->scope,
 		];
@@ -97,9 +103,19 @@ final class Ga4Tokens {
 			return null;
 		}
 
+		$refreshToken = Secret::decrypt( (string) $data['refreshToken'] );
+
+		// A token that will not decrypt is a connection that no longer exists -
+		// the ordinary cause is rotated site salts - and the honest answer is
+		// "not connected", not a half-built object that fails at the first
+		// call to Google.
+		if ( '' === $refreshToken ) {
+			return null;
+		}
+
 		return new self(
-			isset( $data['accessToken'] ) ? (string) $data['accessToken'] : '',
-			(string) $data['refreshToken'],
+			isset( $data['accessToken'] ) ? Secret::decrypt( (string) $data['accessToken'] ) : '',
+			$refreshToken,
 			isset( $data['expiresAt'] ) ? (int) $data['expiresAt'] : 0,
 			isset( $data['scope'] ) ? (string) $data['scope'] : ''
 		);

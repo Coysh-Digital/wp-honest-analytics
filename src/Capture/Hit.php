@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace HonestAnalytics\Capture;
 
 use HonestAnalytics\Channels\Campaign;
+use HonestAnalytics\Support\Url;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -21,6 +22,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * A hit exists for the length of a spool line. Nothing here is ever stored as a
  * row: the drain folds these into aggregates and the line is deleted. Note what
  * the object has no field for - an address, in any form.
+ *
+ * Nor a user agent, nor a referrer URL. Both used to travel whole and be
+ * reduced at the drain, which meant a full user agent and a full referrer -
+ * query string, tokens and all - sat in the spool file for as long as the
+ * drain took to run. Both are now reduced in the request that saw them:
+ * `$device` is four families from {@see \HonestAnalytics\Devices\Device} and
+ * `$referrer` is a bare scheme and host. Nothing downstream ever had the rest,
+ * so nothing downstream can leak it.
  */
 final class Hit {
 
@@ -33,6 +42,19 @@ final class Hit {
 	/** Beyond this a value is a typo or an attack, not a measurement. */
 	public const MAX_EVENT_VALUE = 1000000000.0;
 
+	/**
+	 * The referrer, always as a bare origin.
+	 *
+	 * Not promoted, because it is the one field that is normalised rather than
+	 * assigned: whatever a caller passes, what this object holds is a scheme
+	 * and a host. Doing it here rather than only in the two capture paths is
+	 * what makes the guarantee structural - an integration, a theme calling
+	 * `honest_analytics_track_event()`, or anything hooked to
+	 * `honest_analytics_before_track` cannot put a query string into storage
+	 * by not knowing it should not.
+	 */
+	public readonly string $referrer;
+
 	public function __construct(
 		public readonly int $siteId,
 		public readonly string $path,
@@ -40,9 +62,8 @@ final class Hit {
 		public readonly string $sessionKey,
 		public readonly int $timestamp,
 		public readonly ?int $postId = null,
-		public readonly string $referrer = '',
-		public readonly string $userAgent = '',
-		public readonly string $acceptLanguage = '',
+		string $referrer = '',
+		public readonly string $device = '',
 		public readonly int $dwellMs = 0,
 		public readonly bool $countView = true,
 		public readonly ?string $visitorId = null,
@@ -57,6 +78,7 @@ final class Hit {
 		public readonly ?int $scrollBucket = null,
 		public readonly ?string $searchTerm = null
 	) {
+		$this->referrer = Url::origin( $referrer );
 	}
 
 	/**
@@ -80,8 +102,7 @@ final class Hit {
 			$changes['timestamp'] ?? $this->timestamp,
 			array_key_exists( 'postId', $changes ) ? $changes['postId'] : $this->postId,
 			$changes['referrer'] ?? $this->referrer,
-			$changes['userAgent'] ?? $this->userAgent,
-			$changes['acceptLanguage'] ?? $this->acceptLanguage,
+			$changes['device'] ?? $this->device,
 			$changes['dwellMs'] ?? $this->dwellMs,
 			array_key_exists( 'countView', $changes ) ? (bool) $changes['countView'] : $this->countView,
 			array_key_exists( 'visitorId', $changes ) ? $changes['visitorId'] : $this->visitorId,
@@ -115,8 +136,7 @@ final class Hit {
 			't'  => $this->timestamp,
 			'e'  => $this->postId,
 			'r'  => $this->referrer,
-			'ua' => $this->userAgent,
-			'al' => $this->acceptLanguage,
+			'dv' => $this->device,
 			'd'  => $this->dwellMs,
 			'nv' => $this->countView ? null : 1,
 			'vi' => $this->visitorId,
@@ -171,8 +191,7 @@ final class Hit {
 			isset( $data['t'] ) ? (int) $data['t'] : time(),
 			isset( $data['e'] ) ? (int) $data['e'] : null,
 			isset( $data['r'] ) && is_scalar( $data['r'] ) ? (string) $data['r'] : '',
-			isset( $data['ua'] ) && is_scalar( $data['ua'] ) ? (string) $data['ua'] : '',
-			isset( $data['al'] ) && is_scalar( $data['al'] ) ? (string) $data['al'] : '',
+			isset( $data['dv'] ) && is_scalar( $data['dv'] ) ? (string) $data['dv'] : '',
 			isset( $data['d'] ) ? (int) $data['d'] : 0,
 			! isset( $data['nv'] ),
 			isset( $data['vi'] ) && is_scalar( $data['vi'] ) ? (string) $data['vi'] : null,

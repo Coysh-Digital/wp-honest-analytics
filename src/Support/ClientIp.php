@@ -23,8 +23,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * site collapses to one visitor per user agent. That has to be solved, but
  * `X-Forwarded-For` is attacker-controlled: anyone who can set it can mint
  * unlimited visitor hashes and walk straight through a rate limit keyed on
- * one. So the default trusts REMOTE_ADDR, and trusts Cloudflare's header only
- * when the connection genuinely came from Cloudflare.
+ * one. So the default trusts REMOTE_ADDR, and every other source - including
+ * the explicit Cloudflare one - is believed only when the connection genuinely
+ * came from a proxy this site was told to trust, or from Cloudflare's own
+ * published ranges.
  *
  * The address returned here is never written anywhere. It is an input to a
  * keyed hash and is discarded with the stack frame.
@@ -97,7 +99,15 @@ final class ClientIp {
 				return $this->normalize( $remote );
 
 			case self::SOURCE_CF_CONNECTING:
-				return $this->normalize( $this->server->header( 'cf-connecting-ip' ) ?: $remote );
+				// Verified, not taken on trust. Cloudflare overwrites this
+				// header at its edge, so behind Cloudflare it is reliable - but
+				// an origin that is still reachable directly gets the header
+				// straight from the caller, and then anybody can mint an
+				// unlimited number of visitor hashes, walk through the beacon
+				// rate limit with a fresh bucket every request, and file their
+				// traffic under whichever country they fancy. The `auto` branch
+				// below has always checked this; the explicit setting did not.
+				return $this->normalize( $this->trustedHeader( 'cf-connecting-ip', $remote ) );
 
 			case self::SOURCE_X_REAL_IP:
 				return $this->normalize( $this->trustedHeader( 'x-real-ip', $remote ) );
@@ -124,8 +134,22 @@ final class ClientIp {
 	}
 
 	/**
-	 * The left-most forwarded address, when the connection came from a proxy we
-	 * were told to trust.
+	 * The nearest forwarded address that no trusted proxy vouched for.
+	 *
+	 * Read right to left, which is the only direction that means anything.
+	 * Every proxy worth the name *appends*: nginx's
+	 * `proxy_add_x_forwarded_for`, HAProxy's `forwardfor`, an AWS load
+	 * balancer and Cloudflare all put whatever the caller sent first and the
+	 * address they actually saw last. So the left-most entry is not the
+	 * visitor - it is the one part of the header the visitor chose, and taking
+	 * it hands anybody who asks an unlimited supply of visitor hashes, a fresh
+	 * rate-limit bucket every request, and any country they care to be in.
+	 *
+	 * Walking backwards past the hops we were told to trust stops at the
+	 * address that reached the outermost of them, which is the visitor. If
+	 * every entry is a trusted proxy - a health checker inside the network,
+	 * say - there is no visitor address to find and the peer is the honest
+	 * answer.
 	 *
 	 * @param string $remote Remote address.
 	 */
@@ -141,9 +165,25 @@ final class ClientIp {
 		}
 
 		$parts = array_map( 'trim', explode( ',', $header ) );
-		$first = $parts[0] ?? '';
 
-		return '' !== $first ? $first : $remote;
+		for ( $i = count( $parts ) - 1; $i >= 0; $i-- ) {
+			$candidate = $this->normalize( $parts[ $i ] );
+
+			if ( '' === $candidate ) {
+				// Unparseable, and therefore not something to trust or to
+				// return. Keep walking rather than stopping here: a proxy that
+				// wrote "unknown" is not the end of the chain.
+				continue;
+			}
+
+			if ( $this->isTrustedProxy( $candidate ) || $this->isCloudflare( $candidate ) ) {
+				continue;
+			}
+
+			return $candidate;
+		}
+
+		return $remote;
 	}
 
 	/**

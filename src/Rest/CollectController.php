@@ -16,6 +16,8 @@ use HonestAnalytics\Capture\PathNormalizer;
 use HonestAnalytics\Capture\ShutdownRunner;
 use HonestAnalytics\Channels\Campaign;
 use HonestAnalytics\Consent\ConsentService;
+use HonestAnalytics\Devices\Device;
+use HonestAnalytics\Devices\DeviceParser;
 use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Geo\GeoService;
 use HonestAnalytics\Identity\IdentityService;
@@ -24,6 +26,7 @@ use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Store\StoreFactory;
 use HonestAnalytics\Support\ClientIp;
 use HonestAnalytics\Support\Log;
+use HonestAnalytics\Support\Server;
 use HonestAnalytics\Support\Url;
 use HonestAnalytics\Write\WriterInterface;
 
@@ -45,6 +48,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * in, and is then unset. It is never returned, never logged, never used as a
  * cache key and never written anywhere.
  *
+ * The user agent and the referrer are reduced here too, before the hit is
+ * written rather than when it is aggregated: four device families and a bare
+ * origin. Neither string exists past this method.
+ *
  * Every path out of here answers 204. See NoContent for why.
  */
 final class CollectController {
@@ -65,7 +72,8 @@ final class CollectController {
 		private ConsentService $consent,
 		private WriterInterface $writer,
 		private ClientIp $clientIp,
-		private RateLimit $limits
+		private RateLimit $limits,
+		private DeviceParser $deviceParser
 	) {
 	}
 
@@ -85,7 +93,8 @@ final class CollectController {
 			$plugin->consent(),
 			$plugin->writer(),
 			$plugin->clientIp(),
-			new RateLimit( StoreFactory::keyValue() )
+			new RateLimit( StoreFactory::keyValue() ),
+			$plugin->devices()
 		);
 	}
 
@@ -164,9 +173,31 @@ final class CollectController {
 		$ip          = $this->clientIp->resolve();
 		$visitorHash = $this->identity->visitorHash( $ip, $userAgent, $siteId );
 		$geo         = $this->geo->resolve( $ip );
+		// Not the address: a value derived from it, for one rate-limit key,
+		// which RateLimit hashes again before it becomes one. It goes no
+		// further than the two lines below.
+		$addressKey = '' === $ip ? '' : hash( 'sha256', $ip );
 		unset( $ip );
 
 		if ( $this->limits->exceeded( 'beacon', $visitorHash, $this->settings->beaconRateLimit ) ) {
+			return;
+		}
+
+		// A second, much looser bucket on the address itself.
+		//
+		// The visitor bucket is keyed on a hash of the address *and the user
+		// agent*, so a caller who varies the user agent gets a fresh allowance
+		// every request and the first limit stops meaning anything. This one
+		// cannot be varied. It is deliberately generous - a shared office
+		// address or a mobile carrier's NAT is a great many real people behind
+		// one address, and dropping their pageviews to inconvenience a script
+		// would be the wrong trade - so it is sized to stop one machine minting
+		// thousands of identities a minute, not to police a network.
+		//
+		// The address is hashed into the key by RateLimit and is not stored,
+		// exactly as the visitor hash is not.
+		if ( '' !== $addressKey
+			&& $this->limits->exceeded( 'beacon-addr', $addressKey, $this->addressCeiling() ) ) {
 			return;
 		}
 
@@ -185,7 +216,7 @@ final class CollectController {
 			return;
 		}
 
-		$cookies   = $this->cookies();
+		$cookies   = Server::cookies();
 		$visitorId = $this->consent->resolve( $siteId, $headers, $cookies )->isGranted()
 			? $this->consent->resolvedVisitorId( $siteId, $cookies )
 			: null;
@@ -197,8 +228,8 @@ final class CollectController {
 			sessionKey: $this->identity->sessionKey( $visitorHash, $siteId ),
 			timestamp: time(),
 			referrer: $this->referrer( $headers ),
-			userAgent: $userAgent,
-			acceptLanguage: $headers['accept-language'] ?? '',
+			// Reduced here, in the request that saw it. See Devices\Device.
+			device: (string) Device::fromUserAgent( $this->deviceParser, $userAgent ),
 			dwellMs: $isEngagement ? $this->dwell( $params ) : 0,
 			countView: $countView,
 			visitorId: $visitorId,
@@ -221,6 +252,25 @@ final class CollectController {
 		}
 
 		$this->writer->write( $hit );
+	}
+
+	/**
+	 * How many beacons one address may send in a window.
+	 *
+	 * A generous multiple of the per-visitor limit rather than a figure of its
+	 * own, so that a site which has raised or lowered one has raised or lowered
+	 * both. Filterable for the site that really does have a thousand people
+	 * behind one address.
+	 */
+	private function addressCeiling(): int {
+		$ceiling = max( 600, $this->settings->beaconRateLimit * 30 );
+
+		/**
+		 * Filters how many beacons a single address may send per minute.
+		 *
+		 * @param int $ceiling Requests per window. Zero disables the limit.
+		 */
+		return (int) apply_filters( 'honest_analytics_beacon_address_limit', $ceiling );
 	}
 
 	/**
@@ -403,16 +453,12 @@ final class CollectController {
 	 * @param array<string,string> $headers Request headers.
 	 */
 	private function referrer( array $headers ): string {
-		$referrer = trim( $headers['referer'] ?? '' );
-
-		if ( '' === $referrer ) {
-			return '';
-		}
-
 		// The beacon is posted from the page being counted, so its referrer is
 		// that page - which is this site, and therefore not a traffic source.
 		// A cross-site arrival is recorded by the session's first hit instead.
-		return Url::isInternal( $referrer ) ? '' : $referrer;
+		//
+		// Scheme and host only, and nothing after them: see Url::externalOrigin.
+		return Url::externalOrigin( $headers['referer'] ?? '' );
 	}
 
 	/**
@@ -426,24 +472,6 @@ final class CollectController {
 		}
 
 		return $this->settings->honourDnt && '1' === ( $headers['dnt'] ?? '' );
-	}
-
-	/**
-	 * Request cookies as a plain map.
-	 *
-	 * @return array<string,string>
-	 */
-	private function cookies(): array {
-		$out = [];
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		foreach ( (array) $_COOKIE as $name => $value ) {
-			if ( is_string( $name ) && is_scalar( $value ) ) {
-				$out[ $name ] = (string) $value;
-			}
-		}
-
-		return $out;
 	}
 
 	/**
@@ -496,7 +524,12 @@ final class CollectController {
 	 * A beacon body is form-encoded, but nothing stops somebody posting arrays
 	 * at it, and every reader downstream expects a scalar.
 	 *
-	 * @param array<string,mixed> $params Posted fields.
+	 * Keys are `array-key` rather than `string` because they genuinely can be
+	 * integers: `parse_str()` turns a field named `0` into an int key, and this
+	 * runs on a body anybody can post. The `is_string()` guard below is what
+	 * drops them, so the signature has to admit them first.
+	 *
+	 * @param array<array-key,mixed> $params Posted fields.
 	 *
 	 * @return array<string,string>
 	 */

@@ -37,8 +37,22 @@ final class OptimizerExclusions {
 
 	/**
 	 * The path fragment that identifies the tracker and its companions.
+	 *
+	 * Derived from this build's own folder rather than hardcoded. It used to
+	 * read `honest-analytics/assets/js/`, and `bin/build.sh` packages the paid
+	 * build as `honest-analytics-pro` - of which that is not a substring - so
+	 * every exclusion here, and `skipTagMinification()` with them, silently did
+	 * nothing at all on Pro. ADR 42's promise about delay-JS features did not
+	 * hold for the customers who paid for it, or for anybody who renamed the
+	 * folder.
 	 */
-	private const PATH = 'honest-analytics/assets/js/';
+	private static function path(): string {
+		$folder = defined( 'HONEST_ANALYTICS_BASENAME' )
+			? dirname( (string) constant( 'HONEST_ANALYTICS_BASENAME' ) )
+			: 'honest-analytics';
+
+		return $folder . '/assets/js/';
+	}
 
 	/**
 	 * Attach the exclusions.
@@ -73,7 +87,7 @@ final class OptimizerExclusions {
 	public static function addToCommaSeparated( mixed $excluded ): string {
 		$excluded = is_string( $excluded ) ? $excluded : '';
 
-		return '' === $excluded ? self::PATH : $excluded . ',' . self::PATH;
+		return '' === $excluded ? self::path() : $excluded . ',' . self::path();
 	}
 
 	/**
@@ -83,7 +97,7 @@ final class OptimizerExclusions {
 	 * @param string $script The script tag.
 	 */
 	public static function skipTagMinification( bool $minify, string $script ): bool {
-		return str_contains( $script, self::PATH ) ? false : $minify;
+		return str_contains( $script, self::path() ) ? false : $minify;
 	}
 
 	/**
@@ -96,7 +110,7 @@ final class OptimizerExclusions {
 	 */
 	private static function paths(): array {
 		return [
-			self::PATH,
+			self::path(),
 			'tracker.js',
 			ScriptInjector::HANDLE,
 			ScriptInjector::HANDLE_PRO,

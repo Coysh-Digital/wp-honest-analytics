@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Schema;
 
+use HonestAnalytics\Support\Db;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -104,9 +106,12 @@ final class Upsert {
 		$sql = 'INSERT INTO `' . $name . '` (' . implode( ', ', $names ) . ') VALUES (' .
 			implode( ', ', $placeholders ) . ') ON DUPLICATE KEY UPDATE ' . implode( ', ', $updates );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-		$wpdb->query( $wpdb->prepare( $sql, $values ) );
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		// Throws on failure. Every caller runs inside a transaction whose catch
+		// rolls back and retries; a counter that quietly failed to add would
+		// leave the batch marked committed and the views gone for good.
+		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared -- Identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		Db::query( $wpdb->prepare( $sql, $values ) );
+		// phpcs:enable WordPress.DB.PreparedSQL.NotPrepared
 	}
 
 	/**

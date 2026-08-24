@@ -143,7 +143,7 @@ ever makes are the two daily loopbacks to the site itself.
 | Unit suite | **316 tests, 697 assertions - pass** |
 | Integration, single site | **364 tests, 969 assertions - pass** (7 skipped) |
 | PHPCS (WPCS + security/DB/i18n + PHPCompatibility 8.1−) | **clean** |
-| PHPStan level 6 | **clean** |
+| PHPStan level 8 | **clean** |
 | Asset budgets and vendor checksums | **pass** - tracker 1,307 / 2,048 bytes gzipped |
 | axe-core, WCAG 2.2 AA, 17 screens × 2 widths | **0 findings** |
 | Screenshots | 23 screens × 2 widths, no console errors except one Gutenberg blob request |
@@ -334,7 +334,7 @@ creates carries the `_honest_analytics_demo` meta key.
 ```bash
 composer test:unit          # 171 tests, no WordPress, no database
 composer cs                 # PHPCS
-composer stan               # PHPStan level 6
+composer stan               # PHPStan level 8
 composer budgets            # tracker size, vendor checksums, forbidden APIs
 
 cd dev

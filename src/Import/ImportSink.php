@@ -12,7 +12,7 @@ namespace HonestAnalytics\Import;
 use HonestAnalytics\Dimensions\DimensionCapper;
 use HonestAnalytics\Dimensions\DimensionType;
 use HonestAnalytics\Schema\Tables;
-use HonestAnalytics\Support\Log;
+use HonestAnalytics\Support\Db;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -52,6 +52,7 @@ final class ImportSink {
 			Tables::SOURCES_ROLLUP,
 			Tables::DEVICES_ROLLUP,
 			Tables::GEO_ROLLUP,
+			Tables::DAILY_UNIQUES,
 		];
 	}
 
@@ -64,13 +65,24 @@ final class ImportSink {
 	/**
 	 * Write one day, replacing anything this source wrote for it before.
 	 *
-	 * @param int       $siteId Site.
-	 * @param string    $source One of the ImportSource constants.
-	 * @param DayBucket $bucket The day.
+	 * The day another source owned is displaced here rather than by the caller,
+	 * and the coverage rows move in the same transaction as the data. Done
+	 * outside it, a source that started failing part way through an eighteen
+	 * month replace left the previous import's days deleted with nothing put
+	 * back, and a crash between the write and the coverage record left written
+	 * rows that no clash check could see - which is the double count the
+	 * coverage table exists to prevent.
+	 *
+	 * @param int         $siteId   Site.
+	 * @param string      $source   One of the ImportSource constants.
+	 * @param DayBucket   $bucket   The day.
+	 * @param Coverage    $coverage Coverage table, written inside the transaction.
+	 * @param int         $importId The job doing the writing.
+	 * @param string|null $owner    A source whose day this one replaces, if any.
 	 *
 	 * @return int Rows written.
 	 */
-	public function write( int $siteId, string $source, DayBucket $bucket ): int {
+	public function write( int $siteId, string $source, DayBucket $bucket, Coverage $coverage, int $importId, ?string $owner = null ): int {
 		global $wpdb;
 
 		if ( ImportSource::NATIVE === $source || ! ImportSource::isValid( $source ) ) {
@@ -80,18 +92,26 @@ final class ImportSink {
 		$date = $bucket->date;
 		$rows = 0;
 
-		$wpdb->query( 'START TRANSACTION' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		Db::query( 'START TRANSACTION' );
 
 		try {
+			if ( null !== $owner ) {
+				$this->clearDay( $siteId, $owner, $date );
+				$coverage->forget( $siteId, $owner, $date );
+			}
+
 			$this->clearDay( $siteId, $source, $date );
 
 			$rows += $this->writePages( $siteId, $source, $bucket );
 			$rows += $this->writeTotals( $siteId, $source, $bucket );
+			$rows += $this->writeDailyUniques( $siteId, $source, $bucket );
 			$rows += $this->writeSources( $siteId, $source, $bucket );
 			$rows += $this->writeDevices( $siteId, $source, $bucket );
 			$rows += $this->writeCountries( $siteId, $source, $bucket );
 
-			$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$coverage->record( $siteId, $source, $importId, $date, $rows );
+
+			Db::query( 'COMMIT' );
 		} catch ( \Throwable $e ) {
 			$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
@@ -99,6 +119,47 @@ final class ImportSink {
 		}
 
 		return $rows;
+	}
+
+	/**
+	 * Record a day that had no traffic in it.
+	 *
+	 * A day with nothing in it is still a day that has been imported, and
+	 * recording it stops a second run offering to fetch it again. It can still
+	 * displace another source's day, and that displacement has to be atomic
+	 * with the record of it for the same reason every other day's is.
+	 *
+	 * @param int         $siteId   Site.
+	 * @param string      $source   One of the ImportSource constants.
+	 * @param string      $date     Y-m-d.
+	 * @param Coverage    $coverage Coverage table.
+	 * @param int         $importId The job doing the writing.
+	 * @param string|null $owner    A source whose day this one replaces, if any.
+	 */
+	public function writeEmptyDay( int $siteId, string $source, string $date, Coverage $coverage, int $importId, ?string $owner = null ): void {
+		global $wpdb;
+
+		if ( ImportSource::NATIVE === $source || ! ImportSource::isValid( $source ) ) {
+			throw new \InvalidArgumentException( 'Refusing to write imported data under an invalid source.' );
+		}
+
+		Db::query( 'START TRANSACTION' );
+
+		try {
+			if ( null !== $owner ) {
+				$this->clearDay( $siteId, $owner, $date );
+				$coverage->forget( $siteId, $owner, $date );
+			}
+
+			$this->clearDay( $siteId, $source, $date );
+			$coverage->record( $siteId, $source, $importId, $date, 0 );
+
+			Db::query( 'COMMIT' );
+		} catch ( \Throwable $e ) {
+			$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+			throw $e;
+		}
 	}
 
 	/**
@@ -119,7 +180,7 @@ final class ImportSink {
 			$name = Tables::name( $table );
 
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; the identifier comes from Schema\Tables and every value is a placeholder.
-			$wpdb->query(
+			Db::query(
 				$wpdb->prepare(
 					"DELETE FROM `$name` WHERE siteId = %d AND source = %s AND date = %s",
 					$siteId,
@@ -163,7 +224,38 @@ final class ImportSink {
 	}
 
 	/**
-	 * The day's one sessions row.
+	 * The day's imported visitor count, for the site-wide daily row.
+	 *
+	 * @param int       $siteId Site.
+	 * @param string    $source Source.
+	 * @param DayBucket $bucket Day.
+	 */
+	private function writeDailyUniques( int $siteId, string $source, DayBucket $bucket ): int {
+		if ( 0 === $bucket->visitors() ) {
+			return 0;
+		}
+
+		// A count, not a sketch, and added to the estimate rather than merged
+		// into it - the same rule ADR 54 sets for the per-path rows. Turning a
+		// visitor number back into a sketch would mean inventing the identities
+		// it was built from, and a sketch of invented identities merges
+		// convincingly and is a lie.
+		return $this->insert(
+			Tables::DAILY_UNIQUES,
+			[
+				[
+					'siteId'          => $siteId,
+					'date'            => $bucket->date,
+					'source'          => $source,
+					'uniques'         => null,
+					'importedUniques' => $bucket->visitors(),
+				],
+			]
+		);
+	}
+
+	/**
+	 * The day's totals, as one daily row.
 	 *
 	 * @param int       $siteId Site.
 	 * @param string    $source Source.
@@ -326,7 +418,7 @@ final class ImportSink {
 			$columnList = '`' . implode( '`,`', array_map( static fn ( $c ): string => str_replace( '`', '', (string) $c ), $columns ) ) . '`';
 
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and the caller's own column list, and every value is a placeholder.
-			$result = $wpdb->query(
+			Db::query(
 				$wpdb->prepare(
 					"INSERT INTO `$name` ($columnList) VALUES " . implode( ',', $placeholders ),
 					$values
@@ -334,12 +426,13 @@ final class ImportSink {
 			);
 			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
 
-			if ( false === $result ) {
-				Log::warning( 'An imported batch could not be written: ' . $wpdb->last_error );
-
-				continue;
-			}
-
+			// Db::query() rather than a warning and `continue`. This runs inside
+			// the transaction write() opened, and a lock-wait timeout rolls back
+			// only the statement that hit it - so swallowing one meant
+			// committing a day whose clearDay() deletion had already happened
+			// and whose replacement rows had not. ImportRunner then recorded
+			// coverage for it and the day was never retried: a hole in the
+			// history that nothing would ever fill.
 			$written += count( $chunk );
 		}
 

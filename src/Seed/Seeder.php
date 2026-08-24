@@ -12,6 +12,8 @@ namespace HonestAnalytics\Seed;
 use HonestAnalytics\Capture\Hit;
 use HonestAnalytics\Capture\CaptureService;
 use HonestAnalytics\Channels\Campaign;
+use HonestAnalytics\Devices\Device;
+use HonestAnalytics\Devices\DeviceParser;
 use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Settings\Settings;
@@ -148,10 +150,10 @@ final class Seeder {
 		$visitorHash = strval( bin2hex( random_bytes( 8 ) ) );
 		$sessionKey  = strval( substr( hash( 'sha256', $visitorHash . '|' . $siteId ), 0, 16 ) );
 
-		$userAgent = $this->userAgent();
-		$referrer  = $this->referrer();
-		$campaign  = $this->campaign();
-		$country   = $this->country();
+		$device   = (string) Device::fromUserAgent( new DeviceParser(), $this->userAgent() );
+		$referrer = $this->referrer();
+		$campaign = $this->campaign();
+		$country  = $this->country();
 
 		$pages     = max( 1, (int) round( $this->skewed() * self::PAGES_PER_VISIT * 2 ) );
 		$timestamp = $midnight + $this->timeOfDay();
@@ -171,8 +173,7 @@ final class Seeder {
 				// Only the first page of a visit has an external referrer. The
 				// rest came from this site, which is not a traffic source.
 				referrer: 0 === $page ? $referrer : '',
-				userAgent: $userAgent,
-				acceptLanguage: 'en-GB,en;q=0.9',
+				device: $device,
 				dwellMs: random_int( 4000, 240000 ),
 				campaign: 0 === $page ? $campaign : null,
 				countryCode: $country[0],
@@ -183,7 +184,7 @@ final class Seeder {
 			$timestamp += random_int( 15, 400 );
 		}
 
-		foreach ( $this->interactions( $siteId, $visitorHash, $sessionKey, $timestamp, $hits[0]->path, $userAgent ) as $hit ) {
+		foreach ( $this->interactions( $siteId, $visitorHash, $sessionKey, $timestamp, $hits[0]->path, $device ) as $hit ) {
 			$hits[] = $hit;
 		}
 
@@ -198,11 +199,11 @@ final class Seeder {
 	 * @param string $sessionKey  Session key.
 	 * @param int    $timestamp   When.
 	 * @param string $path        Where.
-	 * @param string $userAgent   Browser.
+	 * @param string $device      The reduced device signature.
 	 *
 	 * @return Hit[]
 	 */
-	private function interactions( int $siteId, string $visitorHash, string $sessionKey, int $timestamp, string $path, string $userAgent ): array {
+	private function interactions( int $siteId, string $visitorHash, string $sessionKey, int $timestamp, string $path, string $device ): array {
 		if ( ! Edition::isPro() || ! $this->settings->enableEvents || random_int( 1, 100 ) > 12 ) {
 			return [];
 		}
@@ -219,7 +220,7 @@ final class Seeder {
 				visitorHash: strval( $visitorHash ),
 				sessionKey: strval( $sessionKey ),
 				timestamp: $timestamp,
-				userAgent: $userAgent,
+				device: $device,
 				countView: false,
 				kind: $kind,
 				eventName: Hit::KIND_EVENT === $kind ? $names[ array_rand( $names ) ] : null,

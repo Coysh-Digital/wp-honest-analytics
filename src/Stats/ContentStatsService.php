@@ -37,6 +37,27 @@ final class ContentStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function byPostType( int $siteId, DateRange $range, int $limit = 100 ): array {
+		return (array) $this->remember(
+			'content:byPostType',
+			$siteId,
+			$range,
+			fn (): array => $this->computeByPostType( $siteId, $range, $limit ),
+			[
+				'limit' => $limit,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See byPostType().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeByPostType( int $siteId, DateRange $range, int $limit = 100 ): array {
 		global $wpdb;
 
 		$rollup = Tables::name( Tables::PAGES_ROLLUP );
@@ -48,10 +69,14 @@ final class ContentStatsService {
 					COALESCE(SUM(r.views),0) AS views,
 					COUNT(DISTINCT r.postId) AS posts,
 					COALESCE(SUM(r.totalDwellMs),0) AS dwell
-				FROM `$rollup` r
+				FROM (
+					SELECT postId, SUM(views) AS views, SUM(totalDwellMs) AS totalDwellMs
+					FROM `$rollup`
+					WHERE siteId = %d AND date BETWEEN %s AND %s AND postId IS NOT NULL
+					GROUP BY postId
+				) r
 				INNER JOIN {$wpdb->posts} p ON p.ID = r.postId
-				WHERE r.siteId = %d AND r.date BETWEEN %s AND %s
-					AND p.post_status = 'publish'
+				WHERE p.post_status = 'publish'
 				GROUP BY p.post_type
 				ORDER BY views DESC
 				LIMIT %d",
@@ -92,6 +117,27 @@ final class ContentStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function byTaxonomy( int $siteId, DateRange $range, int $limit = 100 ): array {
+		return (array) $this->remember(
+			'content:byTaxonomy',
+			$siteId,
+			$range,
+			fn (): array => $this->computeByTaxonomy( $siteId, $range, $limit ),
+			[
+				'limit' => $limit,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See byTaxonomy().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeByTaxonomy( int $siteId, DateRange $range, int $limit = 100 ): array {
 		global $wpdb;
 
 		$taxonomies = get_taxonomies( [ 'public' => true ], 'names' );
@@ -109,6 +155,13 @@ final class ContentStatsService {
 			[ max( 1, $limit ) ]
 		);
 
+		// The rollup is reduced to one row per post *before* the joins. Inside
+		// the hourly window every post has up to twenty-four rows per day per
+		// path, so a thirty-day range was carrying something like 191,000 rows
+		// into a four-table join and a COUNT(DISTINCT) - to produce a few
+		// hundred. Pre-aggregating collapses that to one row per post, which
+		// `by_post (siteId,postId,date)` serves, and the joins then run over
+		// roughly as many rows as the site has posts.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
@@ -116,13 +169,17 @@ final class ContentStatsService {
 					COALESCE(SUM(r.views),0) AS views,
 					COUNT(DISTINCT r.postId) AS posts,
 					COALESCE(SUM(r.totalDwellMs),0) AS dwell
-				FROM `$rollup` r
+				FROM (
+					SELECT postId, SUM(views) AS views, SUM(totalDwellMs) AS totalDwellMs
+					FROM `$rollup`
+					WHERE siteId = %d AND date BETWEEN %s AND %s AND postId IS NOT NULL
+					GROUP BY postId
+				) r
 				INNER JOIN {$wpdb->posts} p ON p.ID = r.postId
 				INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = p.ID
 				INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
 				INNER JOIN {$wpdb->terms} t ON t.term_id = tt.term_id
-				WHERE r.siteId = %d AND r.date BETWEEN %s AND %s
-					AND p.post_status = 'publish'
+				WHERE p.post_status = 'publish'
 					AND tt.taxonomy IN ($placeholders)
 				GROUP BY tt.term_taxonomy_id, t.name, tt.taxonomy, tt.term_id
 				ORDER BY views DESC
@@ -161,6 +218,27 @@ final class ContentStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function byAuthor( int $siteId, DateRange $range, int $limit = 100 ): array {
+		return (array) $this->remember(
+			'content:byAuthor',
+			$siteId,
+			$range,
+			fn (): array => $this->computeByAuthor( $siteId, $range, $limit ),
+			[
+				'limit' => $limit,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See byAuthor().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeByAuthor( int $siteId, DateRange $range, int $limit = 100 ): array {
 		global $wpdb;
 
 		$rollup = Tables::name( Tables::PAGES_ROLLUP );
@@ -172,11 +250,15 @@ final class ContentStatsService {
 					COALESCE(SUM(r.views),0) AS views,
 					COUNT(DISTINCT r.postId) AS posts,
 					COALESCE(SUM(r.totalDwellMs),0) AS dwell
-				FROM `$rollup` r
+				FROM (
+					SELECT postId, SUM(views) AS views, SUM(totalDwellMs) AS totalDwellMs
+					FROM `$rollup`
+					WHERE siteId = %d AND date BETWEEN %s AND %s AND postId IS NOT NULL
+					GROUP BY postId
+				) r
 				INNER JOIN {$wpdb->posts} p ON p.ID = r.postId
 				INNER JOIN {$wpdb->users} u ON u.ID = p.post_author
-				WHERE r.siteId = %d AND r.date BETWEEN %s AND %s
-					AND p.post_status = 'publish'
+				WHERE p.post_status = 'publish'
 				GROUP BY u.ID, u.display_name
 				ORDER BY views DESC
 				LIMIT %d",
@@ -208,6 +290,27 @@ final class ContentStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function topPosts( int $siteId, DateRange $range, int $limit = 20 ): array {
+		return (array) $this->remember(
+			'content:topPosts',
+			$siteId,
+			$range,
+			fn (): array => $this->computeTopPosts( $siteId, $range, $limit ),
+			[
+				'limit' => $limit,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See topPosts().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeTopPosts( int $siteId, DateRange $range, int $limit = 20 ): array {
 		global $wpdb;
 
 		$rollup = Tables::name( Tables::PAGES_ROLLUP );
@@ -259,5 +362,27 @@ final class ContentStatsService {
 			'perPost'    => $posts > 0 ? (int) round( $views / $posts ) : 0,
 			'avgDwellMs' => $views > 0 ? (int) round( $dwell / $views ) : 0,
 		];
+	}
+
+	/**
+	 * Hold a finished period's answer.
+	 *
+	 * `ReportCache` decides whether a period is finished; a range containing
+	 * today is computed every time, because a reader refreshing to see whether
+	 * the morning's post is doing anything deserves the truth.
+	 *
+	 * Every argument beyond the site and the range goes into `$extra` and
+	 * therefore into the key. A limit or a path filter left out of it would
+	 * serve the answer to one question as the answer to another - the failure
+	 * that looks like data rather than like a bug.
+	 *
+	 * @param string               $name    Query name.
+	 * @param int                  $siteId  Site ID.
+	 * @param DateRange            $range   Period.
+	 * @param callable             $compute Produces the value.
+	 * @param array<string,scalar> $extra   Anything else that changes the answer.
+	 */
+	private function remember( string $name, int $siteId, DateRange $range, callable $compute, array $extra = [] ): mixed {
+		return ReportCache::remember( $name, $siteId, $range, $compute, $extra );
 	}
 }

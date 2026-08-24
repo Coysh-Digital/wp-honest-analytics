@@ -10,6 +10,8 @@
 
 declare(strict_types=1);
 
+use HonestAnalytics\Support\Timezone;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -20,7 +22,7 @@ $ha_to    = $ha_range['to'];
 
 // A year back from the end of what exists, not from today: a source that
 // stopped collecting eighteen months ago should still offer something useful.
-$ha_year = wp_date( 'Y-m-d', (int) strtotime( '-12 months', (int) strtotime( $ha_to ) ) );
+$ha_year = Timezone::format( 'Y-m-d', (int) strtotime( '-12 months', (int) Timezone::middayOn( $ha_to ) ) );
 $ha_year = max( $ha_year, $ha_from );
 
 // The overlap step only appears when there is an overlap to resolve.
@@ -42,8 +44,8 @@ $ha_next = [] !== $screen->overlapping( $importer->id(), $ha_from, $ha_to ) ? 'o
 				sprintf(
 					/* translators: 1: start date, 2: end date. */
 					__( 'We found analytics from %1$s to %2$s.', 'honest-analytics' ),
-					wp_date( 'j F Y', (int) strtotime( $ha_from ) ),
-					wp_date( 'j F Y', (int) strtotime( $ha_to ) )
+					Timezone::date( (int) Timezone::middayOn( $ha_from ) ),
+					Timezone::date( (int) Timezone::middayOn( $ha_to ) )
 				)
 			);
 			?>
@@ -64,8 +66,8 @@ $ha_next = [] !== $screen->overlapping( $importer->id(), $ha_from, $ha_to ) ? 'o
 							sprintf(
 								/* translators: 1: start date, 2: end date. */
 								__( '%1$s to %2$s', 'honest-analytics' ),
-								wp_date( 'j M Y', (int) strtotime( $ha_from ) ),
-								wp_date( 'j M Y', (int) strtotime( $ha_to ) )
+								wp_date( 'j M Y', (int) Timezone::middayOn( $ha_from ) ),
+								wp_date( 'j M Y', (int) Timezone::middayOn( $ha_to ) )
 							)
 						);
 						?>
@@ -83,8 +85,8 @@ $ha_next = [] !== $screen->overlapping( $importer->id(), $ha_from, $ha_to ) ? 'o
 							sprintf(
 								/* translators: 1: start date, 2: end date. */
 								__( '%1$s to %2$s', 'honest-analytics' ),
-								wp_date( 'j M Y', (int) strtotime( $ha_year ) ),
-								wp_date( 'j M Y', (int) strtotime( $ha_to ) )
+								wp_date( 'j M Y', (int) Timezone::middayOn( $ha_year ) ),
+								wp_date( 'j M Y', (int) Timezone::middayOn( $ha_to ) )
 							)
 						);
 						?>

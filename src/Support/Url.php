@@ -38,6 +38,66 @@ final class Url {
 	}
 
 	/**
+	 * A referrer reduced to scheme and host, or nothing.
+	 *
+	 * Empty for a referrer that is missing, unparseable, or points at this
+	 * site - the previous page of a visit is not a traffic source. Otherwise
+	 * `https://example.com` and not a character more.
+	 *
+	 * The path and query are dropped here, at the edge, rather than at the
+	 * drain. Only the host is ever reported, and the rest is the part that
+	 * carries what nobody meant to send: a token in a query string, a document
+	 * key, a phrase typed into somebody else's search box.
+	 *
+	 * {@see \HonestAnalytics\Capture\Hit} applies {@see self::origin()} again
+	 * on the way in, so a hit built anywhere else - by an integration, by a
+	 * theme calling the tracking function, by a filter - cannot carry a whole
+	 * URL into storage either.
+	 *
+	 * @param string $referrer Raw referrer.
+	 */
+	public static function externalOrigin( string $referrer ): string {
+		return self::isInternal( $referrer ) ? '' : self::origin( $referrer );
+	}
+
+	/**
+	 * A URL reduced to scheme and host, whoever it points at.
+	 *
+	 * The half of {@see self::externalOrigin()} that has no opinion about
+	 * whose site it is, and does not ask WordPress: this one runs in the Hit
+	 * constructor, which means once per spool line on the drain path, so it
+	 * costs one parse and nothing else.
+	 *
+	 * Empty for anything unparseable, and for any scheme that is not the web -
+	 * `javascript:` and `android-app://` are not traffic sources worth a row.
+	 *
+	 * @param string $url Any URL.
+	 */
+	public static function origin( string $url ): string {
+		$url = trim( $url );
+
+		if ( '' === $url ) {
+			return '';
+		}
+
+		$parts = wp_parse_url( $url );
+
+		if ( ! is_array( $parts ) || empty( $parts['host'] ) ) {
+			return '';
+		}
+
+		$scheme = isset( $parts['scheme'] ) && is_string( $parts['scheme'] )
+			? strtolower( $parts['scheme'] )
+			: 'https';
+
+		if ( ! in_array( $scheme, [ 'http', 'https' ], true ) ) {
+			return '';
+		}
+
+		return $scheme . '://' . ltrim( strtolower( (string) $parts['host'] ), '.' );
+	}
+
+	/**
 	 * Every host this installation answers to.
 	 *
 	 * Used to decide whether a referrer is an external traffic source or just

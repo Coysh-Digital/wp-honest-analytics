@@ -115,6 +115,8 @@ final class Loopback {
 			return self::SPOOL_PROTECTED;
 		}
 
+		$this->sweepProbes( $directory );
+
 		$token = wp_generate_password( 24, false );
 		$name  = 'probe-' . $token . '.txt';
 		$path  = $directory . '/' . $name;
@@ -128,6 +130,13 @@ final class Loopback {
 			$url . '/' . $name,
 			[
 				'timeout'   => 5,
+				// `local` marks this as a request to ourselves, which is what
+				// makes core apply the `https_local_ssl_verify` filter. Without
+				// it a self-request is treated as external, and a staging site
+				// with a self-signed certificate fails this probe and reports a
+				// broken collection endpoint that is not broken - with no way
+				// to say so.
+				'local'     => true,
 				'sslverify' => true,
 				'headers'   => [ 'Cache-Control' => 'no-cache' ],
 			]
@@ -147,6 +156,39 @@ final class Loopback {
 	}
 
 	/**
+	 * Delete probes an earlier check did not live to delete.
+	 *
+	 * The probe is written, fetched and unlinked in one request, so the only
+	 * way one survives is a fatal or a `max_execution_time` kill between the
+	 * write and the delete - which is exactly what a site slow enough to be
+	 * worth probing does. Nothing else looks at these files, so they would
+	 * accumulate one per failed check, forever, in the directory this check
+	 * exists to say is protected.
+	 *
+	 * An hour, because a probe still in flight belongs to a request that has
+	 * long since hit any plausible time limit, and deleting one out from under
+	 * a live check would only make it report `unknown`.
+	 *
+	 * @param string $directory Spool directory.
+	 */
+	private function sweepProbes( string $directory ): void {
+		$stale = time() - HOUR_IN_SECONDS;
+
+		foreach ( (array) glob( $directory . '/probe-*.txt' ) as $file ) {
+			if ( ! is_string( $file ) ) {
+				continue;
+			}
+
+			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			$modified = @filemtime( $file );
+
+			if ( false !== $modified && $modified < $stale ) {
+				wp_delete_file( $file );
+			}
+		}
+	}
+
+	/**
 	 * Whether the collection endpoint answers.
 	 *
 	 * Sends a request the endpoint will reject - no path - because the point is
@@ -162,6 +204,7 @@ final class Loopback {
 			$url,
 			[
 				'timeout'   => 5,
+				'local'     => true,
 				'sslverify' => true,
 				'body'      => [ 'p' => '' ],
 				'headers'   => [ 'Cache-Control' => 'no-cache' ],

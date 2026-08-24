@@ -187,42 +187,72 @@ final class Posture {
 	/**
 	 * The facts table shown on the Privacy screen.
 	 *
-	 * @return array<string,string>
+	 * A list of label-and-value pairs rather than a map keyed by the label.
+	 * Two of these labels translating to the same string in some locale would
+	 * silently collapse two rows into one - and the row that vanished would be
+	 * a claim about what the plugin does with people's data, on the screen
+	 * somebody opens to check exactly that.
+	 *
+	 * @return array<int,array{label:string,value:string}>
 	 */
 	public function facts(): array {
 		$hours = round( $this->settings->saltRotationInterval / 3600, 1 );
 
 		return [
-			__( 'IP addresses stored', 'honest-analytics' ) => __( 'Never - hashed in memory and discarded', 'honest-analytics' ),
-			__( 'Cookies set', 'honest-analytics' ) => $this->settings->enableConsent
-				? sprintf(
-					/* translators: %s: cookie name. */
-					__( 'One, for consenting visitors only (%s)', 'honest-analytics' ),
-					$this->settings->consentCookieName
-				)
-				: __( 'None', 'honest-analytics' ),
-			__( 'Device storage used', 'honest-analytics' ) => __( 'None', 'honest-analytics' ),
-			__( 'Data leaves the site', 'honest-analytics' ) => __( 'Never - no third party receives anything', 'honest-analytics' ),
-			__( 'Visitor salt rotation', 'honest-analytics' ) => sprintf(
-				/* translators: %s: hours. */
-				__( 'Every %s hours, destroying the previous salt', 'honest-analytics' ),
-				$hours
-			),
-			__( 'Global Privacy Control', 'honest-analytics' ) => $this->settings->honourGpc
-				? __( 'Honoured', 'honest-analytics' )
-				: __( 'Ignored', 'honest-analytics' ),
-			__( 'Aggregate retention', 'honest-analytics' ) => sprintf(
-				/* translators: %d: months. */
-				_n( '%d month', '%d months', $this->settings->rollupRetentionMonths, 'honest-analytics' ),
-				$this->settings->rollupRetentionMonths
-			),
-			__( 'Raw per-visitor rows', 'honest-analytics' ) => $this->settings->enableJourneys
-				? sprintf(
-					/* translators: %d: days. */
-					_n( 'Yes, for consenting visitors, kept %d day', 'Yes, for consenting visitors, kept %d days', $this->settings->journeyRetentionDays, 'honest-analytics' ),
-					$this->settings->journeyRetentionDays
-				)
-				: __( 'None', 'honest-analytics' ),
+			[
+				'label' => __( 'IP addresses stored', 'honest-analytics' ),
+				'value' => __( 'Never - hashed in memory and discarded', 'honest-analytics' ),
+			],
+			[
+				'label' => __( 'Cookies set', 'honest-analytics' ),
+				'value' => $this->settings->enableConsent
+					? sprintf(
+						/* translators: %s: cookie name. */
+						__( 'One, for consenting visitors only (%s)', 'honest-analytics' ),
+						$this->settings->consentCookieName
+					)
+					: __( 'None', 'honest-analytics' ),
+			],
+			[
+				'label' => __( 'Device storage used', 'honest-analytics' ),
+				'value' => __( 'None', 'honest-analytics' ),
+			],
+			[
+				'label' => __( 'Data leaves the site', 'honest-analytics' ),
+				'value' => __( 'Never - no third party receives anything', 'honest-analytics' ),
+			],
+			[
+				'label' => __( 'Visitor salt rotation', 'honest-analytics' ),
+				'value' => sprintf(
+					/* translators: %s: hours. */
+					__( 'Every %s hours, destroying the previous salt', 'honest-analytics' ),
+					$hours
+				),
+			],
+			[
+				'label' => __( 'Global Privacy Control', 'honest-analytics' ),
+				'value' => $this->settings->honourGpc
+					? __( 'Honoured', 'honest-analytics' )
+					: __( 'Ignored', 'honest-analytics' ),
+			],
+			[
+				'label' => __( 'Aggregate retention', 'honest-analytics' ),
+				'value' => sprintf(
+					/* translators: %d: months. */
+					_n( '%d month', '%d months', $this->settings->rollupRetentionMonths, 'honest-analytics' ),
+					$this->settings->rollupRetentionMonths
+				),
+			],
+			[
+				'label' => __( 'Raw per-visitor rows', 'honest-analytics' ),
+				'value' => $this->settings->enableJourneys
+					? sprintf(
+						/* translators: %d: days. */
+						_n( 'Yes, for consenting visitors, kept %d day', 'Yes, for consenting visitors, kept %d days', $this->settings->journeyRetentionDays, 'honest-analytics' ),
+						$this->settings->journeyRetentionDays
+					)
+					: __( 'None', 'honest-analytics' ),
+			],
 		];
 	}
 }

@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace HonestAnalytics\Charts;
 
 use HonestAnalytics\Stats\Granularity;
+use HonestAnalytics\Support\Timezone;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -266,8 +267,8 @@ final class ChartData {
 
 			[ $axisFormat, $fullFormat ] = self::labelFormats( $granularity, $spansYears );
 
-			$axis[]   = wp_date( $axisFormat, $timestamp );
-			$fullDate = wp_date( $fullFormat, $timestamp );
+			$axis[]   = Timezone::format( $axisFormat, $timestamp );
+			$fullDate = Timezone::format( $fullFormat, $timestamp );
 
 			$full[] = Granularity::Week === $granularity
 				? sprintf(
@@ -318,20 +319,24 @@ final class ChartData {
 				return false;
 			}
 
-			$date = ( new \DateTimeImmutable() )->setISODate( (int) $matches[1], (int) $matches[2] )->setTime( 0, 0 );
+			// Midday in the site's zone, for the same reason every other
+			// branch here uses it: the label is rendered with wp_date().
+			$date = ( new \DateTimeImmutable( 'now', Timezone::site() ) )
+				->setISODate( (int) $matches[1], (int) $matches[2] )
+				->setTime( 12, 0 );
 
 			return $date->getTimestamp();
 		}
 
 		if ( Granularity::Month === $granularity ) {
-			return strtotime( $label . '-01' );
+			return Timezone::middayOn( $label . '-01' );
 		}
 
 		if ( Granularity::Year === $granularity ) {
-			return strtotime( $label . '-01-01' );
+			return Timezone::middayOn( $label . '-01-01' );
 		}
 
-		return strtotime( $label );
+		return Timezone::middayOn( $label );
 	}
 
 	/**

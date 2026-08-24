@@ -8,6 +8,7 @@
 declare(strict_types=1);
 
 use HonestAnalytics\Admin\MaintenanceHandler;
+use HonestAnalytics\Support\Losses;
 use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Scheduling\Cron;
@@ -257,6 +258,21 @@ $ha_submitted = [
 						<button type="submit" class="button"><?php esc_html_e( 'Run the tidy-up', 'honest-analytics' ); ?></button>
 					</form>
 				</div>
+
+			<?php if ( Losses::total() > 0 ) : ?>
+				<div class="ha-setting-control ha-gap-above">
+					<form method="post" action="<?php echo esc_url( MaintenanceHandler::url() ); ?>">
+						<?php wp_nonce_field( MaintenanceHandler::NONCE ); ?>
+						<input type="hidden" name="action" value="<?php echo esc_attr( MaintenanceHandler::ACTION ); ?>">
+						<input type="hidden" name="task" value="losses">
+						<button type="submit" class="button"><?php esc_html_e( 'Clear the dropped-view count', 'honest-analytics' ); ?></button>
+					</form>
+				</div>
+
+				<p class="ha-setting-help">
+					<?php esc_html_e( 'The count is cumulative and says nothing about whether the cause is still there. Clear it once you have changed something, and watch whether it comes back.', 'honest-analytics' ); ?>
+				</p>
+			<?php endif; ?>
 
 				<p class="ha-setting-help">
 					<?php esc_html_e( 'Compacts finished days to daily totals and deletes anything past its retention. This is the one that acts on the retention settings below, and what it deletes does not come back.', 'honest-analytics' ); ?>

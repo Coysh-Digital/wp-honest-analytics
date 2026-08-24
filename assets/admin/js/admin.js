@@ -8,6 +8,15 @@
 (function () {
 	'use strict';
 
+	// Defaulted, so the script still works if the localize call is missing -
+	// an optimiser that concatenates scripts can lose the inline data object,
+	// and an unlabelled scroll region is better than a TypeError.
+	var config = window.honestAnalyticsAdmin || {};
+	var strings = config.strings || {
+		scrollableNamed: '%s - scrollable',
+		scrollable: 'Scrollable region'
+	};
+
 	/**
 	 * Close the custom date picker when the focus leaves it.
 	 */
@@ -149,7 +158,9 @@
 			region.setAttribute( 'role', 'group' );
 			region.setAttribute(
 				'aria-label',
-				name ? name.trim() + ' - scrollable' : 'Scrollable region'
+				name
+					? strings.scrollableNamed.replace( '%s', name.trim() )
+					: strings.scrollable
 			);
 		} );
 	};

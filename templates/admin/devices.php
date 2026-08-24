@@ -108,7 +108,7 @@ $ha_typeTotal = array_sum( array_column( $types, 'sessions' ) );
 					'admin/partials/ranked-table',
 					[
 						'rows'    => $ha_rows,
-						'max'     => $ha_data ? max( array_column( $ha_data, 'sessions' ) ) : 1,
+						'max'     => Format::largest( $ha_data, 'sessions' ),
 						'columns' => [
 							[
 								'key'   => 'label',

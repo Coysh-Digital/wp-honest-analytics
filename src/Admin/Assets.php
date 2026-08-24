@@ -41,7 +41,22 @@ final class Assets {
 			HONEST_ANALYTICS_URL . 'assets/admin/js/admin.js',
 			[],
 			HONEST_ANALYTICS_VERSION,
-			true
+			[ 'in_footer' => true ]
+		);
+
+		// The script writes an aria-label onto every scrollable table, and had
+		// no strings of its own - so a screen reader announced two words of
+		// English on an otherwise translated screen.
+		wp_localize_script(
+			'honest-analytics-admin',
+			'honestAnalyticsAdmin',
+			[
+				'strings' => [
+					/* translators: %s: the name of a table or card. */
+					'scrollableNamed' => __( '%s - scrollable', 'honest-analytics' ),
+					'scrollable'      => __( 'Scrollable region', 'honest-analytics' ),
+				],
+			]
 		);
 
 		if ( ! $charts ) {
@@ -53,7 +68,7 @@ final class Assets {
 			HONEST_ANALYTICS_URL . 'assets/admin/js/vendor/chart.umd.js',
 			[],
 			'4.5.1',
-			true
+			[ 'in_footer' => true ]
 		);
 
 		wp_enqueue_script(
@@ -61,7 +76,7 @@ final class Assets {
 			HONEST_ANALYTICS_URL . 'assets/admin/js/charts.js',
 			[ 'honest-analytics-chartjs' ],
 			HONEST_ANALYTICS_VERSION,
-			true
+			[ 'in_footer' => true ]
 		);
 	}
 
@@ -76,7 +91,7 @@ final class Assets {
 			HONEST_ANALYTICS_URL . 'assets/admin/js/realtime.js',
 			[],
 			HONEST_ANALYTICS_VERSION,
-			true
+			[ 'in_footer' => true ]
 		);
 
 		wp_localize_script(
@@ -87,6 +102,11 @@ final class Assets {
 				'nonce'    => wp_create_nonce( 'wp_rest' ),
 				'selector' => $selector,
 				'interval' => 15000,
+				// The same locale charts.js is already given. Without it
+				// toLocaleString() uses the *browser's* locale, so the live
+				// counter could group its thousands differently from the
+				// number_format_i18n() figure rendered beside it.
+				'locale'   => str_replace( '_', '-', get_locale() ),
 				'strings'  => [
 					'justNow'     => __( 'just now', 'honest-analytics' ),
 					/* translators: %d: a number of seconds. */

@@ -61,7 +61,7 @@ final class SessionMerger {
 			entryPath: $delta->entryPath,
 			lastPath: $delta->lastPath,
 			referrer: $delta->referrer,
-			userAgent: $delta->userAgent,
+			device: $delta->device,
 			lastBatch: $batchId,
 			closedByBatch: null,
 			campaigns: $delta->campaigns,
@@ -90,8 +90,8 @@ final class SessionMerger {
 			$session->lastPath   = $delta->lastPath;
 		}
 
-		if ( '' === $session->userAgent && '' !== $delta->userAgent ) {
-			$session->userAgent = $delta->userAgent;
+		if ( '' === $session->device && '' !== $delta->device ) {
+			$session->device = $delta->device;
 		}
 
 		// The acquisition referrer belongs to the visit, not to the page. It is

@@ -36,7 +36,7 @@
 	var stopped = false;
 
 	function number( value ) {
-		return Number( value || 0 ).toLocaleString();
+		return Number( value || 0 ).toLocaleString( config.locale || undefined );
 	}
 
 	function say( message ) {

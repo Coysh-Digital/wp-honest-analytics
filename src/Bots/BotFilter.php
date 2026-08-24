@@ -77,6 +77,20 @@ final class BotFilter {
 	private ?CrawlerDetect $detector = null;
 
 	/**
+	 * The last verdict, keyed on what it was reached from.
+	 *
+	 * One request asks this of the same user agent three or four times - the
+	 * shutdown runner, the trackability rules, and the crawler capture each
+	 * ask in turn - and the library answer behind it is a regular expression
+	 * several thousand alternatives long. Remembering one answer is the
+	 * difference between running that once per request and running it four
+	 * times.
+	 *
+	 * @var array{0:string,1:bool}|null
+	 */
+	private ?array $lastVerdict = null;
+
+	/**
 	 * Whether a request came from a machine.
 	 *
 	 * @param string               $userAgent User agent string.
@@ -84,6 +98,25 @@ final class BotFilter {
 	 */
 	public function isBot( string $userAgent, array $headers = [] ): bool {
 		$userAgent = trim( $userAgent );
+		$memoKey   = $userAgent . "\0" . trim( $headers['accept-language'] ?? '' );
+
+		if ( null !== $this->lastVerdict && $this->lastVerdict[0] === $memoKey ) {
+			return $this->lastVerdict[1];
+		}
+
+		$verdict           = $this->decide( $userAgent, $headers );
+		$this->lastVerdict = [ $memoKey, $verdict ];
+
+		return $verdict;
+	}
+
+	/**
+	 * The verdict itself.
+	 *
+	 * @param string               $userAgent Trimmed user agent string.
+	 * @param array<string,string> $headers   Request headers, lower-cased keys.
+	 */
+	private function decide( string $userAgent, array $headers ): bool {
 
 		// A real browser always sends one. Nothing that omits it is a visitor.
 		if ( '' === $userAgent ) {

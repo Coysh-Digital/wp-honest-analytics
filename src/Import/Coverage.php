@@ -12,6 +12,7 @@ namespace HonestAnalytics\Import;
 use DateTimeImmutable;
 use DateTimeZone;
 use HonestAnalytics\Schema\Tables;
+use HonestAnalytics\Support\Db;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -46,21 +47,27 @@ final class Coverage {
 
 		$table = Tables::name( Tables::IMPORT_COVERAGE );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The coverage table has no core API and is deliberately uncached; the identifier comes from Schema\Tables and every value is a placeholder.
-		$rows = $wpdb->get_results(
+		// Db::rows(), because this decides whether an import is about to be
+		// added on top of another source's days. get_results() answers a failed
+		// query with null, `(array) null` is `[]`, and an empty coverage table
+		// reads as "nothing is covered" - so a lost query here silently gave
+		// permission to double-count every day in the range, which is the one
+		// outcome ADR 53 and ADR 55 exist to prevent. Contending with a running
+		// import is the ordinary way that query fails.
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The identifier comes from Schema\Tables and every value is a placeholder.
+		$rows = Db::rows(
 			$wpdb->prepare(
 				"SELECT date, source FROM `$table` WHERE siteId = %d AND date BETWEEN %s AND %s",
 				$siteId,
 				$from,
 				$to
-			),
-			ARRAY_A
+			)
 		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		$out = [];
 
-		foreach ( (array) $rows as $row ) {
+		foreach ( $rows as $row ) {
 			$out[ (string) $row['date'] ] = (string) $row['source'];
 		}
 
@@ -139,7 +146,7 @@ final class Coverage {
 		$table = Tables::name( Tables::IMPORT_COVERAGE );
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- The coverage table has no core API and is deliberately uncached; the identifier comes from Schema\Tables and every value is a placeholder.
-		$wpdb->query(
+		Db::query(
 			$wpdb->prepare(
 				"INSERT INTO `$table` (siteId, source, importId, date, records) VALUES (%d, %s, %d, %s, %d)
 				ON DUPLICATE KEY UPDATE importId = VALUES(importId), records = VALUES(records)",
@@ -169,7 +176,7 @@ final class Coverage {
 		$table = Tables::name( Tables::IMPORT_COVERAGE );
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The coverage table has no core API and is deliberately uncached; the identifier comes from Schema\Tables and every value is a placeholder.
-		$wpdb->query(
+		Db::query(
 			$wpdb->prepare(
 				"DELETE FROM `$table` WHERE siteId = %d AND source = %s AND date = %s",
 				$siteId,

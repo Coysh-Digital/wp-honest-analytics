@@ -10,6 +10,8 @@
 
 declare(strict_types=1);
 
+use HonestAnalytics\Support\Timezone;
+
 use HonestAnalytics\Import\ImportJob;
 use HonestAnalytics\Import\ImportSource;
 use HonestAnalytics\Support\Format;
@@ -37,19 +39,30 @@ if ( null === $job ) {
 }
 
 $ha_name = ImportSource::label( $job->source );
-$ha_from = (int) strtotime( $job->configuration->dateFrom );
-$ha_to   = (int) strtotime( $job->configuration->dateTo );
+$ha_from = (int) Timezone::middayOn( $job->configuration->dateFrom );
+$ha_to   = (int) Timezone::middayOn( $job->configuration->dateTo );
 $ha_days = max( 1, (int) floor( ( $ha_to - $ha_from ) / DAY_IN_SECONDS ) + 1 );
 
 $ha_years  = (int) floor( $ha_days / 365 );
 $ha_months = (int) floor( ( $ha_days % 365 ) / 30 );
 
 if ( $ha_years > 0 && $ha_months > 0 ) {
+	// Two counts, two plural forms, the way MaintenanceHandler already does it.
+	// One _n() keyed on the years wrote "1 year, 1 months" for a 395-day range,
+	// because the months half had no singular to choose.
 	$ha_span = sprintf(
-		/* translators: 1: a number of years, 2: a number of months. */
-		_n( '%1$d year, %2$d months', '%1$d years, %2$d months', $ha_years, 'honest-analytics' ),
-		$ha_years,
-		$ha_months
+		/* translators: 1: a number of years, for example "1 year". 2: a number of months, for example "1 month". */
+		__( '%1$s, %2$s', 'honest-analytics' ),
+		sprintf(
+			/* translators: %d: a number of years. */
+			_n( '%d year', '%d years', $ha_years, 'honest-analytics' ),
+			$ha_years
+		),
+		sprintf(
+			/* translators: %d: a number of months. */
+			_n( '%d month', '%d months', $ha_months, 'honest-analytics' ),
+			$ha_months
+		)
 	);
 } elseif ( $ha_years > 0 ) {
 	/* translators: %d: a number of years. */

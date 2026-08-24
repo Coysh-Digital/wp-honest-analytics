@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+use HonestAnalytics\Support\Timezone;
+
 use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Channels\Channel;
 use HonestAnalytics\Devices\DeviceType;
@@ -85,7 +87,7 @@ View::render(
 
 			<?php if ( null !== ( $boundary ?? null ) ) : ?>
 				<p class="ha-boundary">
-					<span class="ha-boundary-mark"><?php echo esc_html( wp_date( 'j M Y', (int) strtotime( $boundary['date'] ) ) ); ?></span>
+					<span class="ha-boundary-mark"><?php echo esc_html( Timezone::format( 'j M Y', (int) Timezone::middayOn( $boundary['date'] ) ) ); ?></span>
 					<span>
 						<?php
 						echo esc_html(
@@ -139,7 +141,7 @@ View::render(
 				'admin/partials/ranked-table',
 				[
 					'rows'    => $ha_rows,
-					'max'     => $topPages ? max( array_column( $topPages, 'views' ) ) : 1,
+					'max'     => Format::largest( $topPages, 'views' ),
 					'columns' => [
 						[
 							'key'   => 'path',
@@ -188,7 +190,7 @@ View::render(
 					'admin/partials/ranked-table',
 					[
 						'rows'    => $ha_rows,
-						'max'     => $channels ? max( array_column( $channels, 'sessions' ) ) : 1,
+						'max'     => Format::largest( $channels, 'sessions' ),
 						'columns' => [
 							[
 								'key'   => 'label',
@@ -260,7 +262,7 @@ View::render(
 					'admin/partials/ranked-table',
 					[
 						'rows'    => $ha_rows,
-						'max'     => $postTypes ? max( array_column( $postTypes, 'views' ) ) : 1,
+						'max'     => Format::largest( $postTypes, 'views' ),
 						'columns' => [
 							[
 								'key'   => 'label',
@@ -306,7 +308,7 @@ View::render(
 						'admin/partials/ranked-table',
 						[
 							'rows'    => $ha_rows,
-							'max'     => $goals ? max( array_column( $goals, 'conversions' ) ) : 1,
+							'max'     => Format::largest( $goals, 'conversions' ),
 							'empty'   => __( 'No goals defined yet.', 'honest-analytics' ),
 							'columns' => [
 								[
@@ -364,7 +366,7 @@ View::render(
 						'admin/partials/ranked-table',
 						[
 							'rows'    => $ha_rows,
-							'max'     => $campaigns ? max( array_column( $campaigns, 'sessions' ) ) : 1,
+							'max'     => Format::largest( $campaigns, 'sessions' ),
 							'empty'   => __( 'No tagged links have brought anybody here in this period.', 'honest-analytics' ),
 							'columns' => [
 								[
@@ -407,7 +409,7 @@ View::render(
 						'admin/partials/ranked-table',
 						[
 							'rows'    => $ha_rows,
-							'max'     => $countries ? max( array_column( $countries, 'sessions' ) ) : 1,
+							'max'     => Format::largest( $countries, 'sessions' ),
 							'empty'   => __( 'Nothing yet. Country reporting needs a local database, which you can install on the Locations screen.', 'honest-analytics' ),
 							'columns' => [
 								[
@@ -497,7 +499,7 @@ View::render(
 					'admin/partials/ranked-table',
 					[
 						'rows'    => $ha_rows,
-						'max'     => $crawlers ? max( array_column( $crawlers, 'requests' ) ) : 1,
+						'max'     => Format::largest( $crawlers, 'requests' ),
 						'empty'   => __( 'No crawler traffic recorded.', 'honest-analytics' ),
 						'columns' => [
 							[

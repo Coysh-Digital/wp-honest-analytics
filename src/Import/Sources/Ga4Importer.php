@@ -22,6 +22,8 @@ use HonestAnalytics\Import\ImportBatchResult;
 use HonestAnalytics\Import\ImportConfiguration;
 use HonestAnalytics\Import\ImporterInterface;
 use HonestAnalytics\Import\ImportJob;
+use HonestAnalytics\Import\ImportLog;
+use HonestAnalytics\Import\ImportRunner;
 use HonestAnalytics\Import\ImportSource;
 use HonestAnalytics\Import\ImportSummary;
 use HonestAnalytics\Import\MetricMapping;
@@ -292,6 +294,17 @@ final class Ga4Importer implements ImporterInterface {
 	}
 
 	/**
+	 * The property, if it is one, and an empty string if it is not.
+	 *
+	 * @param string $property The value offered.
+	 */
+	private static function validProperty( string $property ): string {
+		$property = trim( $property );
+
+		return preg_match( '#^properties/[0-9]+$#', $property ) ? $property : '';
+	}
+
+	/**
 	 * @param ImportConfiguration $configuration What the user chose.
 	 *
 	 * @return array<string,mixed>
@@ -303,8 +316,20 @@ final class Ga4Importer implements ImporterInterface {
 		// property must keep reading that property even if somebody picks a
 		// different one while it is still running - otherwise an import
 		// quietly mixes two websites into one history.
+		//
+		// Validated rather than sanitised, because it becomes part of a URL
+		// path. `import/start` accepts options over REST with nothing but
+		// sanitize_text_field applied, which leaves `/`, `.`, `?`, `#` and
+		// `..` intact, and Ga4\Client builds its request path by
+		// concatenation. A user with `honest_manage_analytics` but not
+		// `manage_options` - the delegation that capability exists for - could
+		// otherwise aim the site's bearer token at an API path the wizard
+		// never offers. The host is fixed by DATA_BASE, so this is path
+		// manipulation rather than SSRF; it is still not theirs to choose.
 		return [
-			'property'     => (string) $configuration->option( 'property', TokenStore::property() ),
+			'property'     => self::validProperty(
+				(string) $configuration->option( 'property', TokenStore::property() )
+			),
 			'propertyName' => (string) $configuration->option( 'propertyName', $detail['displayName'] ),
 			'timezone'     => (string) $configuration->option( 'timezone', $detail['timezone'] ),
 			'next'         => $configuration->dateFrom,
@@ -319,6 +344,7 @@ final class Ga4Importer implements ImporterInterface {
 	 * @param callable  $writer Receives a DayBucket, returns rows written.
 	 */
 	public function processBatch( ImportJob $job, callable $writer ): ImportBatchResult {
+		$started  = microtime( true );
 		$cursor   = $job->cursor;
 		$property = (string) ( $cursor['property'] ?? TokenStore::property() );
 		$chunk    = max( 1, (int) ( $cursor['chunkDays'] ?? self::DEFAULT_CHUNK_DAYS ) );
@@ -338,7 +364,7 @@ final class Ga4Importer implements ImporterInterface {
 
 		try {
 			foreach ( Reports::all() as $report ) {
-				$this->readReport( $mapper, $property, $report, $next, $chunkEnd );
+				$this->readReport( $job->id, $mapper, $property, $report, $next, $chunkEnd );
 			}
 		} catch ( Ga4Exception $e ) {
 			return $this->handle( $e, $cursor, $chunk );
@@ -358,7 +384,7 @@ final class Ga4Importer implements ImporterInterface {
 		}
 
 		$cursor['next']      = self::addDays( $chunkEnd, 1 );
-		$cursor['chunkDays'] = $chunk;
+		$cursor['chunkDays'] = self::nextChunk( $chunk, microtime( true ) - $started );
 
 		$days = self::daysBetween( $next, $chunkEnd );
 
@@ -385,8 +411,41 @@ final class Ga4Importer implements ImporterInterface {
 	}
 
 	/**
+	 * How wide the next chunk should be, given how long this one took.
+	 *
+	 * The two importers that read a local database check the clock inside their
+	 * own loop and stop when the batch budget is spent. This one cannot: a
+	 * chunk is up to five reports of up to three pages each, fifteen requests
+	 * across the internet, and the days are only written once the whole chunk
+	 * is whole - so stopping half way would throw the work away rather than
+	 * bank it. What it can do is not ask for that much again.
+	 *
+	 * Halving on an overrun is the same move a rate limit already triggers, and
+	 * growing back one day at a time means a site that was slow for a minute
+	 * does not stay on one-day chunks for the rest of a four-year import.
+	 *
+	 * @param int   $chunk   The chunk size just used, in days.
+	 * @param float $seconds How long the batch took.
+	 */
+	private static function nextChunk( int $chunk, float $seconds ): int {
+		$budget = (float) ImportRunner::batchSeconds();
+
+		if ( $seconds > $budget ) {
+			return max( 1, (int) floor( $chunk / 2 ) );
+		}
+
+		// Comfortably inside it: creep back towards the default.
+		if ( $seconds < $budget / 2 ) {
+			return min( self::DEFAULT_CHUNK_DAYS, $chunk + 1 );
+		}
+
+		return $chunk;
+	}
+
+	/**
 	 * Read one report for one chunk, following pagination.
 	 *
+	 * @param int                                                                                                      $importId The job, so a truncation reaches the user's own log.
 	 * @param ResponseMapper                                                                                           $mapper   Accumulator.
 	 * @param string                                                                                                   $property Property name.
 	 * @param array{key:string,dimensions:string[],metrics:string[],limit:int,orderBys:array<int,array<string,mixed>>} $report Report spec.
@@ -395,7 +454,7 @@ final class Ga4Importer implements ImporterInterface {
 	 *
 	 * @throws Ga4Exception When Google will not answer.
 	 */
-	private function readReport( ResponseMapper $mapper, string $property, array $report, string $from, string $to ): void {
+	private function readReport( int $importId, ResponseMapper $mapper, string $property, array $report, string $from, string $to ): void {
 		$offset = 0;
 		$pages  = 0;
 
@@ -419,17 +478,28 @@ final class Ga4Importer implements ImporterInterface {
 			$more = count( $response['rows'] ) > 0 && $offset < (int) $response['rowCount'];
 
 			if ( $more && $pages >= self::MAX_PAGES ) {
-				// Never silently. A truncated report is a figure somebody will
-				// later find puzzling, so it goes in the log with the number.
-				Log::warning(
+				// The *import's* log, not the debug one. Support\Log is gated on
+				// WP_DEBUG and off by default, so a truncated report - a figure
+				// somebody will later find puzzling - was recorded where nobody
+				// would ever see it. ImportLog is what the import details screen
+				// renders.
+				ImportLog::write(
+					$importId,
+					ImportLog::WARNING,
 					sprintf(
-						'The Google Analytics %s report for %s to %s returned more rows than one batch reads; %d of %d were taken.',
+						/* translators: 1: report name, 2: start date, 3: end date, 4: rows taken, 5: rows available. */
+						__( 'The Google Analytics %1$s report for %2$s to %3$s had more rows than one batch reads. %4$s of %5$s were taken.', 'honest-analytics' ),
 						$report['key'],
 						$from,
 						$to,
-						$offset,
-						(int) $response['rowCount']
-					)
+						number_format_i18n( $offset ),
+						number_format_i18n( (int) $response['rowCount'] )
+					),
+					[
+						'report' => $report['key'],
+						'taken'  => $offset,
+						'total'  => (int) $response['rowCount'],
+					]
 				);
 
 				return;
@@ -511,7 +581,7 @@ final class Ga4Importer implements ImporterInterface {
 	 * @param string $from     Y-m-d.
 	 * @param string $to       Y-m-d.
 	 *
-	 * @return array<string,int>
+	 * @return array<int,array{label:string,count:int}>
 	 *
 	 * @throws Ga4Exception When Google will not answer.
 	 */
@@ -527,10 +597,22 @@ final class Ga4Importer implements ImporterInterface {
 
 		$metrics = $response['rows'][0]['metrics'] ?? [];
 
+		// Pairs rather than a map keyed by the label: two of these labels
+		// translating alike would drop a figure from the summary somebody is
+		// reading to decide whether to import.
 		return [
-			__( 'page views', 'honest-analytics' )      => (int) round( (float) ( $metrics[0] ?? 0 ) ),
-			__( 'sessions', 'honest-analytics' )        => (int) round( (float) ( $metrics[1] ?? 0 ) ),
-			__( 'unique visitors', 'honest-analytics' ) => (int) round( (float) ( $metrics[2] ?? 0 ) ),
+			[
+				'label' => __( 'page views', 'honest-analytics' ),
+				'count' => (int) round( (float) ( $metrics[0] ?? 0 ) ),
+			],
+			[
+				'label' => __( 'sessions', 'honest-analytics' ),
+				'count' => (int) round( (float) ( $metrics[1] ?? 0 ) ),
+			],
+			[
+				'label' => __( 'unique visitors', 'honest-analytics' ),
+				'count' => (int) round( (float) ( $metrics[2] ?? 0 ) ),
+			],
 		];
 	}
 

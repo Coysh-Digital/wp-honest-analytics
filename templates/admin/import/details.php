@@ -11,6 +11,8 @@
 
 declare(strict_types=1);
 
+use HonestAnalytics\Support\Timezone;
+
 use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Import\ImportJob;
 use HonestAnalytics\Import\ImportSource;
@@ -99,8 +101,8 @@ $ha_property = (string) $job->configuration->option( 'propertyName', '' );
 								sprintf(
 									/* translators: 1: start date, 2: end date. */
 									__( '%1$s to %2$s', 'honest-analytics' ),
-									wp_date( 'j M Y', (int) strtotime( $job->configuration->dateFrom ) ),
-									wp_date( 'j M Y', (int) strtotime( $job->configuration->dateTo ) )
+									wp_date( 'j M Y', (int) Timezone::middayOn( $job->configuration->dateFrom ) ),
+									wp_date( 'j M Y', (int) Timezone::middayOn( $job->configuration->dateTo ) )
 								)
 							);
 							?>
@@ -125,12 +127,12 @@ $ha_property = (string) $job->configuration->option( 'propertyName', '' );
 					<?php if ( $job->completedAt > 0 ) : ?>
 						<tr>
 							<th scope="row" class="ha-rowhead"><?php esc_html_e( 'Finished', 'honest-analytics' ); ?></th>
-							<td><?php echo esc_html( wp_date( 'j M Y, H:i', $job->completedAt ) ); ?></td>
+							<td><?php echo esc_html( Timezone::dateTime( $job->completedAt ) ); ?></td>
 						</tr>
 					<?php elseif ( $job->startedAt > 0 ) : ?>
 						<tr>
 							<th scope="row" class="ha-rowhead"><?php esc_html_e( 'Started', 'honest-analytics' ); ?></th>
-							<td><?php echo esc_html( wp_date( 'j M Y, H:i', $job->startedAt ) ); ?></td>
+							<td><?php echo esc_html( Timezone::dateTime( $job->startedAt ) ); ?></td>
 						</tr>
 					<?php endif; ?>
 				</tbody>

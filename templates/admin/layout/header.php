@@ -10,6 +10,8 @@
 
 declare(strict_types=1);
 
+use HonestAnalytics\Support\Timezone;
+
 use HonestAnalytics\Capabilities\Capabilities;
 use HonestAnalytics\Export\ExportHandler;
 use HonestAnalytics\Stats\DateRange;
@@ -118,8 +120,8 @@ $ha_granularities = Granularity::availableFor( $ha_range );
 						sprintf(
 							/* translators: 1: start date, 2: end date. */
 							__( '%1$s - %2$s', 'honest-analytics' ),
-							wp_date( 'j M Y', (int) strtotime( $ha_range->from ) ),
-							wp_date( 'j M Y', (int) strtotime( $ha_range->to ) )
+							wp_date( 'j M Y', (int) Timezone::middayOn( $ha_range->from ) ),
+							wp_date( 'j M Y', (int) Timezone::middayOn( $ha_range->to ) )
 						)
 					);
 					?>

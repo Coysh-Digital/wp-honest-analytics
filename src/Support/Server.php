@@ -131,6 +131,29 @@ class Server {
 	 *
 	 * Never stored. It exists to be hashed and dropped inside the same frame.
 	 */
+	/**
+	 * Request cookies as a plain map.
+	 *
+	 * Static, and reading the superglobal directly, because both callers did
+	 * exactly that with byte-identical bodies - the capture path and the REST
+	 * controller. Two copies of a filter over untrusted input is two places to
+	 * fix when the filter turns out to be wrong.
+	 *
+	 * @return array<string,string>
+	 */
+	public static function cookies(): array {
+		$out = [];
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		foreach ( (array) $_COOKIE as $name => $value ) {
+			if ( is_string( $name ) && is_scalar( $value ) ) {
+				$out[ $name ] = (string) $value;
+			}
+		}
+
+		return $out;
+	}
+
 	public function remoteAddr(): string {
 		return $this->get( 'REMOTE_ADDR' );
 	}

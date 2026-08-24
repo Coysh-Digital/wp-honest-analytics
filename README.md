@@ -25,7 +25,11 @@ without JavaScript, in a reduced form. It works without paying for anything.
   tiles, not for a licence check.
 - Store an address. Not in a table, not in a log, not in a cache key, not in
   the write spool.
-- Store a full referrer URL, a full user-agent string, or a raw pageview.
+- Store a full referrer URL or a full user-agent string. Both are reduced in
+  the request that saw them - to an origin, and to four device families - so
+  neither reaches the spool either.
+- Store a raw pageview. A hit waits in the write spool for a few minutes and is
+  folded into counters; nothing keeps one afterwards.
 - Set a cookie, unless you explicitly turn on a consented feature that needs
   one.
 - Count a visitor who sent `Sec-GPC: 1`.
@@ -130,7 +134,8 @@ wp honest-analytics seed --days=400 --per-day=520 --content --force
 ## Checking the claims
 
 ```bash
-# The write spool, before aggregation. There is no address in it.
+# The write spool, before aggregation. No address, no user agent, and a
+# referrer reduced to its origin.
 cat wp-content/uploads/honest-analytics/spool/*.ndjson | head
 
 # Rotate the salt, and watch every identity cease to exist.

@@ -27,6 +27,12 @@ five seconds at a time. A large backlog is taken a bite at a time rather than
 all at once, so no single visitor ever pays for the whole thing and the figures
 catch up over the next few page views.
 
+That budget now covers every part of a drain. It used to bind only the spool
+files: the database queue drained whole however large it was, and the
+idle-session close ran to the end after it - so on the write driver chosen for
+managed hosts with a read-only filesystem, the promise above was not kept and
+the request could be killed by `max_execution_time` part way instead.
+
 **The tidy-up.** Compaction and retention run from the first admin page load of
 any day they have not already run. The admin is never page-cached, which makes
 it the most reliable clock a site without cron has.

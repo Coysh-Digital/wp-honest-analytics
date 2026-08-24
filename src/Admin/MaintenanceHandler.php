@@ -12,6 +12,8 @@ namespace HonestAnalytics\Admin;
 use HonestAnalytics\Capabilities\Capabilities;
 use HonestAnalytics\Gc\GcService;
 use HonestAnalytics\Plugin;
+use HonestAnalytics\Schema\Upgrader;
+use HonestAnalytics\Support\Losses;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -115,6 +117,10 @@ final class MaintenanceHandler {
 					self::tidy();
 					break;
 
+				case 'losses':
+					self::clearLosses();
+					break;
+
 				default:
 					self::remember( 'error', __( 'That is not something this form does.', 'honest-analytics' ) );
 			}
@@ -203,10 +209,48 @@ final class MaintenanceHandler {
 	}
 
 	/**
+	 * Start the dropped-view count again.
+	 *
+	 * The count is cumulative and says nothing about whether the cause is still
+	 * there, so somebody who has raised a ceiling or moved a spool needs to be
+	 * able to see whether it worked. It counts views that were never recorded;
+	 * clearing it forgets the tally, not any data.
+	 */
+	private static function clearLosses(): void {
+		Losses::forget();
+
+		self::remember(
+			'success',
+			__( 'The dropped-view count has been cleared. If views are still being dropped it will start again.', 'honest-analytics' )
+		);
+	}
+
+	/**
 	 * Compact, cap and delete what is past its retention.
 	 */
 	private static function tidy(): void {
+		// The terminal-free route to a pending migration. Cron and the CLI are
+		// the ordinary ones, but a site with neither would otherwise sit with
+		// its drain stood down and no way for an administrator to do anything
+		// about it - which would break the rule that nothing this plugin needs
+		// doing requires a terminal. Pressing a button and waiting is a choice
+		// somebody made; an ALTER inside an unrelated page load is not.
+		Upgrader::maybeUpgrade();
+
 		$summary = ( new GcService( Plugin::instance()->settings() ) )->run();
+
+		// An empty summary means another tidy-up already holds the lock - cron,
+		// an admin page load or the CLI. Reporting nought days and nought rows
+		// would read as "there was nothing to do", which is a different and
+		// wrong answer.
+		if ( [] === $summary ) {
+			self::remember(
+				'success',
+				__( 'A tidy-up is already running. It will finish on its own; there is nothing to do here.', 'honest-analytics' )
+			);
+
+			return;
+		}
 
 		$days = (int) ( $summary['compactedDays'] ?? 0 );
 

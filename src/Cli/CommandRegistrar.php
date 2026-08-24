@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Cli;
 
+use HonestAnalytics\Schema\Upgrader;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -33,6 +35,16 @@ final class CommandRegistrar {
 		if ( ! class_exists( '\WP_CLI' ) ) {
 			return;
 		}
+
+		// The other place a migration may run from. A terminal has nobody
+		// waiting on it, and somebody who has just deployed by FTP and typed a
+		// command is exactly the person who should not have to visit an admin
+		// screen before the drain will do anything.
+		//
+		// Registered as a hook rather than called here: `register()` runs while
+		// the plugin is still booting, and the schema is not something to touch
+		// before WordPress has finished loading.
+		add_action( 'init', [ Upgrader::class, 'maybeUpgrade' ], 5 );
 
 		\WP_CLI::add_command( 'honest-analytics drain', DrainCommand::class );
 		\WP_CLI::add_command( 'honest-analytics gc', GcCommand::class );

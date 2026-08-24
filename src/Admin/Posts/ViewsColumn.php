@@ -112,7 +112,11 @@ final class ViewsColumn {
 
 		if ( is_object( $query ) && isset( $query->posts ) && is_array( $query->posts ) ) {
 			foreach ( $query->posts as $post ) {
-				$ids[] = is_object( $post ) ? (int) $post->ID : (int) $post;
+				// WP_Query fills `posts` with WP_Post objects, bare ids or
+				// id=>parent rows depending on the `fields` argument another
+				// plugin may have filtered in. Reading the property when it is
+				// there and casting when it is not covers all three.
+				$ids[] = isset( $post->ID ) ? (int) $post->ID : (int) $post;
 			}
 		}
 

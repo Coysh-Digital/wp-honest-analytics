@@ -33,7 +33,7 @@ final class Session {
 	 * @param string                          $entryPath     The page it started on.
 	 * @param string                          $lastPath      The page it is on now.
 	 * @param string                          $referrer      Referring host, never a URL.
-	 * @param string                          $userAgent     Kept only until the visit closes.
+	 * @param string                          $device        The reduced device signature; never a user agent.
 	 * @param string|null                     $lastBatch     Batch that last touched the row.
 	 * @param string|null                     $closedByBatch Batch that closed it, once it has.
 	 * @param array<int,array<string,string>> $campaigns     One entry per campaign touch, in order.
@@ -54,7 +54,7 @@ final class Session {
 		public string $entryPath = '',
 		public string $lastPath = '',
 		public string $referrer = '',
-		public string $userAgent = '',
+		public string $device = '',
 		public ?string $lastBatch = null,
 		public ?string $closedByBatch = null,
 		public array $campaigns = [],
@@ -115,7 +115,7 @@ final class Session {
 			'ep' => $this->entryPath,
 			'lp' => $this->lastPath,
 			'r'  => $this->referrer,
-			'ua' => $this->userAgent,
+			'dv' => $this->device,
 			'lb' => $this->lastBatch,
 			'cb' => $this->closedByBatch,
 			'cm' => $this->campaigns,
@@ -150,7 +150,7 @@ final class Session {
 			isset( $data['ep'] ) && is_scalar( $data['ep'] ) ? (string) $data['ep'] : '',
 			isset( $data['lp'] ) && is_scalar( $data['lp'] ) ? (string) $data['lp'] : '',
 			isset( $data['r'] ) && is_scalar( $data['r'] ) ? (string) $data['r'] : '',
-			isset( $data['ua'] ) && is_scalar( $data['ua'] ) ? (string) $data['ua'] : '',
+			isset( $data['dv'] ) && is_scalar( $data['dv'] ) ? (string) $data['dv'] : '',
 			isset( $data['lb'] ) && is_scalar( $data['lb'] ) ? (string) $data['lb'] : null,
 			isset( $data['cb'] ) && is_scalar( $data['cb'] ) ? (string) $data['cb'] : null,
 			isset( $data['cm'] ) && is_array( $data['cm'] ) ? $data['cm'] : [],

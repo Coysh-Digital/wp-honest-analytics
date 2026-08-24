@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+use HonestAnalytics\Support\Timezone;
+
 use HonestAnalytics\Admin\Screens\DashboardScreen;
 use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Channels\Channel;
@@ -131,7 +133,7 @@ $ha_kpis = [
 				'admin/partials/ranked-table',
 				[
 					'rows'    => $ha_rows,
-					'max'     => $sources ? max( array_column( $sources, 'views' ) ) : 1,
+					'max'     => Format::largest( $sources, 'views' ),
 					'empty'   => __( 'No sources recorded for this page in this period.', 'honest-analytics' ),
 					'columns' => [
 						[
@@ -160,7 +162,7 @@ $ha_kpis = [
 						sprintf(
 							/* translators: %s: a date. */
 							__( 'Fills forward only. Collection for this card began %s; views before then are counted, but their source was not kept. The referrer shown is the one the session arrived by, not the previous page on this site.', 'honest-analytics' ),
-							wp_date( 'j F Y', (int) strtotime( $sourcesSince ) )
+							Timezone::date( (int) Timezone::middayOn( $sourcesSince ) )
 						)
 					);
 					?>
@@ -219,7 +221,7 @@ $ha_kpis = [
 					'admin/partials/ranked-table',
 					[
 						'rows'    => $ha_rows,
-						'max'     => $events ? max( array_column( $events, 'hits' ) ) : 1,
+						'max'     => Format::largest( $events, 'hits' ),
 						'empty'   => $beacon
 							? __( 'No events recorded on this page.', 'honest-analytics' )
 							: __( 'Events arrive on the beacon, which server-only mode does not use.', 'honest-analytics' ),
@@ -261,7 +263,7 @@ $ha_kpis = [
 					'admin/partials/ranked-table',
 					[
 						'rows'    => $ha_rows,
-						'max'     => $queries ? max( array_column( $queries, 'clicks' ) ) : 1,
+						'max'     => Format::largest( $queries, 'clicks' ),
 						'empty'   => __( 'No Search Console clicks recorded for this page in this period.', 'honest-analytics' ),
 						'columns' => [
 							[
@@ -303,7 +305,7 @@ $ha_kpis = [
 					'admin/partials/ranked-table',
 					[
 						'rows'    => $ha_rows,
-						'max'     => $outbound ? max( array_column( $outbound, 'hits' ) ) : 1,
+						'max'     => Format::largest( $outbound, 'hits' ),
 						'empty'   => __( 'No clicks away from this page recorded.', 'honest-analytics' ),
 						'columns' => [
 							[

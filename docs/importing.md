@@ -217,6 +217,12 @@ Some other things worth knowing before you start:
 - **You need the "manage analytics" capability** on this site, which
   administrators have by default.
 - **There is no WP-CLI command for imports.** This one is the admin screen only.
+- **The connection is encrypted with this site's salts.** The token Google
+  issues is read access to your property until it is revoked, so it is not
+  kept in the database in plain text. One consequence is worth knowing before
+  it surprises you: **rotating the salts in `wp-config.php` disconnects
+  Google.** Nothing that has already been imported is affected - that data
+  belongs to the site now - but you will be asked to press Connect again.
 
 ### Then the import itself
 

@@ -14,6 +14,7 @@ use HonestAnalytics\Schema\Tables;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Store\KeyValueStoreInterface;
 use HonestAnalytics\Store\StoreFactory;
+use HonestAnalytics\Support\Db;
 use HonestAnalytics\Support\Lock;
 use HonestAnalytics\Support\Log;
 use HonestAnalytics\Support\Timezone;
@@ -151,17 +152,29 @@ final class SaltService {
 
 		// Overwrite in place. The old salt is gone, not archived - that is the
 		// point of the exercise, and a history table would quietly undo it.
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-		$wpdb->query(
-			$wpdb->prepare(
-				"INSERT INTO `$table` (id, salt, rotatedAt, nextRotation) VALUES (1, %s, %s, %s)
-				ON DUPLICATE KEY UPDATE salt = VALUES(salt), rotatedAt = VALUES(rotatedAt), nextRotation = VALUES(nextRotation)",
-				$data['salt'],
-				$data['rotatedAt'],
-				$data['nextRotation']
-			)
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		//
+		// Checked, because this is the one write in the plugin whose silent
+		// failure is unrecoverable. A salt that is minted but not stored is a
+		// fresh visitor identity for every request that mints one, so unique
+		// visitors quietly become page views - and Health goes on reporting
+		// "not created yet" while the figures look plausible and are not.
+		try {
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+			Db::query(
+				$wpdb->prepare(
+					"INSERT INTO `$table` (id, salt, rotatedAt, nextRotation) VALUES (1, %s, %s, %s)
+					ON DUPLICATE KEY UPDATE salt = VALUES(salt), rotatedAt = VALUES(rotatedAt), nextRotation = VALUES(nextRotation)",
+					$data['salt'],
+					$data['rotatedAt'],
+					$data['nextRotation']
+				)
+			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		} catch ( \Throwable $e ) {
+			Log::error( 'The daily salt could not be rotated: ' . $e->getMessage() );
+
+			return $this->unrotated( $salt );
+		}
 
 		$this->memo = $salt;
 
@@ -176,6 +189,29 @@ final class SaltService {
 		);
 
 		return $salt;
+	}
+
+	/**
+	 * What to hash with when the new salt could not be stored.
+	 *
+	 * Keeping the salt already in the table is the lesser evil. It is overdue,
+	 * and the Privacy screen says so - but every worker agrees on it, so a
+	 * visitor is still counted as one visitor. The alternative is a salt per
+	 * request, which is a new identity per request: uniques equal to views, on
+	 * every screen, with nothing to say the figure changed meaning.
+	 *
+	 * The result is memoised for this request and deliberately not cached, so
+	 * the next request attempts the write again rather than inheriting a
+	 * failure that may already have passed.
+	 *
+	 * @param string $minted The salt that could not be written.
+	 */
+	private function unrotated( string $minted ): string {
+		$row = $this->load( true );
+
+		$this->memo = null !== $row ? $row['salt'] : $minted;
+
+		return $this->memo;
 	}
 
 	/**

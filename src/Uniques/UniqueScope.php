@@ -25,6 +25,17 @@ final class UniqueScope {
 	public const KIND_PAGE    = 'p';
 	public const KIND_SESSION = 's';
 
+	/**
+	 * Everybody who viewed any page on a site that day.
+	 *
+	 * A kind of its own rather than KIND_PAGE with no dimension id, because
+	 * `key()` renders a null id as `0` and would then be indistinguishable from
+	 * a page whose dimension id happened to be zero. Nothing produces one today
+	 * - dimension ids are auto-increment and start at one - but a scope key is
+	 * stored, so a collision would be permanent and silent.
+	 */
+	public const KIND_SITE = 'a';
+
 	/** The hour a compacted daily row carries. */
 	public const HOUR_DAILY = -1;
 

@@ -12,11 +12,14 @@ namespace HonestAnalytics\Capture;
 use HonestAnalytics\Bots\BotFilter;
 use HonestAnalytics\Channels\Campaign;
 use HonestAnalytics\Consent\ConsentService;
+use HonestAnalytics\Devices\Device;
+use HonestAnalytics\Devices\DeviceParser;
 use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Geo\GeoService;
 use HonestAnalytics\Identity\IdentityService;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Support\ClientIp;
+use HonestAnalytics\Support\Server;
 use HonestAnalytics\Support\Url;
 use HonestAnalytics\Write\WriterInterface;
 
@@ -51,7 +54,8 @@ final class CaptureService {
 		private GeoService $geo,
 		private ConsentService $consent,
 		private WriterInterface $writer,
-		private ClientIp $clientIp
+		private ClientIp $clientIp,
+		private DeviceParser $deviceParser
 	) {
 	}
 
@@ -217,7 +221,7 @@ final class CaptureService {
 			sessionKey: $this->identity->sessionKey( $hash, $siteId ),
 			timestamp: time(),
 			postId: $postId,
-			userAgent: $userAgent,
+			device: (string) Device::fromUserAgent( $this->deviceParser, $userAgent ),
 			countView: false,
 			kind: Hit::KIND_EVENT,
 			eventName: mb_substr( $name, 0, 120 ),
@@ -250,7 +254,7 @@ final class CaptureService {
 		$geo         = $this->geo->resolve( $ip );
 		unset( $ip );
 
-		$cookies   = $this->cookies();
+		$cookies   = Server::cookies();
 		$visitorId = $this->consent->resolve( $siteId, $context->headers, $cookies )->isGranted()
 			? $this->consent->resolvedVisitorId( $siteId, $cookies )
 			: null;
@@ -269,8 +273,9 @@ final class CaptureService {
 			timestamp: time(),
 			postId: $context->postId,
 			referrer: $this->externalReferrer( $context->referrer ),
-			userAgent: $context->userAgent,
-			acceptLanguage: $context->acceptLanguage,
+			// Reduced here rather than at the drain. The string itself goes no
+			// further than this line.
+			device: (string) Device::fromUserAgent( $this->deviceParser, $context->userAgent ),
 			visitorId: $visitorId,
 			userId: null !== $visitorId && $this->settings->associateUserId && $context->userId > 0 ? $context->userId : null,
 			campaign: $this->settings->enableCampaigns ? Campaign::fromQueryString( $context->queryString ) : null,
@@ -312,38 +317,23 @@ final class CaptureService {
 	}
 
 	/**
-	 * The referrer, but only when it points somewhere else.
+	 * The referrer, but only when it points somewhere else, and only its origin.
 	 *
 	 * The previous page on this site is not a traffic source, and classifying it
 	 * as one would report every interior page as self-referred: true, and
 	 * useless.
 	 *
+	 * What survives is the scheme and host and nothing after it. Only the host
+	 * is ever reported, and the rest of a referrer is the part that carries
+	 * things nobody meant to send here - a reset token in a query string, a
+	 * document key, a search phrase typed into somebody else's site. Reducing
+	 * it at the drain instead left all of that in the spool file in the
+	 * meantime.
+	 *
 	 * @param string $referrer Raw referrer.
 	 */
 	private function externalReferrer( string $referrer ): string {
-		if ( '' === trim( $referrer ) ) {
-			return '';
-		}
-
-		return Url::isInternal( $referrer ) ? '' : $referrer;
-	}
-
-	/**
-	 * Request cookies as a plain map.
-	 *
-	 * @return array<string,string>
-	 */
-	private function cookies(): array {
-		$out = [];
-
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		foreach ( (array) $_COOKIE as $name => $value ) {
-			if ( is_string( $name ) && is_scalar( $value ) ) {
-				$out[ $name ] = (string) $value;
-			}
-		}
-
-		return $out;
+		return Url::externalOrigin( $referrer );
 	}
 
 	/**

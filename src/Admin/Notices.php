@@ -135,12 +135,19 @@ final class Notices {
 
 		$health = new Health();
 
+		// Asked once, outside the loop. `spoolPublic()` consults the loopback
+		// verdict, so asking it per problem asked the same question as many
+		// times as there were problems - and once a day, when that verdict has
+		// expired, the first of those asks writes a probe file and makes two
+		// HTTP requests with a five-second timeout apiece.
+		$spoolPublic = $health->spoolPublic();
+
 		foreach ( $health->problems() as $problem ) {
 			// The spool warning gets its own dismissible rendering below - a
 			// snoozed-but-still-true fault should stay off this screen without
 			// stopping `problems()` from reporting it everywhere else that asks
 			// (the CLI, the health filter, isHealthy()).
-			if ( $health->spoolPublic() && str_contains( $problem, 'write spool can be read' ) ) {
+			if ( $spoolPublic && str_contains( $problem, 'write spool can be read' ) ) {
 				continue;
 			}
 

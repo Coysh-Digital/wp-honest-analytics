@@ -15,6 +15,7 @@ use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Store\KeyValueStoreInterface;
 use HonestAnalytics\Store\StoreFactory;
 use HonestAnalytics\Support\Log;
+use HonestAnalytics\Support\Losses;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -76,6 +77,7 @@ final class DbQueueWriter implements WriterInterface {
 
 			if ( strlen( $line ) > SpoolWriter::MAX_LINE_BYTES ) {
 				Log::warning( 'Dropped an oversized queued hit.' );
+				Losses::record( Losses::OVERSIZED );
 
 				return;
 			}
@@ -86,6 +88,7 @@ final class DbQueueWriter implements WriterInterface {
 			// Dropping is visible on the Settings screen; a full disk is not.
 			if ( $this->isFull() ) {
 				Log::warning( 'The write queue is at its limit - dropping hits until it drains.' );
+				Losses::record( Losses::FULL );
 
 				return;
 			}
@@ -170,9 +173,22 @@ final class DbQueueWriter implements WriterInterface {
 	 * limit the file spool enforces.
 	 */
 	public function maxRows(): int {
+		return self::maxRowsFor( $this->settings );
+	}
+
+	/**
+	 * The same ceiling, without needing the writer itself.
+	 *
+	 * `SpoolStatus` has to know it to say whether the queue is filling up, and
+	 * it has the settings but not the container. Duplicating the arithmetic
+	 * there would be two places to change when the line limit moves.
+	 *
+	 * @param Settings $settings Settings.
+	 */
+	public static function maxRowsFor( Settings $settings ): int {
 		return max(
 			self::MIN_ROWS,
-			intdiv( $this->settings->spoolMaxBytes, SpoolWriter::MAX_LINE_BYTES )
+			intdiv( $settings->spoolMaxBytes, SpoolWriter::MAX_LINE_BYTES )
 		);
 	}
 

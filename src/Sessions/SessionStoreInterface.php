@@ -53,7 +53,58 @@ interface SessionStoreInterface {
 	public function apply( SessionDelta $delta, string $batchId ): Session;
 
 	/**
-	 * Sessions that have gone quiet and are ready to be committed.
+	 * Fold a whole batch of deltas in, one session each.
+	 *
+	 * The same contract as apply(), called once per drain chunk. A store that
+	 * keeps a shared index can read and write it once here rather than once
+	 * per session; a store that does not simply loops.
+	 *
+	 * @param SessionDelta[] $deltas  Activity, one delta per session.
+	 * @param string         $batchId Batch identifier.
+	 */
+	public function applyBatch( array $deltas, string $batchId ): void;
+
+	/**
+	 * Read several sessions at once.
+	 *
+	 * The drain asks for every session in a chunk twice - once to find the
+	 * referrer each visit arrived by, and once to merge the chunk in - and did
+	 * it one key at a time. On the database store that is two queries per
+	 * distinct session per chunk; one `IN (...)` answers the same question.
+	 *
+	 * Keys absent from the store are absent from the result rather than null,
+	 * so a caller can tell "not there" from "there and empty".
+	 *
+	 * @param int      $siteId      Site ID.
+	 * @param string[] $sessionKeys Session keys.
+	 *
+	 * @return array<string,Session> Keyed by session key.
+	 */
+	public function getMany( int $siteId, array $sessionKeys ): array;
+
+	/**
+	 * Write several sessions at once.
+	 *
+	 * The cache store rewrites a whole site index per `save()`, so closing a
+	 * few thousand idle sessions one at a time is quadratic and never
+	 * finishes. Both stores implement this; only one of them needed it.
+	 *
+	 * @param Session[] $sessions Sessions to write.
+	 */
+	public function saveMany( array $sessions ): void;
+
+	/**
+	 * Delete several sessions at once.
+	 *
+	 * @param Session[] $sessions Sessions to remove.
+	 */
+	public function deleteMany( array $sessions ): void;
+
+	/**
+	 * Sessions that have gone quiet.
+	 *
+	 * Bounded by the implementation. An unbounded answer is a drain that never
+	 * finishes and therefore counts nothing at all.
 	 *
 	 * @param int $now Current timestamp.
 	 *

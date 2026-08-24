@@ -25,6 +25,8 @@ reversed, the entry stays and gains a note.
 - [Editions and licensing](#editions-and-licensing) - ADR 44-48
 - [What was dropped](#what-was-dropped) - ADR 49-52
 - [Importing](#importing) - ADR 53-56
+- [Editions, continued](#adr-57---the-paid-reports-are-named-in-the-free-menu-and-described) - ADR 57
+- [Schema and migrations](#adr-58---migrations-run-from-cron-and-the-cli-never-from-a-page-load) - ADR 58
 
 ---
 
@@ -72,9 +74,11 @@ with `GROUP BY`. `wp_options` autoloads. `wp_postmeta` has one index and no
 type. Transients evict. A custom post type would put a million rows in
 `wp_posts` and break every list screen on the site.
 
-**Consequence.** The plugin owns its schema and its migrations. `Upgrader`
-runs on `admin_init`, at the top of the drain, and at the top of every CLI
-command, so an install that never opens the admin still upgrades itself.
+**Consequence.** The plugin owns its schema and its migrations. `Upgrader` runs
+from cron and from the CLI bootstrap - never from a page load - so an install
+that never opens the admin still upgrades itself, and one that is opened
+constantly never pays for an `ALTER` while somebody waits. See ADR 58, which
+also records what this paragraph used to claim and did not do.
 
 ### ADR 4 - One settings option, with constant and filter overrides
 
@@ -141,6 +145,15 @@ cannot be recomputed even by somebody holding the database and the address.
 person on two days is two uniques. This is stated on every screen that shows
 the number, not buried in the documentation.
 
+A salt that is minted but not stored is the worst failure in the plugin, and
+the write used to ignore its own result: the new value was memoised and cached
+whatever happened, so with a missing or read-only salts table every request
+minted an identity of its own and unique visitors quietly became page views,
+on every screen, with Health still reporting "not created yet". The write is
+checked now. When it fails the salt already in the table is kept - overdue, and
+said to be overdue, but agreed on by every worker, which is the difference
+between a figure that is stale and a figure that is meaningless.
+
 ### ADR 8 - HyperLogLog sketches, merged and never summed
 
 **Decision.** Uniqueness is counted with a HyperLogLog sketch stored on the
@@ -158,6 +171,30 @@ integration test that fails if anyone changes it to a `SUM()`.
 An `exact` counter exists behind `uniqueCounterDriver` for sites that would
 rather have exactness than the storage guarantee. It is not the default and
 the Privacy screen says so.
+
+**Amendment: the merge for a whole site is done once, at write time.** A sketch
+sits on each per-path row, so "how many people came to this site this month"
+was answered by reading every one of them and merging in PHP - about 191,000
+rows for a thirty-day range at the default dimension cap, each carrying a blob,
+twice per render and four times with a comparison period. `honest_daily_uniques`
+holds one pre-merged sketch per site per day, written by the drain as the hits
+arrive, so the same question is one row per day.
+
+Nothing about the rule changes: it is still a merge and never a sum, and the
+daily row is the merge of the same hashes the per-path rows hold. What changes
+is when it happens. Replaying a drain batch cannot inflate it, because adding a
+hash a sketch already holds does nothing and the exact counter's members are
+keyed `(scopeKey, visitorHash)` - the same property that already made the
+per-path rows safe to replay.
+
+Compaction does not touch the table: the rows are daily to begin with. Imported
+days write a count rather than a sketch, added to the estimate rather than
+merged into it, exactly as ADR 54 requires of the per-path rows.
+
+Upgrading runs `DailyUniquesBackfill`, which **merges** the per-path sketches a
+site already has. They cannot be recomputed - ADR 7 destroys the salt that made
+them every night, so the sketch written on a day is the only record of who was
+there. The backfill does once, in the background, what every render used to do.
 
 ### ADR 9 - Aggregate rollups, never raw hits
 
@@ -399,6 +436,24 @@ after a partial failure cannot apply the same chunk twice.
 retried forever, and `Health` raises it on the Settings screen. No data is
 deleted; a quarantined file can be replayed by hand.
 
+The database queue is the same contract by other means, and for a while it was
+not. It had no attempt counter at all, so one row the pipeline could not stomach
+released its claim and was claimed again in the same order on the next run, for
+ever, with every hit behind it waiting - while the file path beside it set the
+equivalent aside after three tries and carried on. Its batches are counted now,
+keyed on the lowest row id because a released batch gets a fresh id, and a batch
+that has had its three is stamped with an id the claim query will never match.
+That is a quarantine rather than a deletion: the rows stay, and the same button
+and the same `--retry` flag release them.
+
+A resumed file also has to be able to reach its end. The chunk markers made
+resuming *correct* from the start, and made it O(prefix): `readChunk()` decoded
+up to 20,000 hits per already-committed chunk purely to discover the marker said
+skip, with no time check in that path. A large spool drained in five-second
+bites could spend every run re-reading the same beginning. The byte offset is
+recorded beside the marker, in the key-value store rather than the schema, so
+losing it degrades to the old behaviour instead of losing anything.
+
 ### ADR 25 - WP-Cron, with an auto-drain fallback and a real cron path
 
 **Decision.** A five-minute `honest_analytics_drain` event, plus a
@@ -427,6 +482,20 @@ reduces row count by roughly an order of magnitude.
 sketches. It reads the existing daily row back in before merging, so running
 it twice is safe. Verified on 21,156 rows folding to 3,467 with views and
 uniques unchanged.
+
+Lossless means the read and the delete have to be the same transaction, and
+originally they were not: the day was selected, merged in PHP, and only then
+did the transaction open to delete the whole day and insert the fold. Anything
+committed for that `(siteId, date)` in between was destroyed without ever being
+merged - and a replayed batch, a recovered spool and seeded history are exactly
+the writers that produce late rows for an old date. The `SELECT` is now inside
+the transaction and takes `FOR UPDATE`.
+
+Two compactions running at once would defeat that regardless of the lock inside
+the day, so `GcService::run()` takes the drain's lock and a second run stands
+down. Four things start a tidy-up - cron, the fallback on an admin page load,
+the button on Settings and the CLI command - and none of them knew about the
+others.
 
 ### ADR 27 - Dimension cardinality is capped first-N, not top-N
 
@@ -473,6 +542,13 @@ stops limiting when the cache is missing is not a rate limiter. It uses
 `Health` detects APCu-only caches, which are per-process and therefore
 useless for cross-request dedupe, and recommends the DB store instead.
 
+The table fills at the rate of the traffic - a nonce per rendered page, a
+rate-limit window per visitor per minute - and all of it is dead within the
+hour. Every drain sweeps a bounded number of expired rows, in chunks, so the
+table stays a few minutes deep rather than a day deep, and the nightly
+tidy-up never faces a million-row `DELETE` on the table the capture path
+writes to.
+
 ### ADR 30 - Sessions are a store, not a table decision
 
 **Decision.** `SessionStoreInterface` with a cache implementation and a table
@@ -483,7 +559,11 @@ per-site index from the cache store.
 single cheap query, because it runs every fifteen seconds per open admin tab.
 
 **Consequence.** Session deltas are applied inside the drain transaction, so a
-rolled-back batch does not leave sessions advanced. `closedByBatch IS NULL`
+rolled-back batch does not leave sessions advanced. Every statement inside
+that transaction goes through `Support\Db`, which turns `$wpdb`'s silent
+`false` into an exception: without it a deadlock - which InnoDB resolves by
+rolling the whole transaction back on its own - would have left the batch
+marker committed and the spool file deleted with nothing counted. `closedByBatch IS NULL`
 became `( closedByBatch IS NULL OR closedByBatch = '' )` because
 `$wpdb->prepare()` renders a PHP null as an empty string - a bug that made
 Real-time show zero visitors while the data was fine.
@@ -655,6 +735,29 @@ ordering, deregistration, optimisation plugins, `SCRIPT_DEBUG`. Printing a raw
 Autoptimize, LiteSpeed, SG Optimizer and Perfmatters so their delay-JS features
 do not defer the beacon until after the visitor has left. The size limit is
 enforced by a test, not by intent.
+
+Its URL exclusions derive the path from `HONEST_ANALYTICS_BASENAME` rather than
+naming the folder. Hardcoded as `honest-analytics/assets/js/`, they matched
+nothing on the paid build, which `bin/build.sh` packages as
+`honest-analytics-pro` - so the promise above did not hold for the customers who
+had paid for it, or for anyone who renamed the folder on the way in.
+
+**Amendment: client-side routing is tracked.** The tracker patches `pushState`
+and `replaceState` and listens for `popstate`; a route change closes the view
+being left with its own dwell and opens the new one. The route is captured when
+a view *begins* rather than read when a request is sent, because on a
+client-routed theme those are different answers - four articles read without a
+page load used to be one view, credited to whichever URL happened to be current
+when the tab was finally hidden.
+
+Deliberately **not** `hashchange`: `path()` is pathname plus search and excludes
+the fragment, because `#comments` is a place on a page rather than a page. A
+router that navigates by fragment alone is therefore invisible here, and making
+it visible would turn every anchor link on every ordinary site into a pageview.
+
+The addition cost about 250 gzipped bytes and the file is at 96% of its budget.
+The next thing to go in it has to earn its place or move the limit
+deliberately - which is what the budget is for.
 
 ### ADR 43 - Cached pages and private content
 
@@ -843,6 +946,22 @@ of progress is a day, which is also the unit every source agrees on, so the
 cursor is a date and resuming is obvious. Coverage is recorded per day, so
 "already imported" is an indexed lookup rather than a scan of the rollups.
 
+The transaction has to hold **everything** that makes the day whole, and for a
+while it did not. Displacing another source's day and recording coverage both
+happened in `ImportRunner`, either side of the call - so a source that started
+failing part way through an eighteen-month `OVERLAP_REPLACE` left the previous
+import's days deleted with nothing put back, and a crash between the write and
+the coverage record left rows that no clash check could see, which is the double
+count the coverage table exists to prevent. `write()` now takes the displaced
+source and the coverage table and does all of it inside the one transaction. The
+same is true of a day with no traffic in it, which is why `writeEmptyDay()`
+exists rather than the runner recording that case itself.
+
+Statements inside that transaction go through `Support\Db`, for the reason ADR
+24 gives: a swallowed failure commits a day whose deletion happened and whose
+replacement did not, and the retry that would have fixed it never fires because
+nothing threw.
+
 ### ADR 56 - Importers read; one class writes
 
 **Decision.** An importer fills `DayBucket`s. It never touches a rollup table,
@@ -892,3 +1011,51 @@ link to the same pages rather than repeating them.
 A build that has the Pro code but no active licence gets the same pages instead
 of 403s, which is a better answer for somebody whose licence has lapsed than a
 locked door.
+
+### ADR 58 - Migrations run from cron and the CLI, never from a page load
+
+**Decision.** `Upgrader::maybeUpgrade()` is called from the two scheduled cron
+handlers, from an `init` hook registered only when WP-CLI is present, and from
+the "Run the tidy-up" button on Settings. It is **not** called from an admin
+screen, and never from a front-end request. While the stored version is behind,
+`Drainer::run()` returns immediately and the spool is left where it is.
+
+**Why.** The check itself is one option read, but an upgrade that has work to do
+is an `ALTER TABLE` against tables that may hold millions of rows, and until now
+the only thing that triggered one was somebody opening a report. That is the
+wrong moment in both directions. A large `ALTER` during a page load is a page
+load nobody gets an answer from - and a site updated by FTP or by a deploy,
+which nobody then signs into, ran its drain against a schema missing a column
+the build writes. `Upsert` hit `Unknown column`, `Support\Db` threw, the batch
+was retried three times and quarantined, and that repeated for every batch while
+the spool climbed to its ceiling and `SpoolWriter` began dropping hits.
+
+Standing the drain down instead costs nothing. The spool is a file, it is
+already the buffer for a site whose cron never fires, and the run after the
+migration drains it whole.
+
+**Consequence.** There is a window in which views are captured and not counted,
+and it lasts until cron next fires. `Health::problems()` says so in those words,
+and names the button that ends it immediately - because the house rule is that
+nothing this plugin needs doing requires a terminal, and "wait for cron or use
+WP-CLI" would break it. Pressing a button and watching it work is a choice
+somebody makes; an `ALTER` inside an unrelated page load is not.
+
+The version option is bumped **only** when every step succeeded, and
+`maybeUpgrade()` holds a `Lock( 'schema' )` while it runs. Both matter for the
+same reason: `widenBucketKeys()` used to drop a unique key and add it back with
+neither statement checked, then bump the version regardless. Two workers
+arriving together could leave a rollup table with no unique key at all,
+permanently - after which every upsert appends a row instead of updating one,
+and every figure on every screen multiplies. A migration that fails now leaves
+the version alone and is retried, with the drain still standing down until it
+works.
+
+**What this deliberately does not do.** There is no chunked or resumable
+migration, no "migration in progress" screen and no progress bar. At 0.5.0 there
+is no installed base whose tables are large enough for the difference to matter,
+and building that machinery now would be designing against a guess. The gap is
+recorded here rather than remembered: **before 1.0, decide whether a large-table
+migration needs to be resumable**, and note that the answer probably involves
+`ALGORITHM=INPLACE, LOCK=NONE` and a documented fallback for the storage engines
+that will not take it.

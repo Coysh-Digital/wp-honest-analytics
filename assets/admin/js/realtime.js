@@ -60,7 +60,7 @@
 				return;
 			}
 
-			node.textContent = Number( snapshot[ key ] || 0 ).toLocaleString();
+			node.textContent = Number( snapshot[ key ] || 0 ).toLocaleString( config.locale || undefined );
 		} );
 
 		var updated = container.querySelector( '[data-ha-updated]' );

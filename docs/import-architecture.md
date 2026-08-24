@@ -14,7 +14,7 @@ Before designing anything, the questions worth answering about this plugin.
 | **Storage model** | Aggregate rollups. There is no table of hits, no visitor table and no session history beyond the live window. |
 | **Grain** | One row per (site, date, hour, dimension). `hour = -1` is a daily row - what the compactor leaves behind after a week. |
 | **Tables** | 26, `{$wpdb->prefix}honest_*`. Six of them hold anything an import could write. |
-| **Migrations** | `Schema::VERSION` plus `Installer::widenBucketKeys()` for anything dbDelta cannot do, run lazily by `Upgrader` on admin, drain and CLI. |
+| **Migrations** | `Schema::VERSION` plus `Installer::widenBucketKeys()` for anything dbDelta cannot do, run by `Upgrader` from cron, from the CLI bootstrap and from the Settings tidy-up button - never from a page load (ADR 58). The drain stands down while one is outstanding. |
 | **Background work** | WP-Cron, a five-minute drain, and a traffic-triggered auto-drain. No queue library. |
 | **Admin** | Server-rendered PHP templates, `.ha-` CSS, WordPress-native components, no framework. |
 | **REST** | `honest-analytics/v1`, capability plus `wp_rest` nonce, permission callbacks on everything non-public. |
@@ -179,6 +179,16 @@ thirty-six months of its own measurements keeps all eight years - retention is
 a promise about what this plugin measures itself, not about history brought in
 from elsewhere. Reversing that would mean an import silently losing most of
 what it just brought across the first time cron ran.
+
+`honest_searchconsole_rollup` is the exception to the mechanism rather than to
+the rule. It is written by `GscRollupWriter` rather than by `ImportSink`, and it
+has no `source` column to be spared by - every row in it is imported, because
+nothing native writes it. So it is exempt whole, named in
+`Tables::retainedElsewhere()` with the reason, rather than carrying a column
+that would read `gsc` on every row. Until that was noticed it sat in
+`expiringRollups()` with no exemption at all, and the nightly sweep deleted
+imported Search Console history the moment it passed the site's own window -
+the precise failure this section says cannot happen.
 
 The importer says so before the import starts, when the discovered range
 reaches further back than `rollupRetentionMonths` would otherwise keep: each

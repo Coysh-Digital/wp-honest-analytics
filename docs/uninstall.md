@@ -28,12 +28,15 @@ warning about something that may not apply.
 then runs `uninstall.php`, which:
 
 1. Drops all twenty-six `{$wpdb->prefix}honest_*` tables.
-2. Deletes `honest_analytics_settings`, `honest_analytics_db_version`,
-   `honest_analytics_licence`, `honest_analytics_last_drain` and
-   `honest_analytics_last_gc`.
+2. Deletes every option and transient whose name begins with
+   `honest_analytics_` - the settings, the schema version, the licence state,
+   the last-run records, the dismissed notices, and the Google OAuth client
+   and tokens an import may have stored. Found by prefix, not by list, so a
+   new option cannot be forgotten here.
 3. Clears the scheduled events.
 4. Removes the three capabilities from every role.
-5. Deletes the spool directory from uploads.
+5. Deletes the data directory from uploads: the spool, the geo database and
+   the PDF font cache.
 6. Deletes the per-user dashboard widget preferences.
 
 On multisite this runs for every site, and the network licence option is

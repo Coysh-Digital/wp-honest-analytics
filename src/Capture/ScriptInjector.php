@@ -64,7 +64,7 @@ final class ScriptInjector {
 	 */
 	public function register(): void {
 		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue' ], 20 );
-		add_filter( 'script_loader_tag', [ $this, 'addDataAttributes' ], 10, 3 );
+		add_filter( 'wp_script_attributes', [ $this, 'addDataAttributes' ] );
 		add_filter( 'template_include', [ $this, 'markTemplateRendered' ], PHP_INT_MAX );
 	}
 
@@ -127,23 +127,41 @@ final class ScriptInjector {
 	 * survives both. The `nowprocket`, `data-cfasync` and `data-no-optimize`
 	 * markers ask the common optimisers to leave the tag where it is.
 	 *
-	 * @param string $tag    The script tag.
-	 * @param string $handle Script handle.
-	 * @param string $src    Script source.
+	 * Hooked on `wp_script_attributes`, which hands over the attribute array of
+	 * the tag core is building, rather than on `script_loader_tag`, where the
+	 * value is `$translations . $before_script . <script src> . $after_script`
+	 * and the old implementation put its attributes on the *first* `<script` in
+	 * it. Any third party calling `wp_add_inline_script( 'honest-analytics', ...,
+	 * 'before' )` - consent managers and optimisers do it routinely - therefore
+	 * took `data-endpoint` and `data-nonce` onto their own tag, `tracker.js`
+	 * found no endpoint and returned, and **counting stopped entirely** with
+	 * nothing in the console to say so. The hybrid nonce was emitted on a
+	 * stranger's element into the bargain.
+	 *
+	 * `mixed` rather than `array` because this is a public filter under
+	 * universal strict_types: a plugin that returns null from it would
+	 * otherwise fatal the front end here rather than wherever it went wrong.
+	 *
+	 * @param mixed $attributes Attributes for the tag core is about to print.
+	 *
+	 * @return array<string,string|bool>
 	 */
-	public function addDataAttributes( string $tag, string $handle, string $src ): string {
-		unset( $src );
+	public function addDataAttributes( mixed $attributes ): array {
+		$attributes = is_array( $attributes ) ? $attributes : [];
+
+		$id     = isset( $attributes['id'] ) ? (string) $attributes['id'] : '';
+		$handle = str_ends_with( $id, '-js' ) ? substr( $id, 0, -3 ) : '';
 
 		if ( ! in_array( $handle, [ self::HANDLE, self::HANDLE_PRO, self::HANDLE_CONSENT ], true ) ) {
-			return $tag;
+			return $attributes;
 		}
 
-		$attributes = [
-			'data-no-optimize' => '1',
-			'data-no-minify'   => '1',
-			'data-no-defer'    => '1',
-			'data-cfasync'     => 'false',
-		];
+		// Merged onto what core built, not substituted for it: `src`, `id` and
+		// the loading strategy are already in here and the tag needs them.
+		$attributes['data-no-optimize'] = '1';
+		$attributes['data-no-minify']   = '1';
+		$attributes['data-no-defer']    = '1';
+		$attributes['data-cfasync']     = 'false';
 
 		if ( self::HANDLE === $handle ) {
 			$this->tagPrinted = true;
@@ -171,13 +189,7 @@ final class ScriptInjector {
 			$attributes['data-consent-endpoint'] = $this->consentUrl();
 		}
 
-		$rendered = '';
-
-		foreach ( $attributes as $name => $value ) {
-			$rendered .= ' ' . $name . '="' . esc_attr( $value ) . '"';
-		}
-
-		return (string) preg_replace( '/<script\s/', '<script' . $rendered . ' ', $tag, 1 );
+		return $attributes;
 	}
 
 	/**
@@ -204,9 +216,15 @@ final class ScriptInjector {
 	 * A page served from a full-page cache never reaches this, which is how the
 	 * capture path tells "PHP built this page" from "somebody's cache did".
 	 *
-	 * @param string $template Template path.
+	 * `mixed` rather than `string`, because this runs on `template_include` at
+	 * PHP_INT_MAX under universal strict_types. Null is never coerced into a
+	 * userland string parameter - it is a TypeError - so a plugin that returns
+	 * null from that filter would have taken the front end down here rather
+	 * than wherever the mistake actually was.
+	 *
+	 * @param mixed $template Template path.
 	 */
-	public function markTemplateRendered( string $template ): string {
+	public function markTemplateRendered( mixed $template ): mixed {
 		$this->templateRendered = true;
 
 		return $template;

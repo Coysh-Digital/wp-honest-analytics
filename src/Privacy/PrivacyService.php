@@ -60,31 +60,42 @@ final class PrivacyService {
 		$journeys   = Tables::name( Tables::JOURNEYS );
 		$dimensions = Tables::name( Tables::DIMENSIONS );
 
-		$where = [];
-		$args  = [];
+		// UNION ALL of two indexed reads rather than `visitorId = %s OR userId
+		// = %d`. The two sides live in different indexes - `visitor` and
+		// `wp_user` - and an OR across two indexes is a full scan of the one
+		// table that grows with traffic, plus a filesort. Each branch here
+		// seeks; the ORDER BY sorts whatever the two returned, which for one
+		// person is a page or two of rows rather than the table.
+		//
+		// ALL rather than DISTINCT: a row matching both branches is the
+		// subject's own row twice, and de-duplicating it costs a sort over the
+		// whole result. The branches are disjoint in practice - a journey row
+		// carries the visitor that made it and the account it was made under -
+		// and where they are not, seeing a row once per reason it was returned
+		// is the more honest answer for a subject access request.
+		$branches = [];
+		$args     = [];
+
+		$select = "SELECT j.occurredAt, d.value AS path, j.sessionId, j.sequence, j.siteId, j.userId
+				FROM `$journeys` j
+				LEFT JOIN `$dimensions` d ON d.id = j.pathDimId
+				WHERE ";
 
 		if ( null !== $visitorId ) {
-			$where[] = 'j.visitorId = %s';
-			$args[]  = $visitorId;
+			$branches[] = $select . 'j.visitorId = %s';
+			$args[]     = $visitorId;
 		}
 
 		if ( null !== $userId ) {
-			$where[] = 'j.userId = %d';
-			$args[]  = $userId;
+			$branches[] = $select . 'j.userId = %d';
+			$args[]     = $userId;
 		}
 
-		$clause = implode( ' OR ', $where );
+		$sql = implode( ' UNION ALL ', $branches ) . ' ORDER BY occurredAt ASC, sequence ASC';
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
 		$journeyRows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT j.occurredAt, d.value AS path, j.sessionId, j.sequence, j.siteId, j.userId
-				FROM `$journeys` j
-				LEFT JOIN `$dimensions` d ON d.id = j.pathDimId
-				WHERE $clause
-				ORDER BY j.occurredAt ASC, j.sequence ASC",
-				$args
-			),
+			$wpdb->prepare( $sql, $args ),
 			ARRAY_A
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare

@@ -40,13 +40,15 @@ final class Format {
 		if ( $value >= 1000000 ) {
 			$decimals = $value >= 10000000 ? 0 : 1;
 
-			return self::trimZero( number_format_i18n( $value / 1000000, $decimals ) ) . 'M';
+			/* translators: %s: a number of millions, already formatted. The suffix on a compacted figure - "1.2M" in English. Keep it short: this goes in a table cell and on a chart axis. */
+			return sprintf( __( '%sM', 'honest-analytics' ), self::trimZero( number_format_i18n( $value / 1000000, $decimals ) ) );
 		}
 
 		if ( $value >= 1000 ) {
 			$decimals = $value >= 10000 ? 0 : 1;
 
-			return self::trimZero( number_format_i18n( $value / 1000, $decimals ) ) . 'k';
+			/* translators: %s: a number of thousands, already formatted. The suffix on a compacted figure - "1.2k" in English. Keep it short: this goes in a table cell and on a chart axis. */
+			return sprintf( __( '%sk', 'honest-analytics' ), self::trimZero( number_format_i18n( $value / 1000, $decimals ) ) );
 		}
 
 		return number_format_i18n( $value, 0 );
@@ -87,7 +89,8 @@ final class Format {
 	 * @param int   $decimals Decimal places.
 	 */
 	public static function percent( float $value, int $decimals = 1 ): string {
-		return number_format_i18n( $value, $decimals ) . '%';
+		/* translators: %s: a number, already formatted. Several locales put a space before the sign. */
+		return sprintf( __( '%s%%', 'honest-analytics' ), number_format_i18n( $value, $decimals ) );
 	}
 
 	/**
@@ -99,6 +102,28 @@ final class Format {
 		$sign = $value > 0 ? '+' : ( $value < 0 ? "\u{2212}" : '' );
 
 		return $sign . number_format_i18n( abs( $value ), 1 ) . '%';
+	}
+
+	/**
+	 * The largest value in one column of a rows array.
+	 *
+	 * The denominator a ranked table divides by to size its bars. Every call
+	 * site used to guard `max()` on the rows being non-empty, which is the
+	 * wrong thing to check: `array_column()` returns an empty array whenever
+	 * the column is absent from every row - a renamed or misspelled key - and
+	 * `max()` throws a ValueError on that, taking the whole screen with it.
+	 * The emptiness has to be tested after the column is extracted, not before.
+	 *
+	 * Returns 0 for nothing to measure. Every consumer either floors at 1 or
+	 * checks for a positive value before dividing.
+	 *
+	 * @param array<int, array<string, mixed>> $rows   Rows to measure.
+	 * @param string                           $column Column holding the value.
+	 */
+	public static function largest( array $rows, string $column ): int {
+		$values = array_column( $rows, $column );
+
+		return [] === $values ? 0 : (int) max( $values );
 	}
 
 	/**

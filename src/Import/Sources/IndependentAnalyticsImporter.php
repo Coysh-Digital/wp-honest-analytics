@@ -127,13 +127,19 @@ final class IndependentAnalyticsImporter implements ImporterInterface {
 		$map        = $this->map();
 		$dimensions = [ __( 'Page views', 'honest-analytics' ) ];
 		$totals     = [
-			__( 'page views', 'honest-analytics' ) => SourceSchema::approximateRows( $this->viewsTable() ),
+			[
+				'label' => __( 'page views', 'honest-analytics' ),
+				'count' => SourceSchema::approximateRows( $this->viewsTable() ),
+			],
 		];
 
 		if ( null !== $map['sessionsDate'] ) {
 			$dimensions[] = __( 'Visitors and sessions', 'honest-analytics' );
 
-			$totals[ __( 'sessions', 'honest-analytics' ) ] = SourceSchema::approximateRows( self::T_SESSIONS );
+			$totals[] = [
+				'label' => __( 'sessions', 'honest-analytics' ),
+				'count' => SourceSchema::approximateRows( self::T_SESSIONS ),
+			];
 		}
 
 		if ( null !== $map['sessionReferrer'] ) {
@@ -681,13 +687,23 @@ final class IndependentAnalyticsImporter implements ImporterInterface {
 	/**
 	 * The instants that bound one calendar day, as the source would have stored them.
 	 *
-	 * @param string $date Y-m-d.
+	 * Two timezones, and they are not the same question. `$date` is a *site*
+	 * calendar day, because that is what every rollup row in this plugin is
+	 * keyed by; the bounds have to be written in the *storage* zone, because
+	 * that is what the values in the source's column are.
 	 *
-	 * @return array{0:string,1:string}
+	 * Both used to be the storage zone, so the conversion cancelled and the
+	 * filter below could not change the answer. On an install that stored UTC
+	 * behind a Sydney site, every evening hit was filed under the previous day
+	 * and there was no way to say so.
+	 *
+	 * @param string $date Y-m-d, site-local.
+	 *
+	 * @return array{0:string,1:string} Inclusive lower bound, exclusive upper bound.
 	 */
 	private function dayBounds( string $date ): array {
-		$zone  = $this->storageTimezone();
-		$start = DateTimeImmutable::createFromFormat( '!Y-m-d', $date, $zone );
+		$storage = $this->storageTimezone();
+		$start   = DateTimeImmutable::createFromFormat( '!Y-m-d', $date, Timezone::site() );
 
 		if ( false === $start ) {
 			return [ $date . ' 00:00:00', $date . ' 23:59:59' ];
@@ -695,16 +711,20 @@ final class IndependentAnalyticsImporter implements ImporterInterface {
 
 		$end = $start->modify( '+1 day' );
 
-		return [ $start->format( 'Y-m-d H:i:s' ), $end->format( 'Y-m-d H:i:s' ) ];
+		return [
+			$start->setTimezone( $storage )->format( 'Y-m-d H:i:s' ),
+			$end->setTimezone( $storage )->format( 'Y-m-d H:i:s' ),
+		];
 	}
 
 	/**
 	 * The timezone the source's timestamps are in.
 	 *
 	 * The site's own, by default. WordPress plugins conventionally store local
-	 * time, and assuming local means the day boundaries are read exactly as
-	 * they were written - no conversion, so no chance of a conversion being
-	 * wrong. A site that knows better can say so.
+	 * time, and on that default the conversion in `dayBounds()` is the identity
+	 * - the boundaries are read exactly as they were written. A site that knows
+	 * better can say so, and saying so now actually moves the window: until
+	 * this was fixed the filter changed nothing but a log line.
 	 */
 	private function storageTimezone(): DateTimeZone {
 		/**

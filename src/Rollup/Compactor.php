@@ -14,6 +14,7 @@ use DateTimeZone;
 use HonestAnalytics\Schema\Tables;
 use HonestAnalytics\Schema\Upsert;
 use HonestAnalytics\Settings\Settings;
+use HonestAnalytics\Support\Db;
 use HonestAnalytics\Support\Log;
 use HonestAnalytics\Support\Timezone;
 use HonestAnalytics\Uniques\Hll;
@@ -36,6 +37,14 @@ final class Compactor {
 
 	/** The hour a compacted daily row carries. */
 	public const DAILY_HOUR = -1;
+
+	/**
+	 * Distinct values of the paging column folded per transaction.
+	 *
+	 * With twenty-four hourly rows behind each value, this is a few thousand
+	 * rows in memory at a time whatever the dimension cap is set to.
+	 */
+	private const PAGE_VALUES = 200;
 
 	private Settings $settings;
 	private UniqueCounterInterface $counter;
@@ -138,32 +147,136 @@ final class Compactor {
 	 * @param string $date   Local date.
 	 */
 	private function compactDay( string $table, int $siteId, string $date ): bool {
-		global $wpdb;
+		$column = self::pageColumn( $table );
+
+		if ( null === $column ) {
+			// Nothing high-cardinality in the group key, so the whole day folds
+			// to a handful of rows and paging would only add transactions.
+			return $this->compactRange( $table, $siteId, $date, null, 0, 0 );
+		}
 
 		$name    = Tables::name( $table );
-		$columns = self::groupColumns( $table );
-		$sums    = self::counterColumns( $table );
+		$after   = -1;
+		$didWork = false;
 
-		// Every row for the day, *including* one that has already been
-		// compacted. Rebuilding a day from its hourly rows alone is correct
-		// exactly once: an hourly row arriving afterwards - a replayed batch, a
-		// recovered spool, seeded history - would otherwise replace the whole
-		// day with whatever had just turned up.
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-		$rows = $wpdb->get_results(
-			$wpdb->prepare( "SELECT * FROM `$name` WHERE siteId = %d AND date = %s", $siteId, $date ),
-			ARRAY_A
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// Paged, because the day used to be read whole into PHP: `SELECT *`
+		// across every hour and every path, blobs included, merged in memory,
+		// then re-inserted a row at a time inside one transaction. At the
+		// default dimension cap that is around twenty-four thousand rows, and
+		// it scales linearly with the cap until the process runs out of memory
+		// - after which the same day is retried identically every night,
+		// compaction stalls for good, and the hourly rows never leave.
+		//
+		// The range is on one column of the grouping key, so every row that
+		// folds together stays in the same page. Splitting a group across two
+		// pages would produce two daily rows for one key, and the second insert
+		// would fail on the unique index.
+		while ( true ) {
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Identifiers come from Schema\Tables and an internal whitelist, and every value is a placeholder.
+			$values = Db::col(
+				$GLOBALS['wpdb']->prepare(
+					"SELECT DISTINCT `$column` FROM `$name` WHERE siteId = %d AND date = %s AND `$column` > %d ORDER BY `$column` ASC LIMIT %d",
+					$siteId,
+					$date,
+					$after,
+					self::PAGE_VALUES
+				)
+			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-		if ( [] === (array) $rows ) {
+			if ( [] === $values ) {
+				return $didWork;
+			}
+
+			$low  = (int) $values[0];
+			$high = (int) $values[ count( $values ) - 1 ];
+
+			if ( $this->compactRange( $table, $siteId, $date, $column, $low, $high ) ) {
+				$didWork = true;
+			}
+
+			$after = $high;
+		}
+	}
+
+	/**
+	 * Compact one page of a day, in its own transaction.
+	 *
+	 * @param string      $table  Unprefixed table name.
+	 * @param int         $siteId Site ID.
+	 * @param string      $date   Local date.
+	 * @param string|null $column Grouping column to range on, or null for the whole day.
+	 * @param int         $low    Lowest value in the range.
+	 * @param int         $high   Highest value in the range.
+	 */
+	private function compactRange( string $table, int $siteId, string $date, ?string $column, int $low, int $high ): bool {
+		global $wpdb;
+
+		$name = Tables::name( $table );
+
+		$range = null === $column ? '' : " AND `$column` BETWEEN $low AND $high";
+
+		// The read is inside the transaction that deletes what it read, and
+		// locks those rows. Outside it, everything committed for this
+		// (siteId, date) between the SELECT and the DELETE was destroyed
+		// without ever being merged: the delete takes the whole day, and the
+		// inserts only carry what the earlier snapshot had seen. The writers
+		// named above are exactly the ones that produce late rows for an old
+		// date, so the window was not theoretical.
+		Db::query( 'START TRANSACTION' );
+
+		try {
+			// Every row for the day, *including* one that has already been
+			// compacted. Rebuilding a day from its hourly rows alone is correct
+			// exactly once: an hourly row arriving afterwards - a replayed
+			// batch, a recovered spool, seeded history - would otherwise
+			// replace the whole day with whatever had just turned up.
+			//
+			// Db::rows() rather than get_results(), because a failed read
+			// answers null and an empty day answers nothing, and treating a
+			// lost query as an empty day would compact it to nothing at all.
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+			$rows = Db::rows(
+				$wpdb->prepare( "SELECT * FROM `$name` WHERE siteId = %d AND date = %s$range FOR UPDATE", $siteId, $date )
+			);
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+			if ( [] === $rows ) {
+				Db::query( 'COMMIT' );
+
+				return false;
+			}
+
+			$folded = $this->mergeDay( $table, $rows );
+		} catch ( \Throwable $e ) {
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+			$wpdb->query( 'ROLLBACK' );
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+			Log::error( 'Compaction could not read ' . $table . ' ' . $date . ': ' . $e->getMessage() );
+
 			return false;
 		}
+
+		return $this->rewriteDay( $table, $name, $siteId, $date, $range, $folded['rows'], $folded['sketches'] );
+	}
+
+	/**
+	 * Fold a day's rows down to one per grouping key.
+	 *
+	 * @param string                         $table Unprefixed table name.
+	 * @param array<int,array<string,mixed>> $rows  Every row for the day.
+	 *
+	 * @return array{rows:array<string,array<string,mixed>>,sketches:array<string,array<int,string>>}
+	 */
+	private function mergeDay( string $table, array $rows ): array {
+		$columns = self::groupColumns( $table );
+		$sums    = self::counterColumns( $table );
 
 		$merged   = [];
 		$sketches = [];
 
-		foreach ( (array) $rows as $row ) {
+		foreach ( $rows as $row ) {
 			$key = [];
 
 			foreach ( $columns as $column ) {
@@ -218,16 +331,38 @@ final class Compactor {
 			}
 		}
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-		$wpdb->query( 'START TRANSACTION' );
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		return [
+			'rows'     => $merged,
+			'sketches' => $sketches,
+		];
+	}
+
+	/**
+	 * Replace a day's rows with the folded ones, inside the open transaction.
+	 *
+	 * @param string                            $table    Unprefixed table name.
+	 * @param string                            $name     Prefixed table name.
+	 * @param int                               $siteId   Site ID.
+	 * @param string                            $date     Local date.
+	 * @param string                            $range    Extra SQL scoping this page, or an empty string.
+	 * @param array<string,array<string,mixed>> $merged   Folded rows.
+	 * @param array<string,array<int,string>>   $sketches Sketches per folded row.
+	 */
+	private function rewriteDay( string $table, string $name, int $siteId, string $date, string $range, array $merged, array $sketches ): bool {
+		global $wpdb;
 
 		try {
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-			$wpdb->query(
-				$wpdb->prepare( "DELETE FROM `$name` WHERE siteId = %d AND date = %s", $siteId, $date )
-			);
-			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			// Through Db so a failure throws and rolls the day back. A delete
+			// that failed quietly, or an insert that did, would commit a day
+			// with some of its rows missing - and after a deadlock, which rolls
+			// the transaction back by itself, the inserts that followed would
+			// each commit alone beside the hourly rows they were meant to
+			// replace, doubling the day on the next read.
+			// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+			// Scoped to the same range the rows were read from, so a page only
+			// ever deletes what it is about to replace.
+			Db::query( $wpdb->prepare( "DELETE FROM `$name` WHERE siteId = %d AND date = %s$range", $siteId, $date ) );
+			// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 			foreach ( $merged as $key => $row ) {
 				$insert = $row;
@@ -244,16 +379,12 @@ final class Compactor {
 					)->serialize();
 				}
 
-				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-				$wpdb->insert( $name, $insert );
-				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+				Db::insert( $name, $insert );
 			}
 
 			$this->compactUniqueScopes( $table, $siteId, $date, $merged );
 
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-			$wpdb->query( 'COMMIT' );
-			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			Db::query( 'COMMIT' );
 		} catch ( \Throwable $e ) {
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
 			$wpdb->query( 'ROLLBACK' );
@@ -315,7 +446,14 @@ final class Compactor {
 		// correctness: a rollback would leave the day with neither its hourly
 		// counters nor its daily one. They are discarded after the commit
 		// instead, and if that fails the figures are still right.
-		$this->pendingDiscards = $folded;
+		//
+		// Merged, not assigned. This runs once per day per table - four tables
+		// by up to two hundred days - and discardFolded() is called once, after
+		// the whole run. Overwriting meant every day but the last kept its
+		// hourly unique-member rows for ever: the exact-counter table grew
+		// without bound on the sites that chose exactness over the storage
+		// guarantee, and nothing else would ever sweep them.
+		$this->pendingDiscards = array_merge( $this->pendingDiscards, $folded );
 	}
 
 	/**
@@ -334,6 +472,26 @@ final class Compactor {
 		}
 
 		$this->pendingDiscards = [];
+	}
+
+	/**
+	 * The grouping column a day is folded in ranges of, if there is one.
+	 *
+	 * Must be one of `groupColumns()`, or a page could split a group in two and
+	 * produce two daily rows for one key. Must also be the high-cardinality one
+	 * to be worth doing: `channel` has a handful of values, so ranging on it
+	 * would bound nothing. Tables whose group key holds nothing but `siteId`,
+	 * `date` and `source` fold to a few rows a day and are done whole.
+	 *
+	 * @param string $table Unprefixed table name.
+	 */
+	private static function pageColumn( string $table ): ?string {
+		return match ( $table ) {
+			Tables::PAGES_ROLLUP   => 'pathDimId',
+			Tables::SOURCES_ROLLUP => 'refHostDimId',
+			Tables::EVENTS_ROLLUP  => 'pathDimId',
+			default                => null,
+		};
 	}
 
 	/**
@@ -368,16 +526,22 @@ final class Compactor {
 	/**
 	 * The counter columns a table sums when compacting.
 	 *
+	 * `importedUniques` is a counter here even though it is never added to by
+	 * the drain: an imported day already sits on a single daily row, and when
+	 * native hourly rows share its date the fold rebuilds that row too. A column
+	 * not in this list is not carried across, so leaving it out silently reset
+	 * every imported visitor count to zero the day it left the hourly window.
+	 *
 	 * @param string $table Unprefixed table name.
 	 *
 	 * @return string[]
 	 */
 	private static function counterColumns( string $table ): array {
 		return match ( $table ) {
-			Tables::PAGES_ROLLUP    => [ 'views', 'totalDwellMs', 'entrances', 'exits', 'bounces' ],
+			Tables::PAGES_ROLLUP    => [ 'views', 'totalDwellMs', 'entrances', 'exits', 'bounces', 'importedUniques' ],
 			Tables::SOURCES_ROLLUP  => [ 'sessions', 'bounces' ],
 			Tables::EVENTS_ROLLUP   => [ 'hits', 'sessions', 'sumValue' ],
-			Tables::SESSIONS_ROLLUP => [ 'sessions', 'bounces', 'totalDurationMs', 'totalPageviews' ],
+			Tables::SESSIONS_ROLLUP => [ 'sessions', 'bounces', 'totalDurationMs', 'totalPageviews', 'importedUniques' ],
 			default                 => [],
 		};
 	}

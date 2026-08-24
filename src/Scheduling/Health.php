@@ -9,13 +9,16 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Scheduling;
 
+use HonestAnalytics\Dimensions\DimensionType;
 use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Schema\Tables;
 use HonestAnalytics\Schema\Upgrader;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Store\StoreFactory;
+use HonestAnalytics\Support\Losses;
 use HonestAnalytics\Support\Paths;
+use HonestAnalytics\Support\Timezone;
 use HonestAnalytics\Write\SpoolStatus;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -42,7 +45,32 @@ final class Health {
 	/** A drain that has not run in this long, with a backlog waiting, is stuck. */
 	private const STALE_DRAIN_SECONDS = 1800;
 
+	/**
+	 * The share of a day's page views that may land in `__other__` before it
+	 * is worth mentioning.
+	 *
+	 * The dimension cap is first-N per day, not top-N, and that is a deliberate
+	 * limitation rather than an oversight - at the moment a value first appears
+	 * there is no way to know whether it will end the day popular. The
+	 * consequence is that a few thousand invented paths early in the morning
+	 * can occupy the whole allowance, and everything real for the rest of that
+	 * day is counted but not attributed.
+	 *
+	 * Nothing is lost when that happens, so it is not a fault. It is also
+	 * invisible unless somebody is told, which is what this is for: a day that
+	 * looks like it has three pages on it should have an explanation attached
+	 * rather than be quietly wrong-looking.
+	 */
+	private const OTHER_SHARE_ADVISORY = 0.25;
+
 	private Settings $settings;
+
+	/**
+	 * Memoised loopback verdict for this request.
+	 *
+	 * @var array{spool:string,endpoint:bool,checkedAt:int}|null
+	 */
+	private ?array $loopback = null;
 	private SpoolStatus $spool;
 
 	/**
@@ -54,6 +82,28 @@ final class Health {
 	}
 
 	/**
+	 * The loopback verdict, asked for once per request.
+	 *
+	 * `problems()` is called several times per admin render - once by the
+	 * notice, once by the Settings screen, once by `isHealthy()` - and it asks
+	 * this twice each time. The verdict is cached for a day in the key-value
+	 * store, so most of those were store reads rather than HTTP; but on the
+	 * first admin load after that day expires, `result()` writes a probe file,
+	 * fetches it over HTTP and posts to the collection endpoint, both with a
+	 * five-second timeout, *while rendering the notice area*. Memoised, that
+	 * happens once instead of six times.
+	 *
+	 * @return array{spool:string,endpoint:bool,checkedAt:int}
+	 */
+	private function loopback(): array {
+		if ( null === $this->loopback ) {
+			$this->loopback = ( new Loopback( $this->settings ) )->result();
+		}
+
+		return $this->loopback;
+	}
+
+	/**
 	 * Things that are actually going wrong.
 	 *
 	 * @return string[]
@@ -61,8 +111,14 @@ final class Health {
 	public function problems(): array {
 		$problems = [];
 
+		// Worth stating plainly, because counting has stopped: the drain stands
+		// down rather than write against a schema it cannot use, so the spool
+		// holds and nothing reaches a report until this clears. Opening a screen
+		// no longer does it - upgrading a large table during a page load is what
+		// this arrangement exists to avoid - so the honest instruction is to run
+		// the tidy-up, which is a button on this same screen.
 		if ( ! Upgrader::isCurrent() ) {
-			$problems[] = __( 'The database tables are out of date. Open any analytics screen as an administrator to finish the upgrade.', 'honest-analytics' );
+			$problems[] = __( 'The database tables are out of date, so new views are being held in the write queue rather than counted. The upgrade runs on the next scheduled job, or straight away if you press "Run the tidy-up" on the Settings screen.', 'honest-analytics' );
 		}
 
 		// A missing schedule is not a fault. Counting continues from ordinary
@@ -97,6 +153,26 @@ final class Health {
 			);
 		}
 
+		// Cumulative, and durable. Every one of these was already logged, to a
+		// channel that is off unless WP_DEBUG is on - which on the sites where
+		// hits are actually being dropped is nobody's. A view that was never
+		// counted cannot be recovered, so the only useful thing left is to say
+		// plainly that it happened.
+		$lost = Losses::total();
+
+		if ( $lost > 0 ) {
+			$problems[] = sprintf(
+				/* translators: 1: a number of views, 2: how long ago, for example "3 hours". */
+				__( '%1$s have been dropped rather than counted, most recently %2$s ago. This usually means the write spool or the write queue reached its ceiling faster than it could be drained. Clear the count on this screen once you have changed something, so you can see whether it worked.', 'honest-analytics' ),
+				sprintf(
+					/* translators: %s: a number. */
+					_n( '%s view', '%s views', $lost, 'honest-analytics' ),
+					number_format_i18n( $lost )
+				),
+				human_time_diff( Losses::lastAt() ?? time() )
+			);
+		}
+
 		if ( $this->usesSpoolFile() && ! $this->spoolIsWritable() ) {
 			$problems[] = __( 'The spool directory cannot be written to, so views are being dropped. Switch the write driver to the database on the Settings screen.', 'honest-analytics' );
 		}
@@ -113,7 +189,7 @@ final class Health {
 			$problems[] = __( 'Country reporting is switched on but no geo database is installed, so nothing is being recorded against it.', 'honest-analytics' );
 		}
 
-		$loopback = ( new Loopback( $this->settings ) )->result();
+		$loopback = $this->loopback();
 
 		if ( $this->spoolPublic() ) {
 			$problems[] = __( 'The write spool can be read over the web. It holds no addresses, but it is not public data. On nginx this needs a rule in the server config - the exact block is in docs/caching.md. On Apache or IIS, check that the .htaccess or web.config in the spool directory has not been removed.', 'honest-analytics' );
@@ -173,12 +249,74 @@ final class Health {
 			$advisories[] = __( 'The tracking mode expects a beacon but script injection is switched off, so nothing is reporting from the browser.', 'honest-analytics' );
 		}
 
+		$other = $this->otherShareToday();
+
+		if ( null !== $other && $other >= self::OTHER_SHARE_ADVISORY ) {
+			$advisories[] = sprintf(
+				/* translators: %s: a percentage, already formatted. */
+				__( 'About %s of today\'s page views are filed under "other" rather than against a page. That means the daily cap on how many distinct values are tracked has been reached, which usually follows a burst of requests for pages that do not exist. No views have been lost and tomorrow starts clean; raising the dimension cap on this screen is the answer if it keeps happening.', 'honest-analytics' ),
+				number_format_i18n( $other * 100, 0 ) . '%'
+			);
+		}
+
 		/**
 		 * Filters the list of informational advisories.
 		 *
 		 * @param string[] $advisories Advisory text.
 		 */
 		return array_values( (array) apply_filters( 'honest_analytics_health_advisories', $advisories ) );
+	}
+
+	/**
+	 * What share of today's page views could not be attributed to a page.
+	 *
+	 * Null when there is nothing to divide by, or when the `__other__` bucket
+	 * has never been created on this site - which is the ordinary case and
+	 * costs one indexed lookup to establish.
+	 */
+	private function otherShareToday(): ?float {
+		global $wpdb;
+
+		$dimensions = Tables::name( Tables::DIMENSIONS );
+		$pages      = Tables::name( Tables::PAGES_ROLLUP );
+		$today      = ( new \DateTimeImmutable( 'now', Timezone::site() ) )->format( 'Y-m-d' );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$otherId = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT id FROM `$dimensions` WHERE type = %d AND value = %s LIMIT 1",
+				DimensionType::Path->value,
+				DimensionType::OTHER_VALUE
+			)
+		);
+
+		if ( $otherId <= 0 ) {
+			return null;
+		}
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT COALESCE(SUM(views),0) AS total,
+					COALESCE(SUM(CASE WHEN pathDimId = %d THEN views ELSE 0 END),0) AS other
+				FROM `$pages` WHERE siteId = %d AND date = %s",
+				$otherId,
+				get_current_blog_id(),
+				$today
+			),
+			ARRAY_A
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$total = is_array( $row ) ? (int) ( $row['total'] ?? 0 ) : 0;
+		$other = is_array( $row ) ? (int) ( $row['other'] ?? 0 ) : 0;
+
+		// A quiet morning is not a flood. Below this the percentage says more
+		// about the sample size than about the cap.
+		if ( $total < 200 ) {
+			return null;
+		}
+
+		return $other / $total;
 	}
 
 	/**
@@ -196,7 +334,7 @@ final class Health {
 	 * snoozed admin notice needs to know before it stays quiet.
 	 */
 	public function spoolPublic(): bool {
-		$loopback = ( new Loopback( $this->settings ) )->result();
+		$loopback = $this->loopback();
 
 		return Loopback::SPOOL_PUBLIC === $loopback['spool'];
 	}
@@ -298,7 +436,7 @@ final class Health {
 		return sprintf(
 			/* translators: 1: formatted date and time, 2: human readable duration. */
 			__( '%1$s (in %2$s)', 'honest-analytics' ),
-			wp_date( 'j M Y H:i', $next ),
+			Timezone::dateTime( $next ),
 			human_time_diff( time(), $next )
 		);
 	}
@@ -362,7 +500,7 @@ final class Health {
 			'writeDriver'   => $plugin->writer()->name(),
 			'sessionStore'  => $this->sessionStoreName(),
 			'objectCache'   => StoreFactory::usingObjectCache(),
-			'loopback'      => ( new Loopback( $this->settings ) )->result(),
+			'loopback'      => $this->loopback(),
 			'uniques'       => $plugin->uniques()->name(),
 			'wpCron'        => Cron::wpCronEnabled(),
 			'nextDrain'     => Cron::nextRun( Cron::DRAIN_HOOK ),

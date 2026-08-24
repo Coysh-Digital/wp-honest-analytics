@@ -81,7 +81,12 @@
 	if ( trackScroll ) {
 		var deepest = 0;
 
-		function depth() {
+		// Function *expressions*, not declarations. A declaration inside a
+		// block is a SyntaxError in ES5 strict mode, and one SyntaxError
+		// throws out the whole file - which would take the tracker's
+		// companions with it on exactly the older browsers tracker.js says it
+		// supports.
+		var depth = function () {
 			var scrollable = document.documentElement.scrollHeight - window.innerHeight;
 
 			// A page shorter than the window was read to the end by definition.
@@ -90,11 +95,11 @@
 			}
 
 			return Math.min( 100, Math.round( ( window.scrollY / scrollable ) * 100 ) );
-		}
+		};
 
-		function bucket( percent ) {
+		var bucket = function ( percent ) {
 			return percent >= 100 ? 100 : percent >= 75 ? 75 : percent >= 50 ? 50 : percent >= 25 ? 25 : 0;
-		}
+		};
 
 		addEventListener( 'scroll', function () {
 			deepest = Math.max( deepest, depth() );
@@ -110,7 +115,7 @@
 	}
 
 	if ( trackOutbound || trackDownloads || trackClicks ) {
-		function isDownload( url ) {
+		var isDownload = function ( url ) {
 			var pathname = url.pathname.toLowerCase();
 			var dot = pathname.lastIndexOf( '.' );
 
@@ -119,7 +124,7 @@
 			}
 
 			return extensions.indexOf( pathname.slice( dot + 1 ) ) !== -1;
-		}
+		};
 
 		// Capture phase, so a click is recorded even when the page's own
 		// handlers stop propagation or navigate away immediately.

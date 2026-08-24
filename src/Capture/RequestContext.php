@@ -53,7 +53,7 @@ final class RequestContext {
 	 * @param bool                 $isLoggedIn         Whether somebody is signed in.
 	 * @param int                  $userId             Who, so exclusion rules can be applied.
 	 * @param string               $userAgent          Parsed and discarded, never stored whole.
-	 * @param string               $acceptLanguage     Reduced to a language, never stored whole.
+	 * @param string               $acceptLanguage     Read for bot detection. Never stored, in any form.
 	 * @param string               $referrer           Reduced to a host, never stored whole.
 	 * @param bool                 $gpc                Whether Global Privacy Control was sent.
 	 * @param bool                 $dnt                Whether Do Not Track was sent.

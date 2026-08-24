@@ -38,6 +38,27 @@ final class ProStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function campaigns( int $siteId, DateRange $range, int $limit = 200 ): array {
+		return (array) $this->remember(
+			'pro:campaigns',
+			$siteId,
+			$range,
+			fn (): array => $this->computeCampaigns( $siteId, $range, $limit ),
+			[
+				'limit' => $limit,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See campaigns().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeCampaigns( int $siteId, DateRange $range, int $limit = 200 ): array {
 		global $wpdb;
 
 		$table = Tables::name( Tables::CAMPAIGNS_ROLLUP );
@@ -47,18 +68,23 @@ final class ProStatsService {
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT s.value AS source, m.value AS medium, c.value AS campaign,
-					COALESCE(SUM(r.sessions),0) AS sessions,
-					COALESCE(SUM(r.bounces),0) AS bounces,
-					COALESCE(SUM(r.conversions),0) AS conversions,
-					COALESCE(SUM(r.value),0) AS value
-				FROM `$table` r
-				INNER JOIN `$dims` s ON s.id = r.sourceDimId
-				LEFT JOIN `$dims` m ON m.id = r.mediumDimId
-				LEFT JOIN `$dims` c ON c.id = r.campaignDimId
-				WHERE r.siteId = %d AND r.date BETWEEN %s AND %s
-				GROUP BY s.value, m.value, c.value
-				ORDER BY sessions DESC
-				LIMIT %d",
+					agg.sessions, agg.bounces, agg.conversions, agg.value
+				FROM (
+					SELECT r.sourceDimId AS sourceId, r.mediumDimId AS mediumId, r.campaignDimId AS campaignId,
+						COALESCE(SUM(r.sessions),0) AS sessions,
+						COALESCE(SUM(r.bounces),0) AS bounces,
+						COALESCE(SUM(r.conversions),0) AS conversions,
+						COALESCE(SUM(r.value),0) AS value
+					FROM `$table` r
+					WHERE r.siteId = %d AND r.date BETWEEN %s AND %s
+					GROUP BY r.sourceDimId, r.mediumDimId, r.campaignDimId
+					ORDER BY sessions DESC
+					LIMIT %d
+				) agg
+				INNER JOIN `$dims` s ON s.id = agg.sourceId
+				LEFT JOIN `$dims` m ON m.id = agg.mediumId
+				LEFT JOIN `$dims` c ON c.id = agg.campaignId
+				ORDER BY agg.sessions DESC",
 				$siteId,
 				$range->from,
 				$range->to,
@@ -99,6 +125,27 @@ final class ProStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function countries( int $siteId, DateRange $range, int $limit = 250 ): array {
+		return (array) $this->remember(
+			'pro:countries',
+			$siteId,
+			$range,
+			fn (): array => $this->computeCountries( $siteId, $range, $limit ),
+			[
+				'limit' => $limit,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See countries().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeCountries( int $siteId, DateRange $range, int $limit = 250 ): array {
 		global $wpdb;
 
 		$table = Tables::name( Tables::GEO_ROLLUP );
@@ -129,6 +176,27 @@ final class ProStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function regions( int $siteId, DateRange $range, int $limit = 100 ): array {
+		return (array) $this->remember(
+			'pro:regions',
+			$siteId,
+			$range,
+			fn (): array => $this->computeRegions( $siteId, $range, $limit ),
+			[
+				'limit' => $limit,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See regions().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeRegions( int $siteId, DateRange $range, int $limit = 100 ): array {
 		global $wpdb;
 
 		$table = Tables::name( Tables::GEO_ROLLUP );
@@ -137,11 +205,18 @@ final class ProStatsService {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
 		return (array) $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT d.value AS region, g.countryCode, COALESCE(SUM(g.sessions),0) AS sessions
-				FROM `$table` g
-				INNER JOIN `$dims` d ON d.id = g.regionDimId
-				WHERE g.siteId = %d AND g.date BETWEEN %s AND %s
-				GROUP BY d.value, g.countryCode ORDER BY sessions DESC LIMIT %d",
+				"SELECT d.value AS region, agg.countryCode, agg.sessions
+				FROM (
+					SELECT g.regionDimId AS dimId, g.countryCode,
+						COALESCE(SUM(g.sessions),0) AS sessions
+					FROM `$table` g
+					WHERE g.siteId = %d AND g.date BETWEEN %s AND %s
+					GROUP BY g.regionDimId, g.countryCode
+					ORDER BY sessions DESC
+					LIMIT %d
+				) agg
+				INNER JOIN `$dims` d ON d.id = agg.dimId
+				ORDER BY agg.sessions DESC",
 				$siteId,
 				$range->from,
 				$range->to,
@@ -163,6 +238,29 @@ final class ProStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function events( int $siteId, DateRange $range, int $limit = 200, ?int $pathDimId = null ): array {
+		return (array) $this->remember(
+			'pro:events',
+			$siteId,
+			$range,
+			fn (): array => $this->computeEvents( $siteId, $range, $limit, $pathDimId ),
+			[
+				'limit'     => $limit,
+				'pathDimId' => null === $pathDimId ? '' : $pathDimId,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See events().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 * @param ?int      $pathDimId Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeEvents( int $siteId, DateRange $range, int $limit = 200, ?int $pathDimId = null ): array {
 		global $wpdb;
 
 		$table = Tables::name( Tables::EVENTS_ROLLUP );
@@ -181,14 +279,20 @@ final class ProStatsService {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT d.value AS label,
-					COALESCE(SUM(e.hits),0) AS hits,
-					COALESCE(SUM(e.sessions),0) AS sessions,
-					COALESCE(SUM(e.sumValue),0) AS value
-				FROM `$table` e
-				INNER JOIN `$dims` d ON d.id = e.eventNameDimId
-				WHERE $where
-				GROUP BY d.value ORDER BY hits DESC LIMIT %d",
+				"SELECT d.value AS label, agg.hits, agg.sessions, agg.value
+				FROM (
+					SELECT e.eventNameDimId AS dimId,
+						COALESCE(SUM(e.hits),0) AS hits,
+						COALESCE(SUM(e.sessions),0) AS sessions,
+						COALESCE(SUM(e.sumValue),0) AS value
+					FROM `$table` e
+					WHERE $where
+					GROUP BY e.eventNameDimId
+					ORDER BY hits DESC
+					LIMIT %d
+				) agg
+				INNER JOIN `$dims` d ON d.id = agg.dimId
+				ORDER BY agg.hits DESC",
 				$args
 			),
 			ARRAY_A
@@ -231,6 +335,29 @@ final class ProStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function outbound( int $siteId, DateRange $range, int $limit = 200, ?int $pathDimId = null ): array {
+		return (array) $this->remember(
+			'pro:outbound',
+			$siteId,
+			$range,
+			fn (): array => $this->computeOutbound( $siteId, $range, $limit, $pathDimId ),
+			[
+				'limit'     => $limit,
+				'pathDimId' => null === $pathDimId ? '' : $pathDimId,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See outbound().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 * @param ?int      $pathDimId Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeOutbound( int $siteId, DateRange $range, int $limit = 200, ?int $pathDimId = null ): array {
 		global $wpdb;
 
 		$table = Tables::name( Tables::OUTBOUND_ROLLUP );
@@ -249,12 +376,19 @@ final class ProStatsService {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
 		return (array) $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT h.value AS host, u.value AS url, COALESCE(SUM(o.hits),0) AS hits
-				FROM `$table` o
-				INNER JOIN `$dims` h ON h.id = o.targetHostDimId
-				LEFT JOIN `$dims` u ON u.id = o.targetDimId
-				WHERE $where
-				GROUP BY h.value, u.value ORDER BY hits DESC LIMIT %d",
+				"SELECT h.value AS host, u.value AS url, agg.hits
+				FROM (
+					SELECT o.targetHostDimId AS hostId, o.targetDimId AS urlId,
+						COALESCE(SUM(o.hits),0) AS hits
+					FROM `$table` o
+					WHERE $where
+					GROUP BY o.targetHostDimId, o.targetDimId
+					ORDER BY hits DESC
+					LIMIT %d
+				) agg
+				INNER JOIN `$dims` h ON h.id = agg.hostId
+				LEFT JOIN `$dims` u ON u.id = agg.urlId
+				ORDER BY agg.hits DESC",
 				$args
 			),
 			ARRAY_A
@@ -272,6 +406,27 @@ final class ProStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function searches( int $siteId, DateRange $range, int $limit = 200 ): array {
+		return (array) $this->remember(
+			'pro:searches',
+			$siteId,
+			$range,
+			fn (): array => $this->computeSearches( $siteId, $range, $limit ),
+			[
+				'limit' => $limit,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See searches().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeSearches( int $siteId, DateRange $range, int $limit = 200 ): array {
 		global $wpdb;
 
 		$table = Tables::name( Tables::SEARCH_ROLLUP );
@@ -280,11 +435,19 @@ final class ProStatsService {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
 		return (array) $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT d.value AS term, COALESCE(SUM(s.hits),0) AS hits, COALESCE(SUM(s.zeroResults),0) AS zeroResults
-				FROM `$table` s
-				INNER JOIN `$dims` d ON d.id = s.termDimId
-				WHERE s.siteId = %d AND s.date BETWEEN %s AND %s
-				GROUP BY d.value ORDER BY hits DESC LIMIT %d",
+				"SELECT d.value AS term, agg.hits, agg.zeroResults
+				FROM (
+					SELECT s.termDimId AS dimId,
+						COALESCE(SUM(s.hits),0) AS hits,
+						COALESCE(SUM(s.zeroResults),0) AS zeroResults
+					FROM `$table` s
+					WHERE s.siteId = %d AND s.date BETWEEN %s AND %s
+					GROUP BY s.termDimId
+					ORDER BY hits DESC
+					LIMIT %d
+				) agg
+				INNER JOIN `$dims` d ON d.id = agg.dimId
+				ORDER BY agg.hits DESC",
 				$siteId,
 				$range->from,
 				$range->to,
@@ -308,6 +471,29 @@ final class ProStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function scrollDepth( int $siteId, DateRange $range, int $limit = 100, ?int $pathDimId = null ): array {
+		return (array) $this->remember(
+			'pro:scrollDepth',
+			$siteId,
+			$range,
+			fn (): array => $this->computeScrollDepth( $siteId, $range, $limit, $pathDimId ),
+			[
+				'limit'     => $limit,
+				'pathDimId' => null === $pathDimId ? '' : $pathDimId,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See scrollDepth().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 * @param ?int      $pathDimId Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeScrollDepth( int $siteId, DateRange $range, int $limit = 100, ?int $pathDimId = null ): array {
 		global $wpdb;
 
 		$table = Tables::name( Tables::SCROLL_ROLLUP );
@@ -321,6 +507,36 @@ final class ProStatsService {
 			$args[] = $pathDimId;
 		}
 
+		$limit = max( 1, $limit );
+
+		// Two queries, because there was no LIMIT in the SQL at all: every
+		// scrolled path in the range was grouped on `dimensions.value` - a
+		// varchar(500) in the temp table's key - fetched whole, and then cut
+		// down to the requested handful in PHP. The shortlist ranks by the
+		// hundred-per-cent bucket, which is exactly what the sort below does,
+		// so the same rows come back in the same order.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$top = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT s.pathDimId
+				FROM `$table` s
+				WHERE $where
+				GROUP BY s.pathDimId
+				ORDER BY SUM(CASE WHEN s.bucket = 100 THEN s.hits ELSE 0 END) DESC
+				LIMIT %d",
+				array_merge( $args, [ $limit ] )
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+		$top = array_map( 'intval', (array) $top );
+
+		if ( [] === $top ) {
+			return [];
+		}
+
+		$where .= ' AND s.pathDimId IN (' . implode( ',', array_fill( 0, count( $top ), '%d' ) ) . ')';
+
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
@@ -328,8 +544,8 @@ final class ProStatsService {
 				FROM `$table` s
 				INNER JOIN `$dims` d ON d.id = s.pathDimId
 				WHERE $where
-				GROUP BY d.value, s.bucket",
-				$args
+				GROUP BY s.pathDimId, d.value, s.bucket",
+				array_merge( $args, $top )
 			),
 			ARRAY_A
 		);
@@ -360,7 +576,7 @@ final class ProStatsService {
 
 		uasort( $byPath, static fn ( array $a, array $b ): int => $b['reached100'] <=> $a['reached100'] );
 
-		return array_slice( array_values( $byPath ), 0, max( 1, $limit ) );
+		return array_values( $byPath );
 	}
 
 	/**
@@ -380,6 +596,29 @@ final class ProStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function searchConsoleQueries( int $siteId, DateRange $range, int $limit, int $pathDimId ): array {
+		return (array) $this->remember(
+			'pro:searchConsoleQueries',
+			$siteId,
+			$range,
+			fn (): array => $this->computeSearchConsoleQueries( $siteId, $range, $limit, $pathDimId ),
+			[
+				'limit'     => $limit,
+				'pathDimId' => $pathDimId,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See searchConsoleQueries().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 * @param int       $pathDimId Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeSearchConsoleQueries( int $siteId, DateRange $range, int $limit, int $pathDimId ): array {
 		global $wpdb;
 
 		$table = Tables::name( Tables::SEARCHCONSOLE_ROLLUP );
@@ -388,14 +627,20 @@ final class ProStatsService {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT d.value AS query,
-					COALESCE(SUM(s.clicks),0) AS clicks,
-					COALESCE(SUM(s.impressions),0) AS impressions,
-					COALESCE(SUM(s.sumPosition),0) AS sumPosition
-				FROM `$table` s
-				INNER JOIN `$dims` d ON d.id = s.queryDimId
-				WHERE s.siteId = %d AND s.date BETWEEN %s AND %s AND s.pathDimId = %d
-				GROUP BY d.value ORDER BY clicks DESC LIMIT %d",
+				"SELECT d.value AS query, agg.clicks, agg.impressions, agg.sumPosition
+				FROM (
+					SELECT s.queryDimId AS dimId,
+						COALESCE(SUM(s.clicks),0) AS clicks,
+						COALESCE(SUM(s.impressions),0) AS impressions,
+						COALESCE(SUM(s.sumPosition),0) AS sumPosition
+					FROM `$table` s
+					WHERE s.siteId = %d AND s.date BETWEEN %s AND %s AND s.pathDimId = %d
+					GROUP BY s.queryDimId
+					ORDER BY clicks DESC
+					LIMIT %d
+				) agg
+				INNER JOIN `$dims` d ON d.id = agg.dimId
+				ORDER BY agg.clicks DESC",
 				$siteId,
 				$range->from,
 				$range->to,
@@ -419,6 +664,27 @@ final class ProStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function searchConsoleTopQueries( int $siteId, DateRange $range, int $limit = 200 ): array {
+		return (array) $this->remember(
+			'pro:searchConsoleTopQueries',
+			$siteId,
+			$range,
+			fn (): array => $this->computeSearchConsoleTopQueries( $siteId, $range, $limit ),
+			[
+				'limit' => $limit,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See searchConsoleTopQueries().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeSearchConsoleTopQueries( int $siteId, DateRange $range, int $limit = 200 ): array {
 		global $wpdb;
 
 		$table = Tables::name( Tables::SEARCHCONSOLE_ROLLUP );
@@ -427,14 +693,20 @@ final class ProStatsService {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT d.value AS query,
-					COALESCE(SUM(s.clicks),0) AS clicks,
-					COALESCE(SUM(s.impressions),0) AS impressions,
-					COALESCE(SUM(s.sumPosition),0) AS sumPosition
-				FROM `$table` s
-				INNER JOIN `$dims` d ON d.id = s.queryDimId
-				WHERE s.siteId = %d AND s.date BETWEEN %s AND %s
-				GROUP BY d.value ORDER BY clicks DESC LIMIT %d",
+				"SELECT d.value AS query, agg.clicks, agg.impressions, agg.sumPosition
+				FROM (
+					SELECT s.queryDimId AS dimId,
+						COALESCE(SUM(s.clicks),0) AS clicks,
+						COALESCE(SUM(s.impressions),0) AS impressions,
+						COALESCE(SUM(s.sumPosition),0) AS sumPosition
+					FROM `$table` s
+					WHERE s.siteId = %d AND s.date BETWEEN %s AND %s
+					GROUP BY s.queryDimId
+					ORDER BY clicks DESC
+					LIMIT %d
+				) agg
+				INNER JOIN `$dims` d ON d.id = agg.dimId
+				ORDER BY agg.clicks DESC",
 				$siteId,
 				$range->from,
 				$range->to,
@@ -457,6 +729,27 @@ final class ProStatsService {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public function searchConsoleTopPages( int $siteId, DateRange $range, int $limit = 200 ): array {
+		return (array) $this->remember(
+			'pro:searchConsoleTopPages',
+			$siteId,
+			$range,
+			fn (): array => $this->computeSearchConsoleTopPages( $siteId, $range, $limit ),
+			[
+				'limit' => $limit,
+			]
+		);
+	}
+
+	/**
+	 * Uncached. See searchConsoleTopPages().
+	 *
+	 * @param int       $siteId Argument.
+	 * @param DateRange $range Argument.
+	 * @param int       $limit Argument.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function computeSearchConsoleTopPages( int $siteId, DateRange $range, int $limit = 200 ): array {
 		global $wpdb;
 
 		$table = Tables::name( Tables::SEARCHCONSOLE_ROLLUP );
@@ -465,14 +758,20 @@ final class ProStatsService {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT d.value AS path,
-					COALESCE(SUM(s.clicks),0) AS clicks,
-					COALESCE(SUM(s.impressions),0) AS impressions,
-					COALESCE(SUM(s.sumPosition),0) AS sumPosition
-				FROM `$table` s
-				INNER JOIN `$dims` d ON d.id = s.pathDimId
-				WHERE s.siteId = %d AND s.date BETWEEN %s AND %s
-				GROUP BY d.value ORDER BY clicks DESC LIMIT %d",
+				"SELECT d.value AS path, agg.clicks, agg.impressions, agg.sumPosition
+				FROM (
+					SELECT s.pathDimId AS dimId,
+						COALESCE(SUM(s.clicks),0) AS clicks,
+						COALESCE(SUM(s.impressions),0) AS impressions,
+						COALESCE(SUM(s.sumPosition),0) AS sumPosition
+					FROM `$table` s
+					WHERE s.siteId = %d AND s.date BETWEEN %s AND %s
+					GROUP BY s.pathDimId
+					ORDER BY clicks DESC
+					LIMIT %d
+				) agg
+				INNER JOIN `$dims` d ON d.id = agg.dimId
+				ORDER BY agg.clicks DESC",
 				$siteId,
 				$range->from,
 				$range->to,
@@ -531,5 +830,27 @@ final class ProStatsService {
 		}
 
 		return $out;
+	}
+
+	/**
+	 * Hold a finished period's answer.
+	 *
+	 * `ReportCache` decides whether a period is finished; a range containing
+	 * today is computed every time, because a reader refreshing to see whether
+	 * the morning's post is doing anything deserves the truth.
+	 *
+	 * Every argument beyond the site and the range goes into `$extra` and
+	 * therefore into the key. A limit or a path filter left out of it would
+	 * serve the answer to one question as the answer to another - the failure
+	 * that looks like data rather than like a bug.
+	 *
+	 * @param string               $name    Query name.
+	 * @param int                  $siteId  Site ID.
+	 * @param DateRange            $range   Period.
+	 * @param callable             $compute Produces the value.
+	 * @param array<string,scalar> $extra   Anything else that changes the answer.
+	 */
+	private function remember( string $name, int $siteId, DateRange $range, callable $compute, array $extra = [] ): mixed {
+		return ReportCache::remember( $name, $siteId, $range, $compute, $extra );
 	}
 }

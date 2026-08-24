@@ -6,6 +6,9 @@
  * than only if the visitor happens to leave tidily. The second goes out when
  * they leave, carrying how long they stayed.
  *
+ * A client-side route change is both: the view being left is closed with its
+ * own dwell, and the new one opens.
+ *
  * It touches no storage of any kind: no cookies, no localStorage, no
  * sessionStorage, no IndexedDB. It reads its own script tag for configuration
  * and reads nothing else about the browser.
@@ -35,6 +38,11 @@
 		return location.pathname + location.search;
 	}
 
+	// Captured when the view begins, not read when it is sent. On a
+	// client-routed theme those differ: four articles read without a page load
+	// used to be one view, credited to whichever URL was current at the end.
+	var current = path();
+
 	function send( body ) {
 		if ( navigator.sendBeacon ) {
 			navigator.sendBeacon( endpoint, body );
@@ -52,7 +60,7 @@
 	function view() {
 		var body = new URLSearchParams();
 
-		body.set( 'p', path() );
+		body.set( 'p', current );
 
 		if ( nonce ) {
 			body.set( 'n', nonce );
@@ -70,7 +78,7 @@
 
 		var body = new URLSearchParams();
 
-		body.set( 'p', path() );
+		body.set( 'p', current );
 		body.set( 'd', String( Math.round( clock() - started ) ) );
 		body.set( 'e', '1' );
 
@@ -89,6 +97,58 @@
 		send( body );
 	}
 
+	function route() {
+		var next = path();
+
+		// replaceState syncs state as often as it navigates, and rewriting the
+		// query string a page already had is not a pageview.
+		if ( next === current ) {
+			return;
+		}
+
+		engagement();
+
+		current = next;
+		leaving = false;
+		started = clock();
+
+		// The nonce authorises the one delivery the server rendered; a route
+		// the browser assembled has no such claim.
+		nonce = '';
+
+		view();
+	}
+
+	// Neither fires an event, so wrapping is the only way to hear them. The
+	// original's return value is handed straight back, so a framework reading
+	// it is unaffected.
+	function patch( name ) {
+		var original = history[ name ];
+
+		if ( 'function' !== typeof original ) {
+			return;
+		}
+
+		history[ name ] = function () {
+			var result = original.apply( this, arguments );
+
+			route();
+
+			return result;
+		};
+	}
+
+	if ( window.history ) {
+		patch( 'pushState' );
+		patch( 'replaceState' );
+	}
+
+	// Back and forward. No hashchange: path() excludes the fragment on purpose,
+	// because #comments is a place on a page rather than a page - so a
+	// fragment-only router is invisible here, and counting one would make every
+	// anchor link on every ordinary site a pageview.
+	addEventListener( 'popstate', route );
+
 	// pagehide is the only one iOS delivers reliably; visibilitychange covers
 	// tab switches and the desktop cases pagehide misses.
 	addEventListener( 'pagehide', engagement );
@@ -105,6 +165,7 @@
 			leaving = false;
 			nonce = '';
 			started = clock();
+			current = path();
 			view();
 		}
 	} );

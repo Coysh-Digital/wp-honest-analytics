@@ -17,12 +17,16 @@ use HonestAnalytics\Rollup\GoalMatcher;
 use HonestAnalytics\Rollup\JourneyRecorder;
 use HonestAnalytics\Rollup\RollupSinkInterface;
 use HonestAnalytics\Schema\Tables;
-use HonestAnalytics\Sessions\Session;
+use HonestAnalytics\Schema\Upgrader;
 use HonestAnalytics\Sessions\SessionDelta;
 use HonestAnalytics\Sessions\SessionStoreInterface;
 use HonestAnalytics\Settings\Settings;
+use HonestAnalytics\Store\DbKeyValueStore;
+use HonestAnalytics\Store\StoreFactory;
+use HonestAnalytics\Support\Db;
 use HonestAnalytics\Support\Lock;
 use HonestAnalytics\Support\Log;
+use HonestAnalytics\Support\Losses;
 use HonestAnalytics\Support\Paths;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -54,15 +58,47 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class Drainer {
 
-	private const CLAIMED_SUFFIX  = '.processing';
-	private const FAILED_SUFFIX   = '.failed';
-	private const ATTEMPTS_SUFFIX = '.attempts';
-	private const MAX_ATTEMPTS    = 3;
 	private const CHUNK_SEPARATOR = '#';
 	private const LOCK_NAME       = 'drain';
 
+	/**
+	 * Failures before a queue batch is set aside.
+	 *
+	 * The same three the file path uses, kept here rather than shared, because
+	 * the two quarantines are different mechanisms - a rename on one side, a
+	 * stamped batch id on the other - and a single constant would imply they
+	 * have to move together.
+	 */
+	private const QUEUE_MAX_ATTEMPTS = 3;
+
+	/**
+	 * Stamped on queue rows that have failed too often.
+	 *
+	 * Anything but NULL keeps them out of the claim query, which is what makes
+	 * this a quarantine rather than a deletion. `wp honest-analytics drain
+	 * --retry` clears them the same way it un-quarantines a spool file.
+	 */
+	public const QUEUE_FAILED_PREFIX = 'failed-';
+
+	/** Expired store rows removed per run - a few minutes' worth on a busy site. */
+	private const STORE_SWEEP_ROWS = 20000;
+
+	/**
+	 * Idle sessions committed per transaction.
+	 *
+	 * Small enough that the row locks it takes across the rollup tables are
+	 * held for a moment rather than for the length of the whole sweep, and
+	 * large enough that the per-transaction overhead stays negligible.
+	 */
+	private const CLOSE_CHUNK = 250;
+
 	/** Hits materialised at once. A full spool would otherwise exhaust memory. */
 	public int $chunkHits = 20000;
+
+	/**
+	 * The file half of the job: claiming, reading and setting aside batches.
+	 */
+	private SpoolBatchReader $files;
 
 	public function __construct(
 		private Settings $settings,
@@ -71,6 +107,7 @@ final class Drainer {
 		private GoalMatcher $matcher,
 		private JourneyRecorder $journeys
 	) {
+		$this->files = new SpoolBatchReader( $this->chunkHits );
 	}
 
 	/**
@@ -105,6 +142,17 @@ final class Drainer {
 
 		$this->deadline = $seconds > 0 ? $start + $seconds : 0.0;
 
+		// A stale schema means the rollup tables are missing a column this
+		// build writes, and every batch would fail on `Unknown column`, be
+		// retried three times and quarantined - for every batch, while the
+		// spool climbs to its ceiling and SpoolWriter starts dropping hits.
+		// Standing down leaves the spool exactly as it is, to be drained by the
+		// run that follows the migration. Nothing is lost by waiting; a great
+		// deal is lost by not.
+		if ( ! Upgrader::isCurrent() ) {
+			return $result;
+		}
+
 		$lock = new Lock( self::LOCK_NAME );
 
 		// Declining is the right answer for the loser. Another drain is already
@@ -114,7 +162,7 @@ final class Drainer {
 		}
 
 		try {
-			foreach ( $this->claimFiles() as $file ) {
+			foreach ( $this->files->claimFiles() as $file ) {
 				if ( $this->outOfTime() ) {
 					break;
 				}
@@ -124,8 +172,12 @@ final class Drainer {
 
 			$this->processQueuedRows( $result );
 			$this->closeIdleSessions( $now, $result );
+			$this->sweepStore();
 
-			$result->quarantinedBatches = count( $this->failedFiles() );
+			// Added, not assigned: processQueuedRows() may already have counted
+			// a database batch it set aside, and an assignment here would
+			// silently forget it.
+			$result->quarantinedBatches += count( $this->files->failedFiles() );
 		} finally {
 			$lock->release();
 		}
@@ -138,43 +190,6 @@ final class Drainer {
 	}
 
 	/**
-	 * Take ownership of whatever is waiting.
-	 *
-	 * @return string[]
-	 */
-	private function claimFiles(): array {
-		$live = Paths::spoolFile();
-
-		if ( is_file( $live ) && filesize( $live ) > 0 ) {
-			$claimed = Paths::spoolDir() . '/spool-' . bin2hex( random_bytes( 8 ) ) . self::CLAIMED_SUFFIX;
-
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename
-			@rename( $live, $claimed );
-		}
-
-		$files = glob( Paths::spoolDir() . '/*' . self::CLAIMED_SUFFIX );
-
-		if ( ! is_array( $files ) ) {
-			return [];
-		}
-
-		sort( $files );
-
-		return $files;
-	}
-
-	/**
-	 * Files set aside after repeated failures.
-	 *
-	 * @return string[]
-	 */
-	public function failedFiles(): array {
-		$files = glob( Paths::spoolDir() . '/*' . self::FAILED_SUFFIX );
-
-		return is_array( $files ) ? $files : [];
-	}
-
-	/**
 	 * Put quarantined batches back in the queue.
 	 *
 	 * The name is kept up to the suffix, so a retried batch presents the same
@@ -184,20 +199,23 @@ final class Drainer {
 	 * @return int Batches requeued.
 	 */
 	public function retryFailed(): int {
-		$count = 0;
+		global $wpdb;
 
-		foreach ( $this->failedFiles() as $file ) {
-			$target = substr( $file, 0, -strlen( self::FAILED_SUFFIX ) ) . self::CLAIMED_SUFFIX;
+		$count = $this->files->requeueFailed();
 
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename
-			if ( @rename( $file, $target ) ) {
-				// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-				@unlink( $file . self::ATTEMPTS_SUFFIX );
-				++$count;
-			}
-		}
+		// And the database queue's equivalent. Both drivers set batches aside
+		// after repeated failures, so both have to be reachable from the one
+		// button and the one command - otherwise a site on the queue driver is
+		// told batches were quarantined and offered no way to put them back.
+		$table = Tables::name( Tables::SPOOL );
 
-		return $count;
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$released = (int) $wpdb->query(
+			$wpdb->prepare( "UPDATE `$table` SET batchId = NULL WHERE batchId LIKE %s", $wpdb->esc_like( self::QUEUE_FAILED_PREFIX ) . '%' )
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return $count + ( $released > 0 ? 1 : 0 );
 	}
 
 	/**
@@ -207,10 +225,10 @@ final class Drainer {
 	 * @param DrainResult $result Result, updated in place.
 	 */
 	private function processFile( string $file, DrainResult $result ): void {
-		$batchId = basename( $file, self::CLAIMED_SUFFIX );
+		$batchId = basename( $file, SpoolBatchReader::CLAIMED_SUFFIX );
 
 		if ( $this->isCommitted( $batchId ) ) {
-			$this->discard( $file );
+			$this->files->discard( $file );
 			++$result->skippedBatches;
 
 			return;
@@ -221,15 +239,30 @@ final class Drainer {
 
 		if ( false === $handle ) {
 			Log::warning( 'Could not open a claimed spool file.' );
+			Losses::record( Losses::UNREADABLE );
 
 			return;
 		}
 
-		$chunkIndex = 0;
+		// Where the last run stopped, if it stopped part way. Without this a
+		// resumed file was decoded from byte zero every time: readChunk()
+		// materialised up to 20,000 Hit objects per already-committed chunk
+		// purely to discover the marker said skip, and the skip path had no
+		// outOfTime() check to stop it. A 50 MB spool drained in five-second
+		// bites could spend every run re-reading the same prefix and never
+		// reach the end.
+		//
+		// The offset cannot be inferred by counting lines: readChunk() counts
+		// *usable* hits toward a chunk and consumes malformed lines on top, so
+		// a chunk boundary depends on what decoding found. It is recorded in
+		// the key-value store instead, where losing it - an evicted cache, a
+		// swept row - simply means falling back to the old behaviour of
+		// re-reading, which is slow rather than wrong.
+		$chunkIndex = $this->files->resume( $handle, $batchId );
 
 		try {
 			while ( true ) {
-				[ $hits, $malformed ] = $this->readChunk( $handle );
+				[ $hits, $malformed ] = $this->files->readChunk( $handle );
 
 				$result->malformedLines += $malformed;
 
@@ -241,6 +274,15 @@ final class Drainer {
 				++$chunkIndex;
 
 				if ( $this->isCommitted( $chunkId ) ) {
+					$this->files->rememberProgress( $handle, $batchId, $chunkIndex );
+
+					if ( $this->outOfTime() ) {
+						// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+						fclose( $handle );
+
+						return;
+					}
+
 					continue;
 				}
 
@@ -250,17 +292,20 @@ final class Drainer {
 					// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 					fclose( $handle );
 
-					$this->recordFailure( $file, $result );
+					$this->files->recordFailure( $file, $result );
 
 					return;
 				}
 
 				$result->hits += count( $hits );
 
+				$this->files->rememberProgress( $handle, $batchId, $chunkIndex );
+
 				if ( $this->outOfTime() ) {
 					// Mid-file. The chunks already applied carry their own
-					// markers, so the next run skips them and carries on from
-					// here rather than starting the file again.
+					// markers, and the offset recorded a line ago says where to
+					// pick up, so the next run resumes here rather than walking
+					// the file again to find the same place.
 					// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 					fclose( $handle );
 
@@ -270,7 +315,11 @@ final class Drainer {
 
 			// The whole-file marker goes last, so a replay skips the file
 			// outright rather than walking chunks it has already committed.
-			$this->commit( $batchId, [], [], [], null );
+			$this->commit(
+				$batchId,
+				static function (): void {
+				}
+			);
 		} finally {
 			if ( is_resource( $handle ) ) {
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
@@ -278,62 +327,8 @@ final class Drainer {
 			}
 		}
 
-		$this->discard( $file );
+		$this->files->discard( $file );
 		++$result->batches;
-	}
-
-	/**
-	 * Read up to one chunk of usable hits.
-	 *
-	 * @param resource $handle Open file handle.
-	 *
-	 * @return array{0:Hit[],1:int}
-	 */
-	private function readChunk( $handle ): array {
-		$hits      = [];
-		$malformed = 0;
-
-		while ( count( $hits ) < $this->chunkHits ) {
-			$line = fgets( $handle );
-
-			if ( false === $line ) {
-				break;
-			}
-
-			$line = trim( $line );
-
-			if ( '' === $line ) {
-				continue;
-			}
-
-			$hit = Hit::decode( $line );
-
-			if ( null === $hit || $hit->siteId <= 0 || ! self::hasUsableIdentity( $hit ) ) {
-				++$malformed;
-
-				continue;
-			}
-
-			$hits[] = $hit;
-		}
-
-		return [ $hits, $malformed ];
-	}
-
-	/**
-	 * Whether a hit carries an identity the pipeline can use.
-	 *
-	 * Crawlers carry a deliberate sentinel rather than a hash, so demanding hex
-	 * of everything would drop every crawler record as malformed.
-	 *
-	 * @param Hit $hit The hit.
-	 */
-	private static function hasUsableIdentity( Hit $hit ): bool {
-		if ( Hit::KIND_CRAWLER === $hit->kind ) {
-			return CaptureService::CRAWLER_HASH === $hit->visitorHash;
-		}
-
-		return IdentityService::isValidHash( $hit->visitorHash );
 	}
 
 	/**
@@ -359,13 +354,20 @@ final class Drainer {
 		// exist. After this they are counters.
 		$this->matcher->matchBatch( $hits, $deltas );
 
-		foreach ( $deltas as $delta ) {
-			$this->sessions->apply( $delta, $chunkId );
-		}
-
 		$result->buckets += $aggregator->bucketCount();
 
-		return $this->commit( $chunkId, $aggregator->buckets(), [], $hits, $aggregator->interactions );
+		return $this->commit(
+			$chunkId,
+			function () use ( $deltas, $chunkId, $aggregator, $hits ): void {
+				// Inside the transaction with the counters, so a batch that
+				// rolls back leaves its sessions where they were rather than
+				// advanced past views that were never counted.
+				$this->sessions->applyBatch( $deltas, $chunkId );
+
+				$this->sink->flush( $aggregator->buckets(), [], $aggregator->interactions );
+				$this->journeys->record( $hits );
+			}
+		);
 	}
 
 	/**
@@ -378,6 +380,23 @@ final class Drainer {
 	 * @return array<string,string>
 	 */
 	private function acquisitionReferrers( array $hits ): array {
+		// Fetched in one go rather than one at a time. This asked the store for
+		// every distinct session in the chunk individually, and applyBatch()
+		// then asked for the same ones again - two queries per session per
+		// chunk on the database store, to answer a question one `IN (...)`
+		// covers.
+		$wanted = [];
+
+		foreach ( $hits as $hit ) {
+			$wanted[ $hit->siteId ][ $hit->sessionKey ] = true;
+		}
+
+		$known = [];
+
+		foreach ( $wanted as $siteId => $keys ) {
+			$known[ $siteId ] = $this->sessions->getMany( (int) $siteId, array_keys( $keys ) );
+		}
+
 		$out = [];
 
 		foreach ( $hits as $hit ) {
@@ -387,7 +406,7 @@ final class Drainer {
 				continue;
 			}
 
-			$session = $this->sessions->get( $hit->siteId, $hit->sessionKey );
+			$session = $known[ $hit->siteId ][ $hit->sessionKey ] ?? null;
 
 			$out[ $key ] = ( null !== $session && '' !== $session->referrer ) ? $session->referrer : $hit->referrer;
 		}
@@ -425,15 +444,18 @@ final class Drainer {
 	}
 
 	/**
-	 * Commit a batch and mark it done, in one transaction.
+	 * Run a batch's writes and mark it done, in one transaction.
 	 *
-	 * @param string                                           $batchId      Batch identifier.
-	 * @param array<string,\HonestAnalytics\Rollup\PageBucket> $buckets      Page buckets.
-	 * @param Session[]                                        $closed       Sessions being closed.
-	 * @param Hit[]                                            $hits         Hits, for the journeys layer.
-	 * @param \HonestAnalytics\Rollup\InteractionBuckets|null  $interactions Interactions.
+	 * The writes go through `Support\Db`, which turns a failed statement into
+	 * an exception. Without that, `$wpdb` would answer false, the marker would
+	 * still be written, and a batch that was only partly applied - or, after a
+	 * deadlock, not applied at all - would be recorded as committed and its
+	 * file deleted.
+	 *
+	 * @param string   $batchId Batch identifier.
+	 * @param callable $writes  Everything the batch writes.
 	 */
-	private function commit( string $batchId, array $buckets, array $closed, array $hits = [], $interactions = null ): bool {
+	private function commit( string $batchId, callable $writes ): bool {
 		global $wpdb;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
@@ -441,14 +463,9 @@ final class Drainer {
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
 		try {
-			$this->sink->flush( $buckets, $closed, $interactions );
+			$writes();
 
-			if ( [] !== $hits ) {
-				$this->journeys->record( $hits );
-			}
-
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-			$wpdb->insert(
+			Db::insert(
 				Tables::name( Tables::DRAIN_LOG ),
 				[
 					'batchId'     => $batchId,
@@ -457,11 +474,8 @@ final class Drainer {
 				],
 				[ '%s', '%s', '%s' ]
 			);
-			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-			$wpdb->query( 'COMMIT' );
-			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			Db::query( 'COMMIT' );
 
 			return true;
 		} catch ( \Throwable $e ) {
@@ -491,70 +505,6 @@ final class Drainer {
 	}
 
 	/**
-	 * Count a failure, and quarantine after enough of them.
-	 *
-	 * @param string      $file   File path.
-	 * @param DrainResult $result Result, updated in place.
-	 */
-	private function recordFailure( string $file, DrainResult $result ): void {
-		++$result->failedBatches;
-
-		$attempts = $this->countAttempt( $file );
-
-		if ( $attempts < self::MAX_ATTEMPTS ) {
-			Log::error( 'A drain batch failed and will be retried: ' . basename( $file ) );
-
-			return;
-		}
-
-		$target = substr( $file, 0, -strlen( self::CLAIMED_SUFFIX ) ) . self::FAILED_SUFFIX;
-
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename
-		@rename( $file, $target );
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-		@unlink( $file . self::ATTEMPTS_SUFFIX );
-
-		Log::error( 'A drain batch has been set aside after three attempts. Run: wp honest-analytics drain --retry' );
-	}
-
-	/**
-	 * Increment and read a batch's attempt count.
-	 *
-	 * Kept in a sidecar file rather than in the name, because the name *is* the
-	 * batch identity and renaming it would defeat the commit marker.
-	 *
-	 * @param string $file File path.
-	 */
-	private function countAttempt( string $file ): int {
-		$path = $file . self::ATTEMPTS_SUFFIX;
-
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_get_contents
-		// A failure-count file. If it cannot be read or written the drain
-		// carries on regardless - losing the count is not worth an exception,
-		// and the quarantine threshold is a heuristic, not a guarantee.
-		// phpcs:disable WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions
-		$current = is_file( $path ) ? (int) @file_get_contents( $path ) : 0;
-		$next    = $current + 1;
-
-		@file_put_contents( $path, (string) $next );
-		// phpcs:enable WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions
-
-		return $next;
-	}
-
-	/**
-	 * Remove a finished batch.
-	 *
-	 * @param string $file File path.
-	 */
-	private function discard( string $file ): void {
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-		@unlink( $file );
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-		@unlink( $file . self::ATTEMPTS_SUFFIX );
-	}
-
-	/**
 	 * Drain hits queued in the database.
 	 *
 	 * @param DrainResult $result Result, updated in place.
@@ -565,6 +515,17 @@ final class Drainer {
 		$table = Tables::name( Tables::SPOOL );
 
 		while ( true ) {
+			// The budget applies here too. This loop had no check at all, and
+			// run() reaches it after the file loop has already stopped for
+			// being out of time - so on the database driver, which is what
+			// managed hosts with a read-only filesystem use, a visitor's page
+			// request drained the entire queue however large it was. docs/cron
+			// promises at most five seconds; this could be killed part way
+			// through by max_execution_time instead.
+			if ( $this->outOfTime() ) {
+				return;
+			}
+
 			$batchId = 'queue-' . bin2hex( random_bytes( 8 ) );
 
 			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
@@ -590,7 +551,7 @@ final class Drainer {
 			foreach ( (array) $lines as $line ) {
 				$hit = Hit::decode( (string) $line );
 
-				if ( null === $hit || $hit->siteId <= 0 || ! self::hasUsableIdentity( $hit ) ) {
+				if ( null === $hit || $hit->siteId <= 0 || ! SpoolBatchReader::hasUsableIdentity( $hit ) ) {
 					++$result->malformedLines;
 
 					continue;
@@ -602,10 +563,17 @@ final class Drainer {
 			if ( [] !== $hits && ! $this->applyChunk( $batchId, $hits, $result ) ) {
 				++$result->failedBatches;
 
-				// Release the claim so a later run can try again.
-				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-				$wpdb->query( $wpdb->prepare( "UPDATE `$table` SET batchId = NULL WHERE batchId = %s", $batchId ) );
-				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				// Counted, and set aside once it has failed enough times. The
+				// claim used to be released unconditionally, and since the next
+				// run claims the same rows in the same order, one row the
+				// pipeline could not stomach blocked the queue for ever - while
+				// the file path quarantines after three tries and carries on.
+				// Every hit behind it waited on it indefinitely.
+				//
+				// Keyed on the lowest row id rather than the batch id, because
+				// a released batch gets a fresh random id on the next attempt
+				// and there would be nothing to count against.
+				$this->countQueueFailure( $table, $batchId, $result );
 
 				return;
 			}
@@ -620,6 +588,53 @@ final class Drainer {
 	}
 
 	/**
+	 * Count a failed queue batch, and quarantine it once it has had its three.
+	 *
+	 * Quarantine here means stamping the rows with a batch id that the claim
+	 * query will never match again, which is the database equivalent of the
+	 * file path's `.failed` rename: the rows stay, they can be looked at, and
+	 * they stop holding up everything queued behind them.
+	 *
+	 * @param string      $table   Prefixed spool table name.
+	 * @param string      $batchId The batch that failed.
+	 * @param DrainResult $result  Result, updated in place.
+	 */
+	private function countQueueFailure( string $table, string $batchId, DrainResult $result ): void {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$lowest = (int) $wpdb->get_var( $wpdb->prepare( "SELECT MIN(id) FROM `$table` WHERE batchId = %s", $batchId ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		$store    = StoreFactory::keyValue();
+		$key      = 'queue-attempts:' . $lowest;
+		$attempts = (int) $store->get( $key ) + 1;
+
+		if ( $attempts >= self::QUEUE_MAX_ATTEMPTS ) {
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+			$wpdb->query( $wpdb->prepare( "UPDATE `$table` SET batchId = %s WHERE batchId = %s", self::QUEUE_FAILED_PREFIX . $lowest, $batchId ) );
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+			$store->delete( $key );
+
+			++$result->quarantinedBatches;
+
+			Losses::record( Losses::QUARANTINED );
+
+			Log::warning( 'A queued batch failed repeatedly and has been set aside from row ' . $lowest . '.' );
+
+			return;
+		}
+
+		$store->set( $key, $attempts, DAY_IN_SECONDS );
+
+		// Released, so the next run tries again.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$wpdb->query( $wpdb->prepare( "UPDATE `$table` SET batchId = NULL WHERE batchId = %s", $batchId ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+
+	/**
 	 * Commit and remove visits that have gone quiet.
 	 *
 	 * Staged first, so a crash between committing and deleting leaves a session
@@ -630,48 +645,97 @@ final class Drainer {
 	 */
 	public function closeIdleSessions( int $now, DrainResult $result ): void {
 		try {
-			$batchId = 'idle-' . bin2hex( random_bytes( 8 ) );
-			$closed  = [];
+			$stale = [];
+			$due   = [];
 
 			foreach ( $this->sessions->idleSessions( $now ) as $session ) {
-				if ( null !== $session->closedByBatch ) {
-					if ( $this->isCommitted( $session->closedByBatch ) ) {
-						// Already counted; the crash was between the commit and
-						// the delete.
-						$this->sessions->delete( $session->siteId, $session->sessionKey );
-
-						continue;
-					}
+				if ( null !== $session->closedByBatch && $this->isCommitted( $session->closedByBatch ) ) {
+					// Already counted; the crash was between the commit and
+					// the delete.
+					$stale[] = $session;
 
 					continue;
 				}
 
-				$session->closedByBatch = $batchId;
-
-				$this->sessions->save( $session );
-
-				$closed[] = $session;
+				// Either never staged, or staged by a run whose commit rolled
+				// back or never happened - in which case nothing was counted
+				// and it is simply closed again under this batch. Leaving such
+				// a session alone is not an option: the idle query returns the
+				// oldest first, so the stuck ones would sit at the front of it
+				// for ever, and once enough had gathered no live session would
+				// reach the drain again.
+				$due[] = $session;
 			}
 
-			if ( [] === $closed ) {
-				return;
+			$this->sessions->deleteMany( $stale );
+
+			// Chunked, each with its own batch id. One transaction over five
+			// thousand sessions holds that many row locks across every table
+			// the reports read, for as long as the flush takes. Idempotency
+			// already keys off `closedByBatch`, so a marker per chunk is as
+			// correct as one for the lot - and a failure now costs one chunk
+			// rather than the whole sweep.
+			foreach ( array_chunk( $due, self::CLOSE_CHUNK ) as $chunk ) {
+				$batchId = 'idle-' . bin2hex( random_bytes( 8 ) );
+
+				foreach ( $chunk as $session ) {
+					$session->closedByBatch = $batchId;
+				}
+
+				// Staged through saveMany() rather than one save() per session:
+				// the cache store rewrites the whole site index on every save,
+				// so this loop was the drain sending a megabyte to Redis a few
+				// thousand times over and never finishing.
+				$this->sessions->saveMany( $chunk );
+
+				if ( ! $this->commit( $batchId, fn () => $this->sink->flush( [], $chunk ) ) ) {
+					++$result->failedBatches;
+
+					return;
+				}
+
+				$this->sessions->deleteMany( $chunk );
+
+				$result->closedSessions += count( $chunk );
+
+				if ( $this->outOfTime() ) {
+					// The rest stay staged and are picked up next run. They
+					// carry no batch id yet, so nothing has been counted for
+					// them and nothing will be counted twice.
+					return;
+				}
 			}
-
-			if ( ! $this->commit( $batchId, [], $closed ) ) {
-				++$result->failedBatches;
-
-				return;
-			}
-
-			foreach ( $closed as $session ) {
-				$this->sessions->delete( $session->siteId, $session->sessionKey );
-			}
-
-			$result->closedSessions += count( $closed );
 		} catch ( \Throwable $e ) {
 			++$result->failedBatches;
 
 			Log::error( 'Closing idle sessions failed: ' . $e->getMessage() );
+		}
+	}
+
+	/**
+	 * Clear expired nonces and rate-limit windows from the table store.
+	 *
+	 * Done here because the drain is the one job that runs every few minutes
+	 * on every site, with or without cron. The nightly tidy-up sweeps too,
+	 * but a day of expired rows on a busy site is millions of them, and the
+	 * table they sit in is the one the capture path writes to on every
+	 * request. A bounded sweep each run keeps it small instead.
+	 */
+	private function sweepStore(): void {
+		if ( $this->outOfTime() ) {
+			return;
+		}
+
+		$store = StoreFactory::keyValue();
+
+		if ( ! $store instanceof DbKeyValueStore ) {
+			return;
+		}
+
+		try {
+			$store->sweep( self::STORE_SWEEP_ROWS );
+		} catch ( \Throwable $e ) {
+			Log::warning( 'Could not sweep the key-value store: ' . $e->getMessage() );
 		}
 	}
 

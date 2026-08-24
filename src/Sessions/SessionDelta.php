@@ -30,7 +30,7 @@ final class SessionDelta {
 	public string $entryPath;
 	public string $lastPath;
 	public string $referrer;
-	public string $userAgent;
+	public string $device;
 	public string $countryCode;
 	public string $region;
 	public int $maxScroll = 0;
@@ -61,7 +61,7 @@ final class SessionDelta {
 		$this->entryPath   = '';
 		$this->lastPath    = '';
 		$this->referrer    = '';
-		$this->userAgent   = '';
+		$this->device      = '';
 		$this->countryCode = '';
 		$this->region      = '';
 		$this->visitorId   = null;
@@ -81,7 +81,7 @@ final class SessionDelta {
 		$delta->entryPath   = $hit->path;
 		$delta->lastPath    = $hit->path;
 		$delta->referrer    = $hit->referrer;
-		$delta->userAgent   = $hit->userAgent;
+		$delta->device      = $hit->device;
 		$delta->countryCode = $hit->countryCode;
 		$delta->region      = $hit->region;
 		$delta->views       = $hit->countView ? 1 : 0;
@@ -120,8 +120,8 @@ final class SessionDelta {
 			$this->lastPath = $hit->path;
 		}
 
-		if ( '' === $this->userAgent && '' !== $hit->userAgent ) {
-			$this->userAgent = $hit->userAgent;
+		if ( '' === $this->device && '' !== $hit->device ) {
+			$this->device = $hit->device;
 		}
 
 		// Resolved once, on arrival. A visitor does not change country mid-visit,

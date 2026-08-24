@@ -43,12 +43,32 @@ final class Paths {
 		 */
 		$dir = (string) apply_filters( 'honest_analytics_data_dir', untrailingslashit( $override ) );
 
-		if ( $create && ! is_dir( $dir ) ) {
-			wp_mkdir_p( $dir );
-			self::protect( $dir );
+		if ( $create ) {
+			self::ensure( $dir );
 		}
 
 		return $dir;
+	}
+
+	/**
+	 * Create a directory if it is missing, and make sure it is still guarded.
+	 *
+	 * The guard files used to be written only inside `! is_dir()`, so a
+	 * directory that existed but had lost its `.htaccess` never got it back -
+	 * an rsync that skipped dotfiles, a restore from a backup that did not keep
+	 * them, a security plugin that tidied them away, a host that strips them.
+	 * The spool would then be readable and nothing would say so. `protect()`
+	 * only writes what is missing, so re-asserting costs three `file_exists()`
+	 * calls on the paths that ask to create.
+	 *
+	 * @param string $dir Absolute path.
+	 */
+	private static function ensure( string $dir ): void {
+		if ( ! is_dir( $dir ) ) {
+			wp_mkdir_p( $dir );
+		}
+
+		self::protect( $dir );
 	}
 
 	/**
@@ -59,9 +79,8 @@ final class Paths {
 	public static function spoolDir( bool $create = false ): string {
 		$dir = self::baseDir( $create ) . '/spool';
 
-		if ( $create && ! is_dir( $dir ) ) {
-			wp_mkdir_p( $dir );
-			self::protect( $dir );
+		if ( $create ) {
+			self::ensure( $dir );
 		}
 
 		return $dir;
@@ -108,9 +127,8 @@ final class Paths {
 	public static function pdfCacheDir( bool $create = false ): string {
 		$dir = self::baseDir( $create ) . '/pdf-cache';
 
-		if ( $create && ! is_dir( $dir ) ) {
-			wp_mkdir_p( $dir );
-			self::protect( $dir );
+		if ( $create ) {
+			self::ensure( $dir );
 		}
 
 		return $dir;
@@ -118,23 +136,61 @@ final class Paths {
 
 	/**
 	 * The MaxMind-format geo database.
+	 *
+	 * The filename carries the same install-specific HMAC the spool file does,
+	 * and for the same reason: `protect()` writes `.htaccess` and `web.config`,
+	 * both of which nginx ignores, and nginx cannot be configured from PHP. At
+	 * a fixed name this was a seventy-megabyte GeoLite2 or DB-IP build sitting
+	 * at a URL anybody could guess - a redistribution of a database the site is
+	 * licensed only to use, and a bandwidth sink. `Loopback::checkSpool()`
+	 * probes the spool subdirectory only, so nothing warned about it either.
+	 *
+	 * A file already at the old name is renamed on first use rather than
+	 * re-downloaded: it is seventy megabytes and there is nothing wrong with
+	 * its contents.
 	 */
 	public static function geoDatabase(): string {
+		$path = self::baseDir() . '/geo-' . self::secretSuffix( 'geo' ) . '.mmdb';
+
+		self::migrateGeoDatabase( $path );
+
 		/**
 		 * Filters the path to the local geo database.
 		 *
 		 * @param string $path Absolute path to a .mmdb file.
 		 */
-		return (string) apply_filters( 'honest_analytics_geo_database', self::baseDir() . '/geo.mmdb' );
+		return (string) apply_filters( 'honest_analytics_geo_database', $path );
+	}
+
+	/**
+	 * Move a database left at the old guessable name.
+	 *
+	 * @param string $target Where it should be now.
+	 */
+	private static function migrateGeoDatabase( string $target ): void {
+		if ( is_file( $target ) ) {
+			return;
+		}
+
+		$legacy = self::baseDir() . '/geo.mmdb';
+
+		if ( ! is_file( $legacy ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename, WordPress.PHP.NoSilencedErrors.Discouraged
+		@rename( $legacy, $target );
 	}
 
 	/**
 	 * A stable, unguessable suffix derived from the site's own salts.
+	 *
+	 * @param string $for What the suffix is for, so two files do not share one.
 	 */
-	public static function secretSuffix(): string {
+	public static function secretSuffix( string $for = 'spool' ): string {
 		$salt = function_exists( 'wp_salt' ) ? wp_salt( 'auth' ) : 'honest-analytics';
 
-		return substr( hash_hmac( 'sha256', 'spool', $salt ), 0, 16 );
+		return substr( hash_hmac( 'sha256', $for, $salt ), 0, 16 );
 	}
 
 	/**

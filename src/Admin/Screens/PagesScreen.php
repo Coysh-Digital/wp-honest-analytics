@@ -17,6 +17,7 @@ use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Stats\Comparison;
 use HonestAnalytics\Stats\Granularity;
+use HonestAnalytics\Support\Format;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -127,7 +128,7 @@ final class PagesScreen extends Screen {
 				'kpis'         => DashboardScreen::kpis( $totals, $totalsBefore, $plugin->settings(), DashboardScreen::compareNote( $params->comparePeriod ) ),
 				'editUrls'     => PostLinks::editUrls( array_column( $rows, 'postId' ) ),
 				'dimensionCap' => $plugin->settings()->dimensionCap,
-				'maxViews'     => $rows ? max( array_column( $rows, 'views' ) ) : 0,
+				'maxViews'     => Format::largest( $rows, 'views' ),
 				'beacon'       => $plugin->settings()->usesBeacon(),
 			]
 		);

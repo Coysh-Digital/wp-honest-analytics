@@ -14,6 +14,7 @@ use HonestAnalytics\Channels\Channel;
 use HonestAnalytics\Charts\ChartData;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Stats\Comparison;
+use HonestAnalytics\Support\Format;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -99,8 +100,8 @@ final class SourcesScreen extends Screen {
 				'channels'     => $channels,
 				'channelTotal' => array_sum( array_column( $channels, 'sessions' ) ),
 				'hosts'        => $hosts,
-				'maxHost'      => $hosts ? max( array_column( $hosts, 'sessions' ) ) : 0,
-				'maxChannel'   => $channels ? max( array_column( $channels, 'sessions' ) ) : 0,
+				'maxHost'      => Format::largest( $hosts, 'sessions' ),
+				'maxChannel'   => Format::largest( $channels, 'sessions' ),
 				'mixChart'     => $mixChart,
 			]
 		);

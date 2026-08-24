@@ -10,6 +10,10 @@ declare(strict_types=1);
 namespace HonestAnalytics\Dimensions;
 
 use HonestAnalytics\Schema\Tables;
+use HonestAnalytics\Support\Db;
+use RuntimeException;
+
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- The message is a dimension type name for the log; the drain catches, rolls back and logs, and never prints it.
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -31,7 +35,13 @@ final class DimensionsService {
 	/**
 	 * Per-request memo, keyed "type:hash".
 	 *
-	 * @var array<string,int>
+	 * A null entry means "looked, and it is not there" - which is an answer
+	 * worth remembering too. Memoising only the hits meant that once the
+	 * cardinality cap engaged, every further occurrence of an uncapped value
+	 * cost a fresh SELECT: the drain asking the same question a few thousand
+	 * times and getting the same no.
+	 *
+	 * @var array<string,int|null>
 	 */
 	private array $memo = [];
 
@@ -65,8 +75,8 @@ final class DimensionsService {
 		// INSERT IGNORE rather than a check-then-insert: two workers seeing the
 		// same new path in the same millisecond is ordinary, and losing that
 		// race should cost a re-read rather than an exception on a page request.
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-		$wpdb->query(
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		Db::query(
 			$wpdb->prepare(
 				"INSERT IGNORE INTO `$table` (type, valueHash, value, firstSeen) VALUES (%d, %s, %s, %s)",
 				$type->value,
@@ -75,7 +85,7 @@ final class DimensionsService {
 				gmdate( 'Y-m-d' )
 			)
 		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
 		$id = (int) $wpdb->insert_id;
 
@@ -83,9 +93,16 @@ final class DimensionsService {
 			$id = (int) $this->lookup( $type, $hash );
 		}
 
-		if ( $id > 0 ) {
-			$this->memo[ $key ] = $id;
+		if ( $id <= 0 ) {
+			// Nothing inserted and nothing found. Returning 0 would be taken
+			// for a dimension id by every caller: DbRollupSink writes it
+			// straight into a rollup key, so a whole batch of views would be
+			// filed under a row that names nothing and stay there. Throwing
+			// puts the batch back instead.
+			throw new RuntimeException( 'Could not resolve a dimension id for a ' . $type->name . ' value.' );
 		}
+
+		$this->memo[ $key ] = $id;
 
 		return $id;
 	}
@@ -107,17 +124,13 @@ final class DimensionsService {
 		$hash  = self::valueHash( $value );
 		$key   = $type->value . ':' . $hash;
 
-		if ( isset( $this->memo[ $key ] ) ) {
+		if ( array_key_exists( $key, $this->memo ) ) {
 			return $this->memo[ $key ];
 		}
 
-		$id = $this->lookup( $type, $hash );
+		$this->memo[ $key ] = $this->lookup( $type, $hash );
 
-		if ( null !== $id ) {
-			$this->memo[ $key ] = $id;
-		}
-
-		return $id;
+		return $this->memo[ $key ];
 	}
 
 	/**

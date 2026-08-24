@@ -49,6 +49,100 @@ final class Timezone {
 	}
 
 	/**
+	 * A stored `Y-m-d` date as a timestamp that renders as that same date.
+	 *
+	 * Every date in this plugin is stored as a local calendar date, and every
+	 * date on a screen is printed with `wp_date()`, which renders in the
+	 * site's timezone. Bridging the two with `strtotime()` is wrong in a way
+	 * that is invisible from London and obvious from New York: WordPress fixes
+	 * PHP's default zone to UTC, so `strtotime( '2026-08-23' )` is midnight
+	 * *UTC*, and `wp_date()` turns that back into 20:00 on the 22nd. Every
+	 * label, axis tick, tooltip and range note one day early, all year.
+	 *
+	 * Anchored at midday rather than midnight so that no offset, and no DST
+	 * transition in either direction, can carry the result into a neighbouring
+	 * day.
+	 *
+	 * @param string            $date     A `Y-m-d` date.
+	 * @param DateTimeZone|null $timezone Override, for tests.
+	 *
+	 * @return int|false The timestamp, or false when the date cannot be read.
+	 */
+	public static function middayOn( string $date, ?DateTimeZone $timezone = null ): int|false {
+		$parsed = DateTimeImmutable::createFromFormat(
+			'!Y-m-d',
+			trim( $date ),
+			$timezone ?? self::site()
+		);
+
+		if ( false === $parsed ) {
+			return false;
+		}
+
+		return $parsed->setTime( 12, 0 )->getTimestamp();
+	}
+
+	/**
+	 * A timestamp formatted in the site's timezone.
+	 *
+	 * `wp_date()` is documented as returning false, and does so when the site's
+	 * timezone cannot be constructed - a corrupt `timezone_string` option, or a
+	 * PHP build whose tzdata does not carry the named zone. Every call site was
+	 * handing the result straight to `esc_html()`, where false prints as an
+	 * empty cell: a date silently disappears from a report and nothing says
+	 * why. Falling back to UTC prints a date that is at worst a few hours out,
+	 * which is a better answer than a blank one.
+	 *
+	 * @param string   $format    A date() format string.
+	 * @param int|null $timestamp Unix timestamp, defaulting to now.
+	 */
+	public static function format( string $format, ?int $timestamp = null ): string {
+		$formatted = wp_date( $format, $timestamp );
+
+		if ( false !== $formatted ) {
+			return $formatted;
+		}
+
+		return gmdate( $format, $timestamp ?? time() );
+	}
+
+	/**
+	 * A date written the way this site writes dates.
+	 *
+	 * For dates in a sentence - "support runs until", "data through", "from X
+	 * to Y". Settings > General has a date format on it and somebody chose the
+	 * one there; a plugin printing 3 March 2026 on a site that writes
+	 * 2026-03-03 everywhere else is ignoring an answer it was given.
+	 *
+	 * Not for dates in a table cell or on a chart axis. Those use a fixed
+	 * compact format on purpose, because `l, jS F Y` is a legitimate setting
+	 * and a column sized for `3 Mar` cannot hold "Tuesday, 3rd March 2026".
+	 * The distinction is width, not correctness.
+	 *
+	 * @param int|null $timestamp Unix timestamp, defaulting to now.
+	 */
+	public static function date( ?int $timestamp = null ): string {
+		$format = (string) get_option( 'date_format' );
+
+		return self::format( '' === $format ? 'j F Y' : $format, $timestamp );
+	}
+
+	/**
+	 * A date and a time, both the way this site writes them.
+	 *
+	 * @param int|null $timestamp Unix timestamp, defaulting to now.
+	 */
+	public static function dateTime( ?int $timestamp = null ): string {
+		$date = (string) get_option( 'date_format' );
+		$time = (string) get_option( 'time_format' );
+
+		return self::format(
+			( '' === $date ? 'j F Y' : $date ) . ', ' . ( '' === $time ? 'H:i' : $time ),
+			$timestamp
+		);
+	}
+
+	/**
 	 * The local date (Y-m-d) and hour (0-23) for a timestamp.
 	 *
 	 * @param int               $timestamp Unix timestamp.

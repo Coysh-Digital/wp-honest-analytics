@@ -34,9 +34,35 @@ final class Schema {
 	 * Bumped whenever a statement below changes.
 	 *
 	 * `Upgrader` compares it with the stored version and re-runs dbDelta, which
-	 * is additive: new tables and new columns appear, nothing is dropped.
+	 * is additive: new tables, new columns and new indexes appear, nothing is
+	 * dropped.
+	 *
+	 * Version 7 adds `honest_daily_uniques`, one pre-merged sketch per site per
+	 * day, and backfills it from the per-path rows. See ADR 8.
+	 *
+	 * Version 6 added the indexes the maintenance sweep and the single-page
+	 * queries were missing. Adding one to a large table takes a while and holds
+	 * no lock that blocks reads on InnoDB, but it is still not something to do
+	 * during somebody's page load - which is why `Upgrader::maybeUpgrade()` no
+	 * longer runs from one. See ADR 58.
+	 *
+	 * The integer display widths stay. They look redundant - MySQL 8.0.19 and
+	 * later drop them from column metadata - but core's dbDelta already ignores
+	 * a difference that is only a display width, and does so *only* on MySQL:
+	 * the check at `upgrade.php` excludes MariaDB explicitly, because MariaDB
+	 * still reports them. Writing `bigint` instead of `bigint(20)` would
+	 * therefore change nothing on MySQL and produce a redundant
+	 * `ALTER TABLE ... CHANGE` for every integer column on every MariaDB
+	 * install, on every version bump, for ever.
 	 */
-	public const VERSION = 5;
+	public const VERSION = 7;
+
+	/**
+	 * Which tables were found this request.
+	 *
+	 * @var array<string,bool>
+	 */
+	private static array $tableExists = [];
 
 	/**
 	 * Every CREATE TABLE statement, in dbDelta's dialect.
@@ -82,7 +108,8 @@ final class Schema {
 	driver varchar(16) NOT NULL,
 	committedAt datetime NOT NULL,
 	PRIMARY KEY  (id),
-	UNIQUE KEY batch (batchId)
+	UNIQUE KEY batch (batchId),
+	KEY committed (committedAt)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_kv (
@@ -138,7 +165,9 @@ final class Schema {
 	bounces int(11) NOT NULL default 0,
 	PRIMARY KEY  (id),
 	UNIQUE KEY bucket (siteId,date,hour,pathDimId,source),
-	KEY by_post (siteId,postId,date)
+	KEY by_post (siteId,postId,date),
+	KEY by_date (date),
+	KEY by_path (siteId,pathDimId,date)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_pagesources_rollup (
@@ -151,7 +180,8 @@ final class Schema {
 	source varchar(24) NOT NULL default 'native',
 	views int(11) NOT NULL default 0,
 	PRIMARY KEY  (id),
-	UNIQUE KEY bucket (siteId,date,pathDimId,channel,refHostDimId,source)
+	UNIQUE KEY bucket (siteId,date,pathDimId,channel,refHostDimId,source),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_sessions_rollup (
@@ -167,7 +197,8 @@ final class Schema {
 	uniques blob NULL,
 	importedUniques int(11) NOT NULL default 0,
 	PRIMARY KEY  (id),
-	UNIQUE KEY bucket (siteId,date,hour,source)
+	UNIQUE KEY bucket (siteId,date,hour,source),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_sources_rollup (
@@ -181,7 +212,8 @@ final class Schema {
 	sessions int(11) NOT NULL default 0,
 	bounces int(11) NOT NULL default 0,
 	PRIMARY KEY  (id),
-	UNIQUE KEY bucket (siteId,date,hour,channel,refHostDimId,source)
+	UNIQUE KEY bucket (siteId,date,hour,channel,refHostDimId,source),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_devices_rollup (
@@ -195,7 +227,28 @@ final class Schema {
 	source varchar(24) NOT NULL default 'native',
 	sessions int(11) NOT NULL default 0,
 	PRIMARY KEY  (id),
-	UNIQUE KEY bucket (siteId,date,browserDimId,browserMajor,osDimId,deviceType,source)
+	UNIQUE KEY bucket (siteId,date,browserDimId,browserMajor,osDimId,deviceType,source),
+	KEY by_date (date)
+) ENGINE=InnoDB $charset;";
+
+		// One row per site per day, holding the sketch of everybody who viewed
+		// any page that day. The per-path rows in honest_pages_rollup can
+		// answer this too - by merging every one of them - and that is what the
+		// reports used to do: a thirty-day range at the default dimension cap
+		// is around 191,000 rows, each carrying a sketch, deserialised and
+		// merged in PHP, twice per render and four times with a comparison
+		// period. Pre-merging at write time makes the same question one row per
+		// day.
+		$out[] = "CREATE TABLE {$p}honest_daily_uniques (
+	id bigint(20) unsigned NOT NULL auto_increment,
+	siteId bigint(20) unsigned NOT NULL,
+	date date NOT NULL,
+	source varchar(24) NOT NULL default 'native',
+	uniques blob NULL,
+	importedUniques int(11) NOT NULL default 0,
+	PRIMARY KEY  (id),
+	UNIQUE KEY bucket (siteId,date,source),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_uniquemembers (
@@ -206,7 +259,8 @@ final class Schema {
 	visitorHash char(16) NOT NULL,
 	PRIMARY KEY  (id),
 	UNIQUE KEY member (scopeKey,visitorHash),
-	KEY expiry (siteId,date)
+	KEY expiry (siteId,date),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_crawlers_rollup (
@@ -216,7 +270,8 @@ final class Schema {
 	crawlerDimId bigint(20) unsigned NOT NULL,
 	requests int(11) NOT NULL default 0,
 	PRIMARY KEY  (id),
-	UNIQUE KEY bucket (siteId,date,crawlerDimId)
+	UNIQUE KEY bucket (siteId,date,crawlerDimId),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		// --------------------------------------------------------- pro rollups
@@ -235,7 +290,8 @@ final class Schema {
 	conversions decimal(12,4) NOT NULL default 0,
 	value decimal(14,2) NOT NULL default 0,
 	PRIMARY KEY  (id),
-	UNIQUE KEY bucket (siteId,date,sourceDimId,mediumDimId,campaignDimId,termDimId,contentDimId)
+	UNIQUE KEY bucket (siteId,date,sourceDimId,mediumDimId,campaignDimId,termDimId,contentDimId),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_geo_rollup (
@@ -247,7 +303,8 @@ final class Schema {
 	source varchar(24) NOT NULL default 'native',
 	sessions int(11) NOT NULL default 0,
 	PRIMARY KEY  (id),
-	UNIQUE KEY bucket (siteId,date,countryCode,regionDimId,source)
+	UNIQUE KEY bucket (siteId,date,countryCode,regionDimId,source),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_events_rollup (
@@ -261,7 +318,8 @@ final class Schema {
 	sessions int(11) NOT NULL default 0,
 	sumValue decimal(14,2) NOT NULL default 0,
 	PRIMARY KEY  (id),
-	UNIQUE KEY bucket (siteId,date,hour,eventNameDimId,pathDimId)
+	UNIQUE KEY bucket (siteId,date,hour,eventNameDimId,pathDimId),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_scroll_rollup (
@@ -272,7 +330,8 @@ final class Schema {
 	bucket smallint(6) NOT NULL,
 	hits int(11) NOT NULL default 0,
 	PRIMARY KEY  (id),
-	UNIQUE KEY depth (siteId,date,pathDimId,bucket)
+	UNIQUE KEY depth (siteId,date,pathDimId,bucket),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_search_rollup (
@@ -283,7 +342,8 @@ final class Schema {
 	hits int(11) NOT NULL default 0,
 	zeroResults int(11) NOT NULL default 0,
 	PRIMARY KEY  (id),
-	UNIQUE KEY term (siteId,date,termDimId)
+	UNIQUE KEY term (siteId,date,termDimId),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_searchconsole_rollup (
@@ -308,7 +368,8 @@ final class Schema {
 	pathDimId bigint(20) unsigned NOT NULL default 0,
 	hits int(11) NOT NULL default 0,
 	PRIMARY KEY  (id),
-	UNIQUE KEY bucket (siteId,date,targetHostDimId,targetDimId,pathDimId)
+	UNIQUE KEY bucket (siteId,date,targetHostDimId,targetDimId,pathDimId),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		// ---------------------------------------------------- goals and funnels
@@ -336,7 +397,8 @@ final class Schema {
 	conversions int(11) NOT NULL default 0,
 	value decimal(14,2) NOT NULL default 0,
 	PRIMARY KEY  (id),
-	UNIQUE KEY bucket (siteId,date,goalId)
+	UNIQUE KEY bucket (siteId,date,goalId),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_funnels (
@@ -369,7 +431,8 @@ final class Schema {
 	position smallint(6) NOT NULL,
 	sessions int(11) NOT NULL default 0,
 	PRIMARY KEY  (id),
-	UNIQUE KEY bucket (siteId,date,funnelId,position)
+	UNIQUE KEY bucket (siteId,date,funnelId,position),
+	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
 		// ------------------------------------------------------------- consent
@@ -434,7 +497,8 @@ final class Schema {
 	recordedAt datetime NOT NULL,
 	PRIMARY KEY  (id),
 	KEY visitor (visitorId),
-	KEY recorded (siteId,recordedAt)
+	KEY recorded (siteId,recordedAt),
+	KEY expiry_time (recordedAt)
 ) ENGINE=InnoDB $charset;";
 
 		$out[] = "CREATE TABLE {$p}honest_journeys (
@@ -450,7 +514,10 @@ final class Schema {
 	PRIMARY KEY  (id),
 	KEY visitor (visitorId,occurredAt),
 	KEY wp_user (userId),
-	KEY site_time (siteId,occurredAt)
+	KEY site_time (siteId,occurredAt),
+	KEY expiry_time (occurredAt),
+	KEY sequence (visitorId,sessionId),
+	KEY visitor_site (siteId,visitorId)
 ) ENGINE=InnoDB $charset;";
 
 		// -------------------------------------------------------------- sharing
@@ -517,8 +584,26 @@ final class Schema {
 
 		$name = Tables::name( $table );
 
+		// Memoised per request. A table cannot appear or vanish part way
+		// through one, and this is asked on every dashboard and import screen
+		// render - `SHOW TABLES LIKE` is not free on a database with a lot of
+		// them, and it is asked to answer a question whose answer is almost
+		// always yes.
+		if ( isset( self::$tableExists[ $name ] ) ) {
+			return self::$tableExists[ $name ];
+		}
+
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-		return (string) $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $name ) ) === $name;
+		self::$tableExists[ $name ] = (string) $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $name ) ) === $name;
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+
+		return self::$tableExists[ $name ];
+	}
+
+	/**
+	 * Forget which tables were found. For the installer, and for tests.
+	 */
+	public static function flushTableCache(): void {
+		self::$tableExists = [];
 	}
 }

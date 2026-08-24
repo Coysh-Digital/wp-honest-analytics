@@ -14,6 +14,8 @@
 
 declare(strict_types=1);
 
+use HonestAnalytics\Support\Timezone;
+
 use HonestAnalytics\Import\ImportConfiguration;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -59,8 +61,8 @@ $ha_overlaps = $screen->overlapping( $importer->id(), $ha_chosen['from'], $ha_ch
 									sprintf(
 										/* translators: 1: start date, 2: end date. */
 										__( '%1$s to %2$s', 'honest-analytics' ),
-										wp_date( 'j M Y', (int) strtotime( $ha_span['from'] ) ),
-										wp_date( 'j M Y', (int) strtotime( $ha_span['to'] ) )
+										wp_date( 'j M Y', (int) Timezone::middayOn( $ha_span['from'] ) ),
+										wp_date( 'j M Y', (int) Timezone::middayOn( $ha_span['to'] ) )
 									)
 								);
 								?>

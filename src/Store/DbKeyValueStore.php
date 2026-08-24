@@ -57,8 +57,9 @@ final class DbKeyValueStore implements KeyValueStoreInterface {
 		$expires = (int) ( $row['expires'] ?? 0 );
 
 		if ( $expires > 0 && $expires <= time() ) {
-			$this->delete( $key );
-
+			// Not delete(): that refuses to touch an expired row, by design,
+			// so the row would survive here and be found again on every read
+			// until the sweep. The sweep takes it instead.
 			return null;
 		}
 
@@ -117,6 +118,22 @@ final class DbKeyValueStore implements KeyValueStoreInterface {
 		$table   = Tables::name( Tables::KV );
 		$now     = time();
 		$expires = $ttl > 0 ? $now + $ttl : 0;
+
+		// A read first, because the answer is almost always no. The throttles
+		// ask this on every front-end request and every admin page, and the
+		// key is live for all but one of them; paying two writes to learn that
+		// is two row locks and two redo-log entries per page view for nothing.
+		// The insert below is still what decides a race - this only spares the
+		// requests that were never in one.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$current = $wpdb->get_var(
+			$wpdb->prepare( "SELECT expires FROM `$table` WHERE k = %s", $this->key( $key ) )
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		if ( null !== $current && ( 0 === (int) $current || (int) $current > $now ) ) {
+			return false;
+		}
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
 		$wpdb->query(
@@ -214,21 +231,48 @@ final class DbKeyValueStore implements KeyValueStoreInterface {
 		return true;
 	}
 
+	/** Rows removed per statement while sweeping. */
+	private const SWEEP_CHUNK = 5000;
+
 	/**
-	 * Delete everything that has expired.
+	 * Delete what has expired, a chunk at a time.
+	 *
+	 * Every nonce, every rate-limit window and every throttle is a row here,
+	 * and on a site without an object cache that is a row per page view and a
+	 * row per visitor per minute, all dead within the hour. Left to a single
+	 * nightly DELETE that is a million-row statement holding locks on the one
+	 * table the capture path writes to on every request. Chunks are short,
+	 * and the drain calls this with a ceiling every few minutes so the
+	 * nightly run has little left to do.
+	 *
+	 * @param int $maxRows The most to remove in this call.
 	 *
 	 * @return int Rows removed.
 	 */
-	public function sweep(): int {
+	public function sweep( int $maxRows = PHP_INT_MAX ): int {
 		global $wpdb;
 
-		$table = Tables::name( Tables::KV );
+		$table   = Tables::name( Tables::KV );
+		$now     = time();
+		$removed = 0;
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-		return (int) $wpdb->query(
-			$wpdb->prepare( "DELETE FROM `$table` WHERE expires > 0 AND expires <= %d", time() )
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		while ( $removed < $maxRows ) {
+			$chunk = min( self::SWEEP_CHUNK, $maxRows - $removed );
+
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+			$deleted = (int) $wpdb->query(
+				$wpdb->prepare( "DELETE FROM `$table` WHERE expires > 0 AND expires <= %d LIMIT %d", $now, $chunk )
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+			$removed += $deleted;
+
+			if ( $deleted < $chunk ) {
+				break;
+			}
+		}
+
+		return $removed;
 	}
 
 	/**

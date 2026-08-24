@@ -75,17 +75,36 @@ final class Coexistence {
 		// events and those belong to the data, not to the build - letting Lite
 		// run its hook on the way out would unschedule the drain that Pro is
 		// about to rely on.
+		// The third argument matters on a network: deactivating a
+		// network-activated plugin per-site leaves it active network-wide and
+		// loading again on the next request, which would be a stand-down that
+		// never happened.
 		if ( Edition::hasPro() ) {
-			deactivate_plugins( $other, true );
+			deactivate_plugins( $other, true, self::isNetworkActive( $other ) );
 
 			set_transient( self::NOTICE, 'lite-stood-down', WEEK_IN_SECONDS );
 
 			return;
 		}
 
-		deactivate_plugins( self::self(), true );
+		deactivate_plugins( self::self(), true, self::isNetworkActive( self::self() ) );
 
 		set_transient( self::NOTICE, 'lite-stood-down', WEEK_IN_SECONDS );
+	}
+
+	/**
+	 * Whether a plugin is active for the whole network rather than this site.
+	 *
+	 * @param string $basename Plugin basename.
+	 */
+	private static function isNetworkActive( string $basename ): bool {
+		if ( ! is_multisite() ) {
+			return false;
+		}
+
+		$network = get_site_option( 'active_sitewide_plugins', [] );
+
+		return is_array( $network ) && isset( $network[ $basename ] );
 	}
 
 	/**
@@ -119,6 +138,29 @@ final class Coexistence {
 	}
 
 	/**
+	 * Every plugin active on this site, per-site and network-wide alike.
+	 *
+	 * @return string[]
+	 */
+	private static function activePlugins(): array {
+		$active = array_map( 'strval', (array) get_option( 'active_plugins', [] ) );
+
+		if ( ! is_multisite() ) {
+			return $active;
+		}
+
+		// Keys, not values: `active_sitewide_plugins` maps basename to the
+		// timestamp it was network-activated at.
+		$network = get_site_option( 'active_sitewide_plugins', [] );
+
+		if ( is_array( $network ) ) {
+			$active = array_merge( $active, array_map( 'strval', array_keys( $network ) ) );
+		}
+
+		return array_values( array_unique( $active ) );
+	}
+
+	/**
 	 * The other edition's basename, if it is active.
 	 *
 	 * Matched on the entry file rather than the folder, because a folder can be
@@ -131,9 +173,14 @@ final class Coexistence {
 
 		$mine = self::self();
 
-		foreach ( (array) get_option( 'active_plugins', [] ) as $basename ) {
-			$basename = (string) $basename;
-
+		// Network-activated plugins are not in `active_plugins`; they are keys
+		// of `active_sitewide_plugins`, a network option. Reading only the
+		// first meant that on a network where either edition is
+		// network-activated this returned null on every site, neither stood
+		// down, and `honest-analytics.php` made whichever loaded second return
+		// before defining anything. Network-activated plugins load first, so a
+		// network-wide Lite silently and permanently beat a per-site Pro.
+		foreach ( self::activePlugins() as $basename ) {
 			if ( $basename === $mine || ! str_ends_with( $basename, self::ENTRY ) ) {
 				continue;
 			}

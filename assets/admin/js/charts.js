@@ -56,6 +56,17 @@
 		return;
 	}
 
+	// `Chart` is a global, and another plugin enqueueing its own copy under the
+	// same name wins or loses by enqueue order. Version 2 and version 3 both
+	// have a `defaults` object and neither takes the options written below, so
+	// without this the charts would not fall back - they would throw part way
+	// through drawing and take the rest of the script's work with them.
+	if ( 'string' !== typeof Chart.version || 0 !== Chart.version.indexOf( '4.' ) ) {
+		giveUpAll( 'another plugin loaded a different version of the charting library.' );
+
+		return;
+	}
+
 	/**
 	 * Resolve a series token against the figure's own custom properties.
 	 *

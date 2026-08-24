@@ -136,9 +136,9 @@ final class Connection {
 		}
 
 		if ( ! $refresh ) {
-			$cached = get_transient( self::LIST_TRANSIENT );
+			$cached = self::cachedAccounts();
 
-			if ( is_array( $cached ) ) {
+			if ( null !== $cached ) {
 				return $cached;
 			}
 		}
@@ -242,6 +242,66 @@ final class Connection {
 		return [
 			'property' => $property,
 			'site'     => $site,
+		];
+	}
+
+	/**
+	 * The cached account list, if there is one and it still has the right shape.
+	 *
+	 * A transient outlives plugin updates and is writable by anything else on
+	 * the site, so what comes back out of one is checked rather than trusted.
+	 * An entry left by an older format would otherwise reach the template as a
+	 * list of rows it has no keys for, and the screen would fail to draw with
+	 * no way for anybody to clear it but waiting fifteen minutes.
+	 *
+	 * @return array{accounts:array<int,array{account:string,properties:array<int,array<string,string>>}>,error:string,detailed:bool}|null
+	 */
+	private static function cachedAccounts(): ?array {
+		$cached = get_transient( self::LIST_TRANSIENT );
+
+		if ( ! is_array( $cached ) || ! isset( $cached['accounts'], $cached['error'], $cached['detailed'] ) ) {
+			return null;
+		}
+
+		if ( ! is_array( $cached['accounts'] ) || ! is_string( $cached['error'] ) ) {
+			return null;
+		}
+
+		$accounts = [];
+
+		foreach ( $cached['accounts'] as $account ) {
+			if ( ! is_array( $account ) || ! isset( $account['account'], $account['properties'] ) || ! is_array( $account['properties'] ) ) {
+				continue;
+			}
+
+			$properties = [];
+
+			foreach ( $account['properties'] as $property ) {
+				if ( ! is_array( $property ) ) {
+					continue;
+				}
+
+				$fields = [];
+
+				foreach ( $property as $key => $value ) {
+					if ( is_scalar( $value ) ) {
+						$fields[ (string) $key ] = (string) $value;
+					}
+				}
+
+				$properties[] = $fields;
+			}
+
+			$accounts[] = [
+				'account'    => (string) $account['account'],
+				'properties' => $properties,
+			];
+		}
+
+		return [
+			'accounts' => $accounts,
+			'error'    => $cached['error'],
+			'detailed' => (bool) $cached['detailed'],
 		];
 	}
 

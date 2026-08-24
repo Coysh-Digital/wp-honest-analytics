@@ -11,6 +11,8 @@
 
 declare(strict_types=1);
 
+use HonestAnalytics\Support\Timezone;
+
 use HonestAnalytics\Import\ImportConfiguration;
 use HonestAnalytics\Support\Format;
 
@@ -53,8 +55,8 @@ $ha_ready    = $available && $ha_detected->isAvailable();
 						sprintf(
 							/* translators: 1: start date, 2: end date. */
 							__( '%1$s to %2$s', 'honest-analytics' ),
-							wp_date( 'j F Y', (int) strtotime( $ha_chosen['from'] ) ),
-							wp_date( 'j F Y', (int) strtotime( $ha_chosen['to'] ) )
+							Timezone::date( (int) Timezone::middayOn( $ha_chosen['from'] ) ),
+							Timezone::date( (int) Timezone::middayOn( $ha_chosen['to'] ) )
 						)
 					);
 					?>
@@ -74,10 +76,10 @@ $ha_ready    = $available && $ha_detected->isAvailable();
 					</dt>
 					<dd class="ha-muted">
 						<ul class="ha-plain-list">
-							<?php foreach ( $ha_summary->totals as $ha_label => $ha_value ) : ?>
+							<?php foreach ( $ha_summary->totals as $ha_total ) : ?>
 								<li>
-									<strong class="ha-nowrap-num"><?php echo esc_html( Format::count( (int) $ha_value ) ); ?></strong>
-									<?php echo esc_html( (string) $ha_label ); ?>
+									<strong class="ha-nowrap-num"><?php echo esc_html( Format::count( (int) $ha_total['count'] ) ); ?></strong>
+									<?php echo esc_html( (string) $ha_total['label'] ); ?>
 								</li>
 							<?php endforeach; ?>
 						</ul>

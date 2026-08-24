@@ -20,7 +20,6 @@ what a lawyer will need in order to tell you what it means for you.
 | Device type | `desktop`, `mobile`, `tablet` | `honest_devices_rollup` |
 | Browser family | `Chrome` | `honest_devices_rollup` |
 | Operating system family | `macOS` | `honest_devices_rollup` |
-| Language | `en-GB` | `honest_dimensions` |
 | Country, if enabled | `GB` | `honest_geo_rollup` |
 | Campaign parameters | `spring-sale` | `honest_campaigns_rollup` |
 | Counts and durations | integers | every rollup |
@@ -34,10 +33,13 @@ Every row is an aggregate. There is no row anywhere that represents one person.
   the spool, not in a queue, not hashed-and-kept. It exists as a local variable
   inside one function, is combined into a hash, and is gone when that function
   returns.
-- **The full referrer URL.** Only the host survives. `?token=…` never reaches
-  disk.
-- **The full user-agent string.** Parsed into browser family, OS family and
-  device type; the string is discarded.
+- **The full referrer URL.** Reduced to a scheme and a host in the request that
+  saw it, before anything is written. `?token=…` never reaches disk.
+- **The full user-agent string.** Parsed into browser family, major version, OS
+  family and device type in the request that saw it; the string is discarded
+  and never written.
+- **The `Accept-Language` header.** Read once, to help tell a browser from a
+  script. Not stored, and there is no language report.
 - **Raw hits.** No table of pageviews. Reports are computed from rollups.
 - **A durable visitor record.** There is no visitor table. Nothing survives
   the daily salt rotation.
@@ -71,6 +73,41 @@ wp honest-analytics salt rotate
 ```
 
 Every visitor is new after that. That is not a bug; it is the guarantee working.
+
+## The write spool, and what is in it
+
+Between capture and aggregation a hit waits in a spool - a file in
+`wp-content/uploads/honest-analytics/spool/`, or a table where the uploads
+directory is not writable. It is one line per hit, so it is the one place in
+the system that briefly looks like a log.
+
+What is in a line is what survives aggregation, and no more:
+
+```json
+{"si":1,"p":"/pricing","v":"a3f1c0d2e4b58697","k":"9c2b…","t":1755861000,
+ "r":"https://example.com","dv":"Chrome|130|macOS|1","d":9400}
+```
+
+A normalised path, the day's visitor hash, a session key derived from it, a
+timestamp, the referrer's origin, four device families and a dwell time. No
+address, no user agent, no query string from anybody else's site.
+
+This is worth stating plainly because it was not always true. Before 0.6.0 the
+reduction happened at the drain rather than at capture, so the full user-agent
+string and the whole referrer - query string included - sat in the spool for as
+long as the drain took to run: five minutes on a healthy site, and indefinitely
+on one whose cron never fires. Nothing was ever aggregated from them, and they
+were never in a report, but they were on disk. They are not any more.
+
+The spool file's name carries an HMAC of the site's own salt, and `.htaccess`,
+`web.config` and `index.html` are written beside it, because nginx cannot be
+told to deny a directory from inside it. The Settings screen runs a loopback
+check and says so if the directory is served anyway.
+
+```bash
+# Look for yourself.
+cat wp-content/uploads/honest-analytics/spool/*.ndjson | head
+```
 
 ## Opt-out signals
 

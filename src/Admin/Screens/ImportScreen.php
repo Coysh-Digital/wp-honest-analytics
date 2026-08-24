@@ -13,13 +13,16 @@ use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Capabilities\Capabilities;
 use HonestAnalytics\Import\Ga4\Client as Ga4Client;
 use HonestAnalytics\Import\Ga4\Connection as Ga4Connection;
+use HonestAnalytics\Import\Coverage;
 use HonestAnalytics\Import\ImportConfiguration;
 use HonestAnalytics\Import\ImporterInterface;
 use HonestAnalytics\Import\ImportRunner;
 use HonestAnalytics\Import\ImportJob;
 use HonestAnalytics\Import\ImportSource;
+use HonestAnalytics\Import\Scheduler;
 use HonestAnalytics\Schema\Tables;
 use HonestAnalytics\Stats\DateRange;
+use HonestAnalytics\Support\Log;
 use HonestAnalytics\Support\Timezone;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -44,6 +47,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class ImportScreen extends Screen {
 
 	/** The landing screen: which sources are here. */
+	/**
+	 * The source key used when the coverage check could not be run.
+	 *
+	 * Not a real source. It exists so that "we could not tell" reaches the
+	 * screen as a row somebody has to look at rather than as an empty list,
+	 * which the wizard would read as "nothing overlaps".
+	 */
+	private const OVERLAP_UNKNOWN = '__unknown__';
+
 	private const STEP_SOURCES = 'sources';
 
 	/** How measurement differs, before anything else. */
@@ -84,6 +96,19 @@ final class ImportScreen extends Screen {
 	 * The job this request created or is watching.
 	 */
 	private ?ImportJob $job = null;
+
+	/**
+	 * Every job this site has run, read once.
+	 *
+	 * `lastJobFor()` walks this list and the sources partial calls it once per
+	 * importer, so without the memo one render of the first step is six
+	 * identical queries. Safe because every action that creates or changes a
+	 * job redirects afterwards, so nothing populated during a render can go
+	 * stale within it.
+	 *
+	 * @var ImportJob[]|null
+	 */
+	private ?array $jobs = null;
 
 	/**
 	 * The page slug.
@@ -242,6 +267,7 @@ final class ImportScreen extends Screen {
 				'tick'     => rest_url( 'honest-analytics/v1/import/' . $job->id . '/tick' ),
 				'nonce'    => wp_create_nonce( 'wp_rest' ),
 				'interval' => 3000,
+				'locale'   => str_replace( '_', '-', get_locale() ),
 				'done'     => $this->url(
 					[
 						'step' => self::STEP_COMPLETE,
@@ -325,22 +351,6 @@ final class ImportScreen extends Screen {
 			'error'    => (string) ( $found['error'] ?? '' ),
 			'detailed' => (bool) ( $found['detailed'] ?? false ),
 		];
-	}
-
-	/**
-	 * Where the property's timezone and the site's disagree.
-	 *
-	 * Nothing can be done about it - a daily total cannot be re-cut into
-	 * another day - so the honest move is to say so before anybody commits.
-	 *
-	 * @return array{property:string,site:string}|null
-	 */
-	public function timezoneMismatch(): ?array {
-		if ( ! class_exists( Ga4Connection::class ) ) {
-			return null;
-		}
-
-		return Ga4Connection::timezoneMismatch();
 	}
 
 	/* ------------------------------------------------------------- the state */
@@ -511,12 +521,47 @@ final class ImportScreen extends Screen {
 		$overlap = isset( $_GET['overlap'] ) ? sanitize_key( wp_unslash( (string) $_GET['overlap'] ) ) : ImportConfiguration::OVERLAP_SKIP;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
+		$dates = self::datesFor( $available, $choice, $from, $to );
+
+		return [
+			'choice'  => $dates['choice'],
+			'from'    => $dates['from'],
+			'to'      => $dates['to'],
+			'overlap' => ImportConfiguration::OVERLAP_REPLACE === $overlap
+				? ImportConfiguration::OVERLAP_REPLACE
+				: ImportConfiguration::OVERLAP_SKIP,
+		];
+	}
+
+	/**
+	 * The dates a range choice means, given what the source has.
+	 *
+	 * One implementation, because there used to be two: the screen worked out
+	 * what "the last 12 months" meant one way when drawing the form and another
+	 * when reading it back, and the two had already drifted apart - one going
+	 * through `wp_date()` and the other through `Timezone::at()`. A rule about
+	 * which days somebody is about to import four years of history for is not a
+	 * rule to hold in two places.
+	 *
+	 * Never wider than the source actually has, whichever branch is taken.
+	 *
+	 * @param array{from:string,to:string} $available What the source holds.
+	 * @param string                       $choice    all, year or custom.
+	 * @param string                       $from      Custom start, if any.
+	 * @param string                       $to        Custom end, if any.
+	 *
+	 * @return array{choice:string,from:string,to:string}
+	 */
+	private static function datesFor( array $available, string $choice, string $from, string $to ): array {
 		if ( 'custom' === $choice && DateRange::isValidParam( $from . ':' . $to ) ) {
 			$dateFrom = $from;
 			$dateTo   = $to;
 		} elseif ( 'year' === $choice ) {
-			$dateFrom = wp_date( 'Y-m-d', (int) strtotime( '-12 months', (int) strtotime( $available['to'] ) ) );
-			$dateTo   = $available['to'];
+			$dateFrom = Timezone::at(
+				strtotime( '-12 months', (int) Timezone::middayOn( $available['to'] ) ) ?: time()
+			)->format( 'Y-m-d' );
+
+			$dateTo = $available['to'];
 		} else {
 			$choice   = 'all';
 			$dateFrom = $available['from'];
@@ -524,12 +569,9 @@ final class ImportScreen extends Screen {
 		}
 
 		return [
-			'choice'  => $choice,
-			'from'    => (string) max( $dateFrom, $available['from'] ),
-			'to'      => (string) min( $dateTo, $available['to'] ),
-			'overlap' => ImportConfiguration::OVERLAP_REPLACE === $overlap
-				? ImportConfiguration::OVERLAP_REPLACE
-				: ImportConfiguration::OVERLAP_SKIP,
+			'choice' => $choice,
+			'from'   => (string) max( $dateFrom, $available['from'] ),
+			'to'     => (string) min( $dateTo, $available['to'] ),
 		];
 	}
 
@@ -547,41 +589,32 @@ final class ImportScreen extends Screen {
 	 * @return array<string,array{from:string,to:string,days:int}> Keyed by the covering source.
 	 */
 	public function overlapping( string $source, string $from, string $to ): array {
-		global $wpdb;
-
 		if ( ! $this->coverageTableExists() ) {
 			return [];
 		}
 
-		$table = Tables::name( Tables::IMPORT_COVERAGE );
+		try {
+			// One implementation, in Coverage. This used to be a second copy of
+			// the same GROUP BY, and the copy cast a failed `get_results()` to
+			// an empty array - which the wizard reads as "nothing overlaps" and
+			// walks the user straight past the question. Guessing "no clash" is
+			// the unsafe direction: it is the one that ends in two sources being
+			// added together.
+			return ( new Coverage() )->clashSummary( $this->siteId(), $source, $from, $to );
+		} catch ( \Throwable $e ) {
+			Log::warning( 'Could not check which dates are already imported: ' . $e->getMessage() );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Import tables have no core API and are deliberately uncached; the identifier comes from Schema\Tables and every value is a placeholder.
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT source, MIN(date) AS dateFrom, MAX(date) AS dateTo, COUNT(*) AS days
-				FROM `$table`
-				WHERE siteId = %d AND source <> %s AND date BETWEEN %s AND %s
-				GROUP BY source",
-				$this->siteId(),
-				$source,
-				$from,
-				$to
-			),
-			ARRAY_A
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-
-		$out = [];
-
-		foreach ( (array) $rows as $row ) {
-			$out[ (string) $row['source'] ] = [
-				'from' => (string) $row['dateFrom'],
-				'to'   => (string) $row['dateTo'],
-				'days' => (int) $row['days'],
+			// Asked rather than assumed. A row the user can see, on the step
+			// that makes them choose skip or replace deliberately, is the right
+			// answer to "we do not know" - silence is not.
+			return [
+				self::OVERLAP_UNKNOWN => [
+					'from' => $from,
+					'to'   => $to,
+					'days' => 0,
+				],
 			];
 		}
-
-		return $out;
 	}
 
 	/**
@@ -605,15 +638,23 @@ final class ImportScreen extends Screen {
 	 * @return ImportJob[]
 	 */
 	public function jobs(): array {
+		if ( null !== $this->jobs ) {
+			return $this->jobs;
+		}
+
 		$repository = $this->repository();
 
 		if ( null === $repository || ! method_exists( $repository, 'recent' ) ) {
-			return [];
+			$this->jobs = [];
+
+			return $this->jobs;
 		}
 
 		$jobs = $repository->recent( $this->siteId() );
 
-		return is_array( $jobs ) ? $jobs : [];
+		$this->jobs = is_array( $jobs ) ? $jobs : [];
+
+		return $this->jobs;
 	}
 
 	/**
@@ -669,6 +710,13 @@ final class ImportScreen extends Screen {
 
 		$this->job = $job;
 
+		// Ask for a batch now rather than waiting for the five-minute drain.
+		// With JavaScript the progress screen ticks the import along itself, so
+		// this was never noticed; without it - a locked-down admin, a blocked
+		// REST route, a browser extension - the first thing that happened after
+		// pressing Start was five minutes of nothing.
+		Scheduler::nudge();
+
 		// Straight to the progress step, so the first thing the person sees
 		// after pressing the button is the thing moving.
 		wp_safe_redirect(
@@ -708,7 +756,22 @@ final class ImportScreen extends Screen {
 			return;
 		}
 
-		$this->notice = __( 'The import has been stopped. Everything it had already brought across is still there.', 'honest-analytics' );
+		// Redirected, like starting one is, and to the step that describes a
+		// finished import. Rendering in place after the POST drew a progress
+		// bar still ticking underneath the words "the import has been stopped"
+		// - the job was read into memory before it was cancelled, so the page
+		// showed the state it had a moment ago - and a refresh posted the
+		// cancellation again.
+		wp_safe_redirect(
+			$this->url(
+				[
+					'step' => self::STEP_COMPLETE,
+					'job'  => (string) $job->id,
+				]
+			)
+		);
+
+		exit;
 	}
 
 	/**
@@ -724,28 +787,35 @@ final class ImportScreen extends Screen {
 		$from    = isset( $_POST['from'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['from'] ) ) : '';
 		$to      = isset( $_POST['to'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['to'] ) ) : '';
 		$overlap = isset( $_POST['overlap'] ) ? sanitize_key( wp_unslash( (string) $_POST['overlap'] ) ) : ImportConfiguration::OVERLAP_SKIP;
-		$options = isset( $_POST['options'] ) && is_array( $_POST['options'] )
-			? array_map( 'sanitize_text_field', wp_unslash( $_POST['options'] ) )
+		// map_deep() rather than array_map(): it walks nested arrays instead of
+		// handing one to sanitize_text_field(), which takes a string and would
+		// be a TypeError under strict_types. A wizard step posting
+		// `options[a][b]` took this screen down rather than being ignored.
+		// ImportController::options() has always had that guard; this copy did
+		// not.
+		$posted  = isset( $_POST['options'] ) && is_array( $_POST['options'] )
+			? (array) map_deep( wp_unslash( $_POST['options'] ), 'sanitize_text_field' )
 			: [];
+		$options = [];
+
+		foreach ( $posted as $key => $value ) {
+			if ( ! is_scalar( $value ) ) {
+				continue;
+			}
+
+			// Not sanitize_key(): that lower-cases, and an option posted as
+			// `propertyName` is read back by exactly that name.
+			$name = (string) preg_replace( '/[^A-Za-z0-9_\-]/', '', (string) $key );
+
+			if ( '' !== $name ) {
+				$options[ substr( $name, 0, 64 ) ] = (string) $value;
+			}
+		}
 		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
-		if ( 'custom' === $choice && DateRange::isValidParam( $from . ':' . $to ) ) {
-			$dateFrom = $from;
-			$dateTo   = $to;
-		} elseif ( 'year' === $choice ) {
-			$dateFrom = max(
-				$available['from'],
-				Timezone::at( strtotime( '-12 months', (int) strtotime( $available['to'] ) ) ?: time() )->format( 'Y-m-d' )
-			);
-			$dateTo   = $available['to'];
-		} else {
-			$dateFrom = $available['from'];
-			$dateTo   = $available['to'];
-		}
-
-		// Never wider than the source actually has.
-		$dateFrom = max( $dateFrom, $available['from'] );
-		$dateTo   = min( $dateTo, $available['to'] );
+		$dates    = self::datesFor( $available, $choice, $from, $to );
+		$dateFrom = $dates['from'];
+		$dateTo   = $dates['to'];
 
 		if ( ImportSource::GA4 === $importer->id() && class_exists( Ga4Connection::class ) ) {
 			// Pinned into the job rather than read at batch time. Choosing a
@@ -886,6 +956,10 @@ final class ImportScreen extends Screen {
 	 * @param string $source Source id.
 	 */
 	public function sourceLabel( string $source ): string {
+		if ( self::OVERLAP_UNKNOWN === $source ) {
+			return __( 'Could not be checked', 'honest-analytics' );
+		}
+
 		return ImportSource::label( $source );
 	}
 }

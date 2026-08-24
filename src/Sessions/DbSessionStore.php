@@ -11,6 +11,7 @@ namespace HonestAnalytics\Sessions;
 
 use HonestAnalytics\Schema\Tables;
 use HonestAnalytics\Settings\Settings;
+use HonestAnalytics\Support\Db;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -91,8 +92,11 @@ final class DbSessionStore implements SessionStoreInterface {
 
 		$table = Tables::name( Tables::SESSIONS );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-		$wpdb->query(
+		// Through Db: this runs inside the drain's transaction, and a failure
+		// answered with false would let the batch marker commit beside
+		// counters that were never written.
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		Db::query(
 			$wpdb->prepare(
 				"INSERT INTO `$table`
 					(siteId, sessionKey, visitorHash, startedAt, lastSeenAt, pageviews, lastBatch, closedByBatch, data)
@@ -116,7 +120,7 @@ final class DbSessionStore implements SessionStoreInterface {
 				(string) wp_json_encode( $session->toArray() )
 			)
 		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 	}
 
 	/**
@@ -138,6 +142,113 @@ final class DbSessionStore implements SessionStoreInterface {
 	}
 
 	/**
+	 * Read several sessions in one query.
+	 *
+	 * @param int      $siteId      Site ID.
+	 * @param string[] $sessionKeys Session keys.
+	 *
+	 * @return array<string,Session>
+	 */
+	public function getMany( int $siteId, array $sessionKeys ): array {
+		global $wpdb;
+
+		$keys = array_values( array_unique( $sessionKeys ) );
+
+		if ( [] === $keys ) {
+			return [];
+		}
+
+		$table = Tables::name( Tables::SESSIONS );
+		$out   = [];
+
+		foreach ( array_chunk( $keys, 500 ) as $chunk ) {
+			$placeholders = implode( ',', array_fill( 0, count( $chunk ), '%s' ) );
+
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+			$rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT sessionKey, data FROM `$table` WHERE siteId = %d AND sessionKey IN ($placeholders)",
+					array_merge( [ $siteId ], $chunk )
+				),
+				ARRAY_A
+			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+
+			foreach ( (array) $rows as $row ) {
+				if ( ! is_array( $row ) || empty( $row['data'] ) ) {
+					continue;
+				}
+
+				$data = json_decode( (string) $row['data'], true );
+
+				if ( ! is_array( $data ) ) {
+					continue;
+				}
+
+				$session = Session::fromArray( $data );
+
+				if ( $session instanceof Session ) {
+					$out[ (string) $row['sessionKey'] ] = $session;
+				}
+			}
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Write several sessions.
+	 *
+	 * One row at a time here, because the upsert is already a single indexed
+	 * statement against the primary key and batching it would mean building a
+	 * multi-row VALUES list with nine columns and a longtext in each. The
+	 * method exists so that the cache store, where the difference is
+	 * quadratic rather than linear, can be called the same way.
+	 *
+	 * @param Session[] $sessions Sessions to write.
+	 */
+	public function saveMany( array $sessions ): void {
+		foreach ( $sessions as $session ) {
+			$this->save( $session );
+		}
+	}
+
+	/**
+	 * Delete several sessions, one statement per site.
+	 *
+	 * @param Session[] $sessions Sessions to remove.
+	 */
+	public function deleteMany( array $sessions ): void {
+		global $wpdb;
+
+		if ( [] === $sessions ) {
+			return;
+		}
+
+		$table  = Tables::name( Tables::SESSIONS );
+		$bySite = [];
+
+		foreach ( $sessions as $session ) {
+			$bySite[ $session->siteId ][] = $session->sessionKey;
+		}
+
+		foreach ( $bySite as $siteId => $keys ) {
+			foreach ( array_chunk( $keys, 500 ) as $chunk ) {
+				$placeholders = implode( ',', array_fill( 0, count( $chunk ), '%s' ) );
+
+				// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+				$wpdb->query(
+					$wpdb->prepare(
+						"DELETE FROM `$table` WHERE siteId = %d AND sessionKey IN ($placeholders)",
+						array_merge( [ $siteId ], $chunk )
+					)
+				);
+				// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			}
+		}
+	}
+
+	/**
 	 * Fold a batch's activity into a session.
 	 *
 	 * @param SessionDelta $delta   Activity.
@@ -151,6 +262,18 @@ final class DbSessionStore implements SessionStoreInterface {
 		$this->save( $session );
 
 		return $session;
+	}
+
+	/**
+	 * Fold a batch in, a row read and a row write per session.
+	 *
+	 * @param SessionDelta[] $deltas  Activity.
+	 * @param string         $batchId Batch identifier.
+	 */
+	public function applyBatch( array $deltas, string $batchId ): void {
+		foreach ( $deltas as $delta ) {
+			$this->apply( $delta, $batchId );
+		}
 	}
 
 	/**

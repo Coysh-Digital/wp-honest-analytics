@@ -30,6 +30,15 @@ final class GeoInstaller {
 	private const GZIP_MAGIC = "\x1f\x8b";
 
 	/**
+	 * The most this will download or read from disk.
+	 *
+	 * Comfortably above a GeoLite2 or DB-IP City build and far below anything
+	 * that would exhaust a PHP memory limit, because the file is held whole
+	 * while its format is checked.
+	 */
+	private const MAX_DOWNLOAD_BYTES = 320000000;
+
+	/**
 	 * Install from a local file.
 	 *
 	 * @param string $path Source path.
@@ -41,8 +50,16 @@ final class GeoInstaller {
 			return __( 'That file does not exist or cannot be read.', 'honest-analytics' );
 		}
 
+		// Checked before reading, not after: the point of the ceiling is not to
+		// hold the file in memory in the first place.
+		$size = filesize( $path );
+
+		if ( false !== $size && $size > self::MAX_DOWNLOAD_BYTES ) {
+			return __( 'That file is far larger than any geo database, so it has not been read.', 'honest-analytics' );
+		}
+
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-		$contents = file_get_contents( $path );
+		$contents = file_get_contents( $path, false, null, 0, self::MAX_DOWNLOAD_BYTES );
 
 		if ( false === $contents ) {
 			return __( 'That file could not be read.', 'honest-analytics' );
@@ -63,11 +80,23 @@ final class GeoInstaller {
 			return __( 'The download URL must use HTTPS.', 'honest-analytics' );
 		}
 
-		$response = wp_remote_get(
+		// `wp_safe_remote_get`, not `wp_remote_get`: the safe variant refuses
+		// private and loopback ranges, so an administrator cannot be talked
+		// into using this screen to reach something inside their own network.
+		// The capability check upstream establishes who is asking, not what
+		// they were told to type.
+		//
+		// The size limit matters as much. Without it the whole body is held in
+		// memory before the magic bytes are even looked at, and a URL that
+		// answers with a few hundred megabytes is a white screen rather than
+		// an error message. The largest legitimate database here is a GeoLite2
+		// or DB-IP City build at well under 200 MB.
+		$response = wp_safe_remote_get(
 			$url,
 			[
-				'timeout' => 120,
-				'headers' => [ 'Accept' => 'application/octet-stream' ],
+				'timeout'             => 120,
+				'headers'             => [ 'Accept' => 'application/octet-stream' ],
+				'limit_response_size' => self::MAX_DOWNLOAD_BYTES,
 			]
 		);
 
@@ -97,8 +126,15 @@ final class GeoInstaller {
 		if ( str_starts_with( $contents, self::GZIP_MAGIC ) ) {
 			// gzdecode() warns as well as returning false on a truncated or
 			// mislabelled file, which is exactly the case being handled below.
+			//
+			// The ceiling applies to the decompressed size too. Without it a
+			// few megabytes on the wire can inflate to several gigabytes in
+			// memory, and the format check below never gets a chance to say
+			// no. Anything cut off here loses the metadata MaxMind keeps at
+			// the end of the file, so it fails that check rather than being
+			// installed short.
 			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
-			$decoded = @gzdecode( $contents );
+			$decoded = @gzdecode( $contents, self::MAX_DOWNLOAD_BYTES );
 
 			if ( false === $decoded ) {
 				return __( 'That file looked gzipped but could not be decompressed.', 'honest-analytics' );
@@ -140,11 +176,15 @@ final class GeoInstaller {
 			];
 		}
 
+		// size_format() answers false for anything it cannot read as a number,
+		// which would put a bare `false` into a row of the diagnostics table.
+		$size = size_format( $info['size'] );
+
 		$status = [
 			'Installed' => __( 'Yes', 'honest-analytics' ),
 			'Path'      => $info['path'],
 			'Type'      => '' !== $info['type'] ? $info['type'] : __( 'Unknown', 'honest-analytics' ),
-			'Size'      => size_format( $info['size'] ),
+			'Size'      => false !== $size ? $size : __( 'Unknown', 'honest-analytics' ),
 			'Built'     => null !== $info['built'] ? gmdate( 'Y-m-d', $info['built'] ) : __( 'Unknown', 'honest-analytics' ),
 		];
 

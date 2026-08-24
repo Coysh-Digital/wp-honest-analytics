@@ -138,15 +138,21 @@ final class Hll {
 			return;
 		}
 
-		$this->toDense();
+		// Held as a local and written back at the end: PHP strings are values,
+		// so mutating this one does not touch the property until it is
+		// assigned, and a merge that throws part way leaves the sketch as it
+		// was rather than half merged.
+		$dense = $this->toDense();
 
 		for ( $i = 0; $i < $this->registerCount; $i++ ) {
 			$incoming = ord( $other->dense[ $i ] );
 
-			if ( $incoming > ord( $this->dense[ $i ] ) ) {
-				$this->dense[ $i ] = chr( $incoming );
+			if ( $incoming > ord( $dense[ $i ] ) ) {
+				$dense[ $i ] = chr( $incoming );
 			}
 		}
+
+		$this->dense = $dense;
 	}
 
 	/**
@@ -329,11 +335,15 @@ final class Hll {
 	}
 
 	/**
-	 * Promote to the dense representation.
+	 * Promote to the dense representation, and hand it back.
+	 *
+	 * Returns the register string rather than nothing so that a caller which
+	 * is about to walk it has a value it can see is a string. A sketch that is
+	 * already dense is returned unchanged.
 	 */
-	private function toDense(): void {
+	private function toDense(): string {
 		if ( null !== $this->dense ) {
-			return;
+			return $this->dense;
 		}
 
 		$dense = str_repeat( "\0", $this->registerCount );
@@ -344,6 +354,8 @@ final class Hll {
 
 		$this->dense  = $dense;
 		$this->sparse = [];
+
+		return $dense;
 	}
 
 	/**

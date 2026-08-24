@@ -49,6 +49,9 @@ final class ConsentController {
 	/** A banner cannot legitimately change its mind twenty times a minute. */
 	private const RATE_LIMIT = 20;
 
+	/** The floor for the address bucket, whatever the per-visitor limit is. */
+	private const ADDRESS_RATE_LIMIT = 400;
+
 	public function __construct(
 		private Settings $settings,
 		private ConsentService $consent,
@@ -116,9 +119,28 @@ final class ConsentController {
 		// Transient, exactly as in the capture path: hashed and discarded.
 		$ip          = $this->clientIp->resolve();
 		$visitorHash = $this->identity->visitorHash( $ip, $headers['user-agent'] ?? '', $siteId );
+		// Not the address: a value derived from it, for one rate-limit key,
+		// which RateLimit hashes again before it becomes one.
+		$addressKey = '' === $ip ? '' : hash( 'sha256', $ip );
 		unset( $ip );
 
 		if ( $this->limits->exceeded( 'consent', $visitorHash, self::RATE_LIMIT ) ) {
+			return;
+		}
+
+		// A second bucket on the address alone, for the same reason the beacon
+		// has one: the visitor hash is built from the address *and the user
+		// agent*, so a caller who varies the user agent gets a fresh allowance
+		// every request and the first limit stops meaning anything. Every call
+		// that gets past here writes a consent-log row, and those are evidence
+		// - they are kept indefinitely unless somebody sets a retention period
+		// - so an unbounded writer would fill a table nothing sweeps and leave
+		// the log proving nothing.
+		//
+		// Generous, like the beacon's: a shared office address or a carrier's
+		// NAT is a great many real people, each entitled to change their mind.
+		if ( '' !== $addressKey
+			&& $this->limits->exceeded( 'consent-addr', $addressKey, $this->addressCeiling() ) ) {
 			return;
 		}
 
@@ -198,7 +220,24 @@ final class ConsentController {
 	}
 
 	/**
-	 * Whether the browser has signalled a refusal.
+	 * How many consent decisions one address may record in a window.
+	 *
+	 * A multiple of the per-visitor limit rather than a figure of its own, so
+	 * a site that has raised or lowered one has raised or lowered both.
+	 */
+	private function addressCeiling(): int {
+		$ceiling = max( self::ADDRESS_RATE_LIMIT, self::RATE_LIMIT * 20 );
+
+		/**
+		 * Filters how many consent decisions a single address may record per minute.
+		 *
+		 * @param int $ceiling Requests per window. Zero disables the limit.
+		 */
+		return (int) apply_filters( 'honest_analytics_consent_address_limit', $ceiling );
+	}
+
+	/**
+	 * Whether the visitor has asked not to be tracked.
 	 *
 	 * @param array<string,string> $headers Request headers.
 	 */

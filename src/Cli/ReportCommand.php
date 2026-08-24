@@ -128,7 +128,11 @@ final class ReportCommand {
 
 		\WP_CLI::log( $exporter->label( $kind ) . ' - ' . $range->label );
 
-		\WP_CLI\Utils\format_items( 'table', $rows, array_keys( (array) reset( $rows ) ) );
+		// A row keyed `2026` arrives from array_keys() as an int, and
+		// format_items() indexes each row by the field name as a string.
+		$fields = array_map( 'strval', array_keys( (array) reset( $rows ) ) );
+
+		\WP_CLI\Utils\format_items( 'table', $rows, $fields );
 
 		\WP_CLI::log(
 			sprintf(

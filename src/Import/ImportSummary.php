@@ -23,14 +23,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class ImportSummary {
 
 	/**
-	 * @param string            $dateFrom    Earliest date available, Y-m-d.
-	 * @param string            $dateTo      Latest date available, Y-m-d.
-	 * @param array<string,int> $totals      Headline figures, keyed by label.
-	 * @param bool              $approximate Whether those totals are estimates.
-	 * @param string[]          $dimensions  What will be imported, in plain words.
-	 * @param string[]          $excluded    What will not, and is worth naming.
-	 * @param MetricMapping[]   $mappings    The metric-by-metric mapping.
-	 * @param string[]          $notes       Anything else the person should read first.
+	 * @param string                                   $dateFrom    Earliest date available, Y-m-d.
+	 * @param string                                   $dateTo      Latest date available, Y-m-d.
+	 * @param array<int,array{label:string,count:int}> $totals      Headline figures, in order.
+	 * @param bool                                     $approximate Whether those totals are estimates.
+	 * @param string[]                                 $dimensions  What will be imported, in plain words.
+	 * @param string[]                                 $excluded    What will not, and is worth naming.
+	 * @param MetricMapping[]                          $mappings    The metric-by-metric mapping.
+	 * @param string[]                                 $notes       Anything else the person should read first.
 	 */
 	public function __construct(
 		public readonly string $dateFrom,

@@ -101,12 +101,12 @@ $ha_warnings = $posture->warnings();
 	<div class="ha-card-body">
 		<table class="ha-table">
 			<tbody>
-				<?php foreach ( $posture->facts() as $ha_label => $ha_value ) : ?>
+				<?php foreach ( $posture->facts() as $ha_fact ) : ?>
 					<tr>
 						<th scope="row" class="ha-rowhead">
-							<?php echo esc_html( (string) $ha_label ); ?>
+							<?php echo esc_html( $ha_fact['label'] ); ?>
 						</th>
-						<td class="ha-muted"><?php echo esc_html( (string) $ha_value ); ?></td>
+						<td class="ha-muted"><?php echo esc_html( $ha_fact['value'] ); ?></td>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>
@@ -122,20 +122,23 @@ $ha_warnings = $posture->warnings();
 			<table class="ha-table">
 				<tbody>
 					<?php
+					// Pairs, not a map keyed by the label: two of these
+					// translating alike in some locale would drop a row from a
+					// table of counts without anything saying so.
 					foreach (
 						[
-							__( 'Consent grants recorded', 'honest-analytics' )   => $counts['consentGrants'],
-							__( 'Consent refusals recorded', 'honest-analytics' ) => $counts['consentDenials'],
-							__( 'Visitors with stored journeys', 'honest-analytics' ) => $counts['consentedVisitors'],
-							__( 'Journey rows', 'honest-analytics' )              => $counts['journeyRows'],
-						] as $ha_label => $ha_value
+							[ __( 'Consent grants recorded', 'honest-analytics' ), $counts['consentGrants'] ],
+							[ __( 'Consent refusals recorded', 'honest-analytics' ), $counts['consentDenials'] ],
+							[ __( 'Visitors with stored journeys', 'honest-analytics' ), $counts['consentedVisitors'] ],
+							[ __( 'Journey rows', 'honest-analytics' ), $counts['journeyRows'] ],
+						] as $ha_row
 					) :
 						?>
 						<tr>
 							<th scope="row" class="ha-rowhead">
-								<?php echo esc_html( (string) $ha_label ); ?>
+								<?php echo esc_html( (string) $ha_row[0] ); ?>
 							</th>
-							<td class="ha-num"><?php echo esc_html( number_format_i18n( (int) $ha_value ) ); ?></td>
+							<td class="ha-num"><?php echo esc_html( number_format_i18n( (int) $ha_row[1] ) ); ?></td>
 						</tr>
 					<?php endforeach; ?>
 				</tbody>

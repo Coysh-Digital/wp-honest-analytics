@@ -15,6 +15,7 @@ use HonestAnalytics\Email\ReportMailer;
 use HonestAnalytics\Gc\GcService;
 use HonestAnalytics\Import\Gsc\DailySync;
 use HonestAnalytics\Plugin;
+use HonestAnalytics\Schema\Upgrader;
 use HonestAnalytics\Support\Log;
 use HonestAnalytics\Support\Timezone;
 
@@ -80,11 +81,18 @@ final class Cron {
 	/**
 	 * Add the five-minute interval.
 	 *
-	 * @param array<string,array{interval:int,display:string}> $schedules Existing schedules.
+	 * `mixed` rather than `array`, for the reason
+	 * {@see \HonestAnalytics\Capture\ScriptInjector::markTemplateRendered()}
+	 * gives: a public filter under universal strict_types must not fatal on
+	 * the value somebody else's plugin returned.
+	 *
+	 * @param mixed $schedules Existing schedules.
 	 *
 	 * @return array<string,array{interval:int,display:string}>
 	 */
-	public static function schedules( array $schedules ): array {
+	public static function schedules( mixed $schedules ): array {
+		$schedules = is_array( $schedules ) ? $schedules : [];
+
 		$schedules[ self::DRAIN_INTERVAL ] = [
 			'interval' => self::DRAIN_SECONDS,
 			'display'  => __( 'Every five minutes (Honest Analytics)', 'honest-analytics' ),
@@ -96,8 +104,9 @@ final class Cron {
 	/**
 	 * Schedule everything that is not already scheduled.
 	 *
-	 * Called on activation, on a new site, and again whenever the plugin
-	 * notices an event has gone missing.
+	 * Called on activation, on a new site, and from `Fallback::repairSchedule()`
+	 * whenever an admin page load notices an event has gone missing. Only fills
+	 * gaps, so calling it on a healthy site is a handful of array lookups.
 	 */
 	public static function schedule(): void {
 		self::registerSchedules();
@@ -152,6 +161,11 @@ final class Cron {
 	 */
 	public static function runDrain(): void {
 		try {
+			// Cron is one of the two places a migration may run from. It has no
+			// visitor waiting on it and no page to hold up, which is exactly
+			// what an ALTER against a large rollup needs.
+			Upgrader::maybeUpgrade();
+
 			Plugin::instance()->drainer()->run();
 		} catch ( \Throwable $e ) {
 			Log::error( 'Scheduled drain failed: ' . $e->getMessage() );
@@ -167,6 +181,8 @@ final class Cron {
 	 */
 	public static function runDaily(): void {
 		try {
+			Upgrader::maybeUpgrade();
+
 			// Anything still in the spool is counted before the retention rules
 			// run, so a hit captured just before midnight is not deleted by the
 			// compaction of the day it belongs to.

@@ -150,7 +150,14 @@ final class DashboardScreen extends Screen {
 			'range'       => $range,
 			'isPro'       => $isPro,
 			'accuracy'    => $stats->uniquesAccuracy(),
-			'realtime'    => $plugin->realtime()->snapshot( $siteId, null, 0 ),
+			// The banner prints one number, so ask for one number. snapshot()
+			// selects and JSON-decodes 200 session blobs to build a list of
+			// visits and a page breakdown that nothing on this screen reads -
+			// and its `visitors` is a count of the rows it fetched, so the
+			// banner quietly stopped at 200 on a site busy enough for the
+			// figure to be worth looking at. activeCount() is one indexed
+			// COUNT(*) and has no ceiling.
+			'realtime'    => [ 'visitors' => $plugin->realtime()->visitorCount( $siteId ) ],
 			'kpis'        => self::kpis( $totals, $totalsBefore, $plugin->settings(), self::compareNote( $params->comparePeriod ) ),
 			'trendChart'  => ChartData::trend( $trend, $comparisonTrend, self::seriesLabel( $params->comparePeriod ) ),
 			'heatmap'     => Heatmap::grid( $stats->hourOfWeek( $siteId, $range ) ),

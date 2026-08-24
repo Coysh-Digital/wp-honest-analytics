@@ -133,18 +133,24 @@ final class DrainCommand {
 		foreach ( $sites as $siteId ) {
 			switch_to_blog( (int) $siteId );
 
-			// Services are built from this site's settings, so the container
-			// has to be rebuilt as the prefix changes underneath it.
-			Plugin::reset();
+			// `finally`, because a drain that throws leaves every query after
+			// it pointed at this site's tables - so the run would carry on and
+			// write the remaining sites' hits into whichever one failed.
+			try {
+				// Services are built from this site's settings, so the
+				// container has to be rebuilt as the prefix changes underneath
+				// it.
+				Plugin::reset();
 
-			$result = Plugin::instance()->drainer()->run();
+				$result = Plugin::instance()->drainer()->run();
 
-			if ( ! $quiet || $result->hasFailures() ) {
-				\WP_CLI::log( sprintf( '%s:', home_url() ) );
-				$this->report( $result );
+				if ( ! $quiet || $result->hasFailures() ) {
+					\WP_CLI::log( sprintf( '%s:', home_url() ) );
+					$this->report( $result );
+				}
+			} finally {
+				restore_current_blog();
 			}
-
-			restore_current_blog();
 		}
 
 		Plugin::reset();

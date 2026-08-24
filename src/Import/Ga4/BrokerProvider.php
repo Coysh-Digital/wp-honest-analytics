@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace HonestAnalytics\Import\Ga4;
 
 use HonestAnalytics\Settings\SettingsRepository;
+use HonestAnalytics\Support\Log;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -71,7 +72,20 @@ final class BrokerProvider implements Ga4ProviderInterface {
 		 */
 		$url = (string) apply_filters( 'honest_analytics_ga4_broker_url', '' );
 
-		return untrailingslashit( trim( $url ) );
+		$url = untrailingslashit( trim( $url ) );
+
+		// https only. This carries the licence key and Google's refresh token,
+		// which is read access to somebody's property until it is revoked - so
+		// a filter, or a compromised mu-plugin, returning an http:// address
+		// would send both in clear. StripeProvider has had this floor since the
+		// update package was pinned; there was no reason for this to be softer.
+		if ( '' !== $url && 'https' !== wp_parse_url( $url, PHP_URL_SCHEME ) ) {
+			Log::warning( 'The Google broker URL was ignored because it is not https.' );
+
+			return '';
+		}
+
+		return $url;
 	}
 
 	public function isConfigured(): bool {

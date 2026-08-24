@@ -36,6 +36,14 @@ final class PostLinks {
 			return [];
 		}
 
+		// One query for the lot. Every editUrl() below asks
+		// current_user_can( 'edit_post', $id ), which sends map_meta_cap to
+		// get_post() - and an unprimed get_post() is a query each. On a Pages
+		// screen showing two hundred rows that was two hundred single-row
+		// lookups to decide which titles become links. Terms and meta are not
+		// wanted, hence both flags false.
+		_prime_post_caches( $ids, false, false );
+
 		$urls = [];
 
 		foreach ( $ids as $id ) {

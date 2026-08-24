@@ -8,6 +8,7 @@
 declare(strict_types=1);
 
 namespace HonestAnalytics\Import;
+use HonestAnalytics\Support\Secret;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -42,9 +43,15 @@ final class GoogleCloudCredentials {
 	public static function get(): array {
 		$stored = get_option( self::OPTION, [] );
 
+		// The secret is encrypted at rest, the same way the refresh tokens
+		// derived from it are - it is the long-lived credential the whole OAuth
+		// flow hangs off, and it sat in wp_options in clear beside two values
+		// that did not. Secret::decrypt() returns anything written before this
+		// change unchanged, so there is no migration: a secret is re-encrypted
+		// the next time it is saved.
 		return [
 			'id'     => is_array( $stored ) && isset( $stored['id'] ) ? (string) $stored['id'] : '',
-			'secret' => is_array( $stored ) && isset( $stored['secret'] ) ? (string) $stored['secret'] : '',
+			'secret' => is_array( $stored ) && isset( $stored['secret'] ) ? Secret::decrypt( (string) $stored['secret'] ) : '',
 		];
 	}
 
@@ -75,7 +82,7 @@ final class GoogleCloudCredentials {
 			self::OPTION,
 			[
 				'id'     => $id,
-				'secret' => $secret,
+				'secret' => Secret::encrypt( $secret ),
 			],
 			false
 		);

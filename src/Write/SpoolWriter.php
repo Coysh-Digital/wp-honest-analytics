@@ -12,6 +12,7 @@ namespace HonestAnalytics\Write;
 use HonestAnalytics\Capture\Hit;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Support\Log;
+use HonestAnalytics\Support\Losses;
 use HonestAnalytics\Support\Paths;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -54,6 +55,7 @@ final class SpoolWriter implements WriterInterface {
 
 			if ( strlen( $line ) > self::MAX_LINE_BYTES ) {
 				Log::warning( 'Dropped an oversized spool line.' );
+				Losses::record( Losses::OVERSIZED );
 
 				return;
 			}
@@ -106,9 +108,14 @@ final class SpoolWriter implements WriterInterface {
 			return $this->path;
 		}
 
+		// Asked twice per hit, and resolving it means the uploads directory,
+		// a filter and a stat or two each time. Once is enough: the directory
+		// does not move between the capacity check and the write.
 		Paths::spoolDir( true );
 
-		return Paths::spoolFile();
+		$this->path = Paths::spoolFile();
+
+		return $this->path;
 	}
 
 	/**

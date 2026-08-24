@@ -11,6 +11,8 @@
 
 declare(strict_types=1);
 
+use HonestAnalytics\Support\Timezone;
+
 use HonestAnalytics\Import\DetectionResult;
 use HonestAnalytics\Import\ImportJob;
 use HonestAnalytics\Support\Format;
@@ -48,8 +50,8 @@ $ha_card = static function ( $screen, $importer, bool $enabled ): void {
 						sprintf(
 							/* translators: 1: start date, 2: end date. */
 							__( '%1$s to %2$s', 'honest-analytics' ),
-							wp_date( 'j M Y', (int) strtotime( $last->configuration->dateFrom ) ),
-							wp_date( 'j M Y', (int) strtotime( $last->configuration->dateTo ) )
+							wp_date( 'j M Y', (int) Timezone::middayOn( $last->configuration->dateFrom ) ),
+							wp_date( 'j M Y', (int) Timezone::middayOn( $last->configuration->dateTo ) )
 						)
 					);
 					?>
@@ -79,8 +81,8 @@ $ha_card = static function ( $screen, $importer, bool $enabled ): void {
 							sprintf(
 								/* translators: 1: start date, 2: end date. */
 								__( 'History from %1$s to %2$s is ready to import.', 'honest-analytics' ),
-								wp_date( 'j M Y', (int) strtotime( $detected->dateFrom ) ),
-								wp_date( 'j M Y', (int) strtotime( $detected->dateTo ) )
+								wp_date( 'j M Y', (int) Timezone::middayOn( $detected->dateFrom ) ),
+								wp_date( 'j M Y', (int) Timezone::middayOn( $detected->dateTo ) )
 							)
 						);
 					} else {

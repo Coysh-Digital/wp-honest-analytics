@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace HonestAnalytics\Import;
 
 use HonestAnalytics\Plugin;
+use HonestAnalytics\Support\Lock;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -45,6 +46,14 @@ final class ImportRunner {
 
 	/** After this many consecutive failures the job stops and says so. */
 	private const MAX_ATTEMPTS = 5;
+
+	/**
+	 * Prefix for the per-job lock. The job id is appended.
+	 *
+	 * Per job rather than global, so two different imports on a multisite
+	 * network do not queue behind one another.
+	 */
+	private const LOCK_NAME = 'import-';
 
 	/** Backoff between failed attempts, in seconds, by attempt number. */
 	private const BACKOFF = [ 30, 120, 300, 900, 3600 ];
@@ -110,9 +119,44 @@ final class ImportRunner {
 	/**
 	 * Run one batch of one job.
 	 *
+	 * Under a lock, because three things advance an import and only one of them
+	 * used to take one: `Scheduler::runDue()` did, `ImportController::tick()`
+	 * and `Fallback::maybeAdvanceImport()` did not - and the second of those is
+	 * a thirty-second key-value throttle, which is not a lock. The browser
+	 * polls again 250ms after `visibilitychange` without aborting the request
+	 * in flight, so one open tab is enough to have two.
+	 *
+	 * This method is read-modify-write on a row the caller hydrated, and
+	 * `ImportRepository::save()` writes every column with no version check. Two
+	 * runs therefore double-count their counters and, worse, **the cursor goes
+	 * backwards**: a tick that started at day 40 is overwritten by one that
+	 * started at day 30, and the import walks back over ground it has already
+	 * covered.
+	 *
 	 * @param ImportJob $job The job.
 	 */
 	public function runBatch( ImportJob $job ): ImportJob {
+		$lock = new Lock( self::LOCK_NAME . $job->id );
+
+		if ( ! $lock->acquire() ) {
+			// Somebody else is already advancing this job. Handing back the job
+			// untouched is the truthful answer: nothing has changed here.
+			return $job;
+		}
+
+		try {
+			return $this->runBatchLocked( $job );
+		} finally {
+			$lock->release();
+		}
+	}
+
+	/**
+	 * One batch, with the job's lock held.
+	 *
+	 * @param ImportJob $job The job.
+	 */
+	private function runBatchLocked( ImportJob $job ): ImportJob {
 		$importer = ImporterRegistry::get( $job->source );
 
 		if ( null === $importer ) {
@@ -123,8 +167,21 @@ final class ImportRunner {
 			return $job;
 		}
 
+		// Counted before the work, not after it. `fail()` is the only place
+		// that increments this and it is reached from a caught Throwable - so a
+		// PHP fatal or an out-of-memory kill never got there, MAX_ATTEMPTS was
+		// unreachable, and `due()` handed back the same job on every drain for
+		// ever while `begin()` refused to start another. Cancel was the only
+		// way out. Reset to zero on success a few lines below, so an import
+		// that is making progress never accumulates them.
+		++$job->attempts;
+
 		$job->status = ImportJob::STATUS_RUNNING;
 		$this->repository->save( $job );
+
+		if ( $job->attempts > self::MAX_ATTEMPTS ) {
+			return $this->fail( $job, $this->friendlyError( $job->source ), 'abandoned after ' . self::MAX_ATTEMPTS . ' attempts that did not report back' );
+		}
 
 		$started = microtime( true );
 		$clashes = $this->coverage->clashes( $job->siteId, $job->source, $job->configuration->dateFrom, $job->configuration->dateTo );
@@ -260,24 +317,21 @@ final class ImportRunner {
 			return 0;
 		}
 
-		if ( null !== $owner ) {
-			// Replace: the other source's day goes, rows and coverage together,
-			// so that the record of who owns the day follows the data.
-			$this->sink->clearDay( $job->siteId, $owner, $bucket->date );
-			$this->coverage->forget( $job->siteId, $owner, $bucket->date );
-		}
-
 		if ( $bucket->isEmpty() ) {
 			// A day with no traffic is still a day that has been imported.
-			// Recording it stops a second run offering to fetch it again.
-			$this->coverage->record( $job->siteId, $job->source, $job->id, $bucket->date, 0 );
+			// Recording it stops a second run offering to fetch it again. The
+			// displacement still has to happen, and still has to be atomic with
+			// the record of it, so it goes through the sink like any other day.
+			$this->sink->writeEmptyDay( $job->siteId, $job->source, $bucket->date, $this->coverage, $job->id, $owner );
 
 			return 0;
 		}
 
-		$rows = $this->sink->write( $job->siteId, $job->source, $bucket );
-
-		$this->coverage->record( $job->siteId, $job->source, $job->id, $bucket->date, $rows );
+		// Replace, when there is an owner: the other source's rows and its
+		// coverage go inside the same transaction that writes the replacement,
+		// so a failure part way through leaves the day exactly as it was rather
+		// than deleted with nothing to put back.
+		$rows = $this->sink->write( $job->siteId, $job->source, $bucket, $this->coverage, $job->id, $owner );
 
 		$written += $rows;
 
@@ -327,8 +381,9 @@ final class ImportRunner {
 	 * @param string    $technical What to write in the log.
 	 */
 	private function fail( ImportJob $job, string $message, string $technical ): ImportJob {
-		++$job->attempts;
-
+		// No increment here any more. `runBatchLocked()` counts the attempt
+		// before the work begins, which is the only place that can count one
+		// that ends in a fatal rather than in an exception.
 		$job->lastError = $message;
 
 		if ( $job->attempts >= self::MAX_ATTEMPTS ) {

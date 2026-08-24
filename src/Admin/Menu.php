@@ -171,17 +171,19 @@ final class Menu {
 			// constructed. The free build does not contain the Pro screen
 			// classes at all, so `new CampaignsScreen()` followed by an edition
 			// check is a fatal on wordpress.org and a passing test here.
-			$missing = ! class_exists( $class );
-			$screen  = $missing ? null : new $class();
+			$screen = class_exists( $class ) ? new $class() : $this->standIn( $class );
 
-			if ( $missing || ( $screen->isPro() && ! $isPro ) ) {
+			// A real screen that this licence may not open becomes its own
+			// stand-in, so Lite and a lapsed Pro show the same description
+			// rather than a missing row and a 403 respectively.
+			if ( null !== $screen && $screen->isPro() && ! $isPro ) {
 				$screen = $this->standIn( $class );
+			}
 
-				// Something stripped that has no stand-in, which is the licence
-				// screen and anything added later without one.
-				if ( null === $screen ) {
-					continue;
-				}
+			// Something stripped that has no stand-in, which is the licence
+			// screen and anything added later without one.
+			if ( null === $screen ) {
+				continue;
 			}
 
 			// A build without the Pro code has nothing to unlock, so it has no

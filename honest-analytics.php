@@ -3,7 +3,7 @@
  * Plugin Name:       Honest Analytics
  * Plugin URI:        https://coysh.digital/plugins/honest-analytics
  * Description:       Privacy-first, cookieless analytics that live inside WordPress. No third-party service, no IP addresses, no per-visitor rows - just aggregate counters you own.
- * Version:           0.5.0
+ * Version:           0.8.3
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Coysh Digital
@@ -39,7 +39,7 @@ if ( defined( 'HONEST_ANALYTICS_FILE' ) ) {
 	return;
 }
 
-const VERSION = '0.5.0';
+const VERSION = '0.8.3';
 
 define( 'HONEST_ANALYTICS_FILE', __FILE__ );
 define( 'HONEST_ANALYTICS_DIR', plugin_dir_path( __FILE__ ) );
