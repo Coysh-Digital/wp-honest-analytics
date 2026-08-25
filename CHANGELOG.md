@@ -13,10 +13,10 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 - **The plugin directory has an icon and a banner.** `.wordpress-org/` held a
   to-do list and nothing else, and a listing with no icon reads as abandoned
-  before anybody has read a word of it. They are drawn by
-  `bin/directory-assets.py` from the marketing site's own palette rather than
-  exported by hand, so the listing and the site cannot drift apart, and a
-  change to either is a diff. Screenshots are still outstanding, and are noted
+  before anybody has read a word of it. Both carry the marketing site's own
+  logo - the chart from its `favicon.svg`, its palette, its serif - and are
+  drawn by `bin/directory-assets.py` rather than exported by hand, so the
+  directory cannot end up showing a mark the site stopped using. Screenshots are still outstanding, and are noted
   there as needing to come from a Lite install rather than from the demo,
   which runs this tree and so behaves as Pro.
 - **A second workflow keeps the listing up to date without a release.** The

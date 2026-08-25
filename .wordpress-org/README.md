@@ -21,10 +21,16 @@ Drawn by `bin/directory-assets.py`, not by hand. Run it to change them:
 python3 bin/directory-assets.py
 ```
 
-The palette is copied from the marketing site's `src/styles/tokens.css` and
-the wordmark is set in the same serif the site falls back to, so the listing
-and the site do not drift apart. A designer replacing these should replace the
-script as well, or the next run will quietly overwrite their work.
+The mark is the marketing site's own logo - the chart geometry is
+`public/favicon.svg` drawn at a larger size, the palette comes from
+`src/styles/tokens.css`, and the wordmark is set in the same serif the site
+falls back to. The banner follows the lockup the site's share image uses: the
+teal rule, then the mark and the name together, then one line of sans.
+
+Somebody changing the logo on the site should change it here in the same
+sitting, or the directory quietly shows last year's brand. A designer
+replacing these outright should replace the script as well, or the next run
+overwrites their work.
 
 ## The screenshots
 
