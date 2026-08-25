@@ -61,8 +61,12 @@ jobs:
       - name: Build the zip
         run: |
           mkdir -p /tmp/build/honest-analytics
+          # .distignore excludes itself, so the copy the directory serves has
+          # never carried it. Without this line the GitHub release does, and
+          # the two zips claiming to be the same version differ.
           rsync -a --exclude '.git' --exclude '.github' --exclude '.wordpress-org' \
             --exclude 'docs' --exclude 'CONTRIBUTING.md' --exclude '.gitignore' \
+            --exclude '.distignore' \
             ./ /tmp/build/honest-analytics/
           cd /tmp/build && zip -qr "honest-analytics-${{ steps.version.outputs.version }}.zip" honest-analytics
 
