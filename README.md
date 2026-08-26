@@ -151,4 +151,4 @@ for it. It fails the build if it finds it.
 ## Licence
 
 GPL-2.0-or-later. See [LICENSE.md](LICENSE.md) and
-[THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md).
+[licenses/THIRD-PARTY-LICENSES.md](licenses/THIRD-PARTY-LICENSES.md).

@@ -197,8 +197,23 @@ final class GeoHandler {
 			return;
 		}
 
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
-		if ( ! @unlink( $path ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- The failure is reported below rather than printed.
+		/*
+		 * wp_delete_file() rather than unlink(), so a host filtering deletions
+		 * gets to see this one. It returns nothing, so success is read off the
+		 * disk afterwards instead of from a return value; unlink() clears the
+		 * stat cache on its way out, so the answer is current. file_exists()
+		 * rather than is_file() because after a delete the question is whether
+		 * anything is still there, not what kind of thing it is.
+		 *
+		 * This replaced a silenced unlink() whose suppression sat on the line
+		 * above while the line itself carried a different one. A same-line
+		 * phpcs:ignore replaces the preceding-line directive rather than adding
+		 * to it, so that suppression had never applied and the sniff had been
+		 * firing, unread, the whole time. Plugin Check is what found it.
+		 */
+		wp_delete_file( $path );
+
+		if ( file_exists( $path ) ) {
 			self::remember( 'error', __( 'The file could not be deleted. Check the permissions on the uploads directory.', 'honest-analytics' ) );
 
 			return;

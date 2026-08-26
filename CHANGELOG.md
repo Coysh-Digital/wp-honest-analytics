@@ -7,6 +7,49 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-08-26
+
+Everything here came out of running Plugin Check, the plugin directory's own
+checker, against the packaged zip for the first time. It found four errors. Two
+were real, and one of those had been hiding behind a suppression that did not
+work.
+
+### Fixed
+
+- **A `phpcs:ignore` had been silencing nothing for as long as it has been
+  there.** The geo database delete carried a suppression for `unlink()` on the
+  line above the call, while the call's own line carried a different one for a
+  silenced error - and a same-line directive replaces the preceding-line
+  directive rather than adding to it. So the sniff had been firing, unread, and
+  the comment above it had been describing a decision nobody was making. The
+  call is now `wp_delete_file()`, which is the function the directory asks for
+  and which lets a host filter a deletion it cares about; because that function
+  returns nothing, whether the delete worked is now read off the disk instead
+  of off a return value. `Loopback` already deleted files this way, so this is
+  the house style rather than a new one.
+- **One file in the package looked unprotected against direct access.** Every
+  PHP file in this tree ends its `use` block and then guards on `ABSPATH`, and
+  `Plugin.php` did too - but its `use` list is long enough that the guard sat
+  at line 58, past the point the directory's checker stops looking. The file
+  was as protected as every other one, and reported as protected by none of the
+  tools that matter. The guard now sits above the `use` block in that one file,
+  with a note saying why it breaks the convention the rest of the tree keeps.
+
+### Changed
+
+- **`composer.json` ships in the package.** `vendor/` has always shipped, and
+  the manifest that produced it was excluded on the grounds that it is a build
+  file. A package carrying a vendor directory with nothing beside it saying
+  what is in there is harder to audit than it needs to be, and that is what the
+  checker objected to. The lock file stays out: it describes a build that has
+  already happened.
+- **`THIRD-PARTY-LICENSES.md` moved to `licenses/`.** It ships either way, and
+  it must - it is the attribution for everything bundled. The plugin root is
+  expected to hold a specific short list of markdown files, and a package that
+  wanders outside that list makes a reviewer look twice at the one thing they
+  should be able to take for granted. `LICENSE.md` and `README.md` point at the
+  new path.
+
 ## [0.8.4] - 2026-08-24
 
 ### Added

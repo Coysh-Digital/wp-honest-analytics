@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.8.4
+Stable tag: 0.8.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -164,6 +164,12 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.8.5 =
+* Fixed: Removing the geo database used a function the plugin guidelines discourage, behind a suppression comment that had never applied. It now uses the WordPress function for deleting a file, so a host that filters deletions sees this one.
+* Fixed: One file looked as though it was missing its guard against being loaded directly. It was not missing - it sat below a long list of imports, past the point the directory's own checker stops looking.
+* Changed: The package now carries composer.json beside the vendor directory it produced, so what is bundled can be read without unpacking anything.
+* Changed: The third-party licence list moved to licenses/, out of the plugin root.
 
 = 0.8.4 =
 * Changed: The readme said the free edition makes no outbound request at all, and it does - the optional Google Analytics import and the geo installer both reach a third party. The claims now say what is true: nothing leaves your server while it counts.
@@ -351,6 +357,9 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 * First release.
 
 == Upgrade Notice ==
+
+= 0.8.5 =
+Packaging and code-standards corrections found by the plugin directory's own checker. No change to how anything counts.
 
 = 0.8.4 =
 Corrects the stated size of the tracking script on the Settings screen. No change to how anything counts.

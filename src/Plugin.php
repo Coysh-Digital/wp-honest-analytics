@@ -9,6 +9,20 @@ declare(strict_types=1);
 
 namespace HonestAnalytics;
 
+/*
+ * Above the use block, where the rest of this tree puts it below.
+ *
+ * Plugin Check reads only the top of a file when it looks for direct-access
+ * protection, and this file's use list is long enough to push the guard past
+ * that window. It was the one file in the package the directory's own checker
+ * reported as unprotected, while the guard sat there unread forty lines
+ * further down. The convention is worth keeping everywhere it fits; this file
+ * is the one it does not fit.
+ */
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 use HonestAnalytics\Bots\BotFilter;
 use HonestAnalytics\Capture\CaptureService;
 use HonestAnalytics\Capture\NonceRegistry;
@@ -54,10 +68,6 @@ use HonestAnalytics\Write\Drainer;
 use HonestAnalytics\Write\HitApplier;
 use HonestAnalytics\Write\SpoolWriter;
 use HonestAnalytics\Write\WriterInterface;
-
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
 
 /**
  * Every service, built on first use.

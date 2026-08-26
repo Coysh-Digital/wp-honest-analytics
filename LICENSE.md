@@ -20,4 +20,4 @@ The full text of version 2 of the GNU General Public License is available at
 <https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt>.
 
 Third-party components and their licences are listed in
-[THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md).
+[licenses/THIRD-PARTY-LICENSES.md](licenses/THIRD-PARTY-LICENSES.md).

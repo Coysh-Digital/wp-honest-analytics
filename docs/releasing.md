@@ -72,16 +72,16 @@ package a free build that still reaches for something it removed.
 
 ## Where things stand
 
-Both repositories exist and 0.8.3 is released on each: the paid zip on the
-private one, the free zip on the public one. 0.8.4 is the first release
-prepared for the directory. The plugin directory submission has not been made
-yet, which is the next step below.
+Both repositories exist and are released on each: the paid zip on the private
+one, the free zip on the public one. 0.8.5 is the release prepared for the
+directory, and the first one Plugin Check has been run against. The submission
+has not been made yet, which is the next step below.
 
 ## The plugin directory
 
 The first submission is by hand, at
 <https://wordpress.org/plugins/developers/add/>, with the zip from
-`build/honest-analytics-0.8.4.zip`. Review takes one to ten days, sometimes
+`build/honest-analytics-0.8.5.zip`. Review takes one to ten days, sometimes
 longer.
 
 Before uploading, paste `readme.txt` into the
@@ -89,6 +89,19 @@ Before uploading, paste `readme.txt` into the
 and install the zip on a clean site with `WP_DEBUG` and `WP_DEBUG_LOG` on and
 click every screen. Not testing with `WP_DEBUG` is on the directory's own list
 of common reasons for refusing a plugin.
+
+The submission form also asks you to confirm the plugin has been checked with
+[Plugin Check](https://wordpress.org/plugins/plugin-check/), and it means the
+packaged zip rather than the working tree, which is Pro. Nothing in this
+repository runs it, so it is a manual step: install WordPress somewhere
+disposable, `wp plugin install plugin-check --activate`, install the Lite zip
+beside it, and `wp plugin check honest-analytics`. On 0.8.5 that returns two
+errors and 376 warnings. The two errors are one false positive counted twice -
+the GA4 Client ID field's placeholder text names
+`.apps.googleusercontent.com`, and the offloading check reads a remote-looking
+domain in markup as a remote asset. The warnings are interpolated table
+identifiers, which cannot be placeholders in `prepare()`, and template locals
+the prefix sniff cannot tell are locals.
 
 The slug is derived from the Plugin Name header, so it will be
 `honest-analytics`. It is permanent once approved, and changeable once from the
