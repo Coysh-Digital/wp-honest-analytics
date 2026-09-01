@@ -109,7 +109,7 @@ View::render(
 		'admin/partials/heatmap',
 		[
 			'heatmap' => $heatmap,
-			'from'    => $heatmapFrom,
+			'window'  => $heatmapWindow,
 			'days'    => $hourlyDays,
 		]
 	);

@@ -19,6 +19,7 @@ use HonestAnalytics\Schema\Schema;
 use HonestAnalytics\Schema\Tables;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Stats\Comparison;
+use HonestAnalytics\Stats\DateRange;
 use HonestAnalytics\Support\Format;
 use HonestAnalytics\Write\SpoolStatus;
 
@@ -146,10 +147,10 @@ final class DashboardScreen extends Screen {
 		$comparisonTrend = null !== $comparison ? $stats->trend( $siteId, $comparison, null, $params->granularity ) : null;
 
 		$data = [
-			'params'      => $params,
-			'range'       => $range,
-			'isPro'       => $isPro,
-			'accuracy'    => $stats->uniquesAccuracy(),
+			'params'        => $params,
+			'range'         => $range,
+			'isPro'         => $isPro,
+			'accuracy'      => $stats->uniquesAccuracy(),
 			// The banner prints one number, so ask for one number. snapshot()
 			// selects and JSON-decodes 200 session blobs to build a list of
 			// visits and a page breakdown that nothing on this screen reads -
@@ -157,29 +158,64 @@ final class DashboardScreen extends Screen {
 			// banner quietly stopped at 200 on a site busy enough for the
 			// figure to be worth looking at. activeCount() is one indexed
 			// COUNT(*) and has no ceiling.
-			'realtime'    => [ 'visitors' => $plugin->realtime()->visitorCount( $siteId ) ],
-			'kpis'        => self::kpis( $totals, $totalsBefore, $plugin->settings(), self::compareNote( $params->comparePeriod ) ),
-			'trendChart'  => ChartData::trend( $trend, $comparisonTrend, self::seriesLabel( $params->comparePeriod ) ),
-			'heatmap'     => Heatmap::grid( $stats->hourOfWeek( $siteId, $range ) ),
-			'heatmapFrom' => $stats->hourlyWindowFrom(),
-			'hourlyDays'  => $plugin->settings()->hourlyWindowDays,
-			'topPages'    => $stats->topPages( $siteId, $range, 6 ),
-			'channels'    => $stats->channels( $siteId, $range ),
-			'devices'     => $stats->devices( $siteId, $range, 'deviceType' ),
-			'postTypes'   => $plugin->contentStats()->byPostType( $siteId, $range, 5 ),
+			'realtime'      => [ 'visitors' => $plugin->realtime()->visitorCount( $siteId ) ],
+			'kpis'          => self::kpis( $totals, $totalsBefore, $plugin->settings(), self::compareNote( $params->comparePeriod ) ),
+			'trendChart'    => ChartData::trend( $trend, $comparisonTrend, self::seriesLabel( $params->comparePeriod ) ),
+			'heatmap'       => Heatmap::grid( $stats->hourOfWeek( $siteId, $range ) ),
+			'heatmapWindow' => self::heatmapWindow( $range, $stats->hourlyWindowFrom() ),
+			'hourlyDays'    => $plugin->settings()->hourlyWindowDays,
+			'topPages'      => $stats->topPages( $siteId, $range, 6 ),
+			'channels'      => $stats->channels( $siteId, $range ),
+			'devices'       => $stats->devices( $siteId, $range, 'deviceType' ),
+			'postTypes'     => $plugin->contentStats()->byPostType( $siteId, $range, 5 ),
 			// Lite never queries these. The cards still render, with a plain
 			// sentence about what they would tell you - a gap where a card
 			// should be reads as a bug, not as an edition boundary.
-			'crawlers'    => $isPro ? $stats->crawlers( $siteId, $range, 4 ) : [],
-			'crawlerHits' => $isPro ? $stats->crawlerRequests( $siteId, $range ) : 0,
-			'goals'       => $isPro ? array_slice( $plugin->conversionStats()->goals( $siteId, $range ), 0, 4 ) : [],
-			'campaigns'   => $isPro ? $plugin->proStats()->campaigns( $siteId, $range, 4 ) : [],
-			'countries'   => $isPro ? $plugin->proStats()->countries( $siteId, $range, 5 ) : [],
-			'emptyHint'   => 0 === $totals['views'] ? $this->emptyHint( $plugin->settings() ) : null,
-			'boundary'    => $this->importBoundary( $siteId, $range->from, $range->to ),
+			'crawlers'      => $isPro ? $stats->crawlers( $siteId, $range, 4 ) : [],
+			'crawlerHits'   => $isPro ? $stats->crawlerRequests( $siteId, $range ) : 0,
+			'goals'         => $isPro ? array_slice( $plugin->conversionStats()->goals( $siteId, $range ), 0, 4 ) : [],
+			'campaigns'     => $isPro ? $plugin->proStats()->campaigns( $siteId, $range, 4 ) : [],
+			'countries'     => $isPro ? $plugin->proStats()->countries( $siteId, $range, 5 ) : [],
+			'emptyHint'     => 0 === $totals['views'] ? $this->emptyHint( $plugin->settings() ) : null,
+			'boundary'      => $this->importBoundary( $siteId, $range->from, $range->to ),
 		];
 
 		View::render( 'admin/dashboard', $data );
+	}
+
+	/**
+	 * What the heatmap actually covered, as against what was asked for.
+	 *
+	 * The one card on this screen that cannot follow the selected range.
+	 * {@see \HonestAnalytics\Stats\StatsService::hourOfWeek()} clamps its start
+	 * to the hourly retention window because past that cutoff the compactor has
+	 * folded the hourly rows into daily ones and the hour is genuinely not
+	 * recorded any more - so the card has to say what it covered rather than
+	 * silently showing a week and letting the toolbar imply a year.
+	 *
+	 * Null means the whole period is older than the window: not an empty
+	 * result, but a question the data cannot answer, and the two read very
+	 * differently to somebody wondering whether their site had no visitors.
+	 *
+	 * Pure and static so the three states can be tested without a database.
+	 *
+	 * @param DateRange $range      The period asked for.
+	 * @param string    $hourlyFrom The oldest date still held hour by hour, `Y-m-d`.
+	 *
+	 * @return array{from:string,to:string,clipped:bool}|null
+	 */
+	public static function heatmapWindow( DateRange $range, string $hourlyFrom ): ?array {
+		$from = max( $range->from, $hourlyFrom );
+
+		if ( $from > $range->to ) {
+			return null;
+		}
+
+		return [
+			'from'    => $from,
+			'to'      => $range->to,
+			'clipped' => $range->from < $hourlyFrom,
+		];
 	}
 
 	/**

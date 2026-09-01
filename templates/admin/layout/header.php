@@ -69,6 +69,11 @@ $ha_granularities = Granularity::availableFor( $ha_range );
 								<?php endif; ?>
 							<?php endforeach; ?>
 
+							<?php // carried() stops at the screen boundary, and this form posts back to the same screen - so the path a detail view is showing has to be carried by hand, or Apply lands on the list. ?>
+							<?php if ( '' !== $params->path ) : ?>
+								<input type="hidden" name="path" value="<?php echo esc_attr( $params->path ); ?>" />
+							<?php endif; ?>
+
 							<label>
 								<?php esc_html_e( 'From', 'honest-analytics' ); ?>
 								<input type="date" name="from" value="<?php echo esc_attr( $ha_range->from ); ?>" max="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>" required />

@@ -1481,6 +1481,25 @@ tr:hover .ha-row-edit,
 	transform: rotate(-135deg) translate(-2px, -2px);
 }
 
+/* A disclosure that has to read as an action rather than as a caption, where
+   the thing behind it is a job somebody came to do. Opted into per summary, so
+   the disclosures that are genuinely captions keep the plain look above.
+
+   Both overrides are needed: `summary` defaults to display: list-item, which
+   the button padding sits badly inside, and the chevron above is sized as a
+   flex item of a card head - as a bare inline box its width and height are
+   ignored and it disappears. */
+.ha-more-detail > summary.button {
+	display: inline-block;
+}
+
+.ha-more-detail > summary.button::after {
+	display: inline-block;
+	margin-left: 8px;
+	border-color: currentColor;
+	vertical-align: middle;
+}
+
 /* One question, a few answers, each with room to say what it means. */
 .ha-choices {
 	display: grid;

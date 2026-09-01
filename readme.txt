@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.8.5
+Stable tag: 0.9.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -164,6 +164,14 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.9.0 =
+* Added: An "All time" range on every report screen and on the dashboard widget. It starts at the earliest day anything was recorded, imported history included, and the chart grouping offers Year once the span is long enough.
+* Added: The write spool warning can now be put away for good as well as snoozed for thirty days. Dismissing it silences the notice only; the Settings screen, the site health check and WP-CLI all still report the fault.
+* Fixed: Changing the date range while reading one page's report returned you to the Pages list. Every range, grouping and comparison control now keeps the page you are looking at, and so does the custom date picker.
+* Fixed: The "When people visit" card said "Last 7 days" whatever it had actually covered. It now names the dates it drew, says when the selected range asked for more hourly detail than is kept, and links to the setting that widens it.
+* Fixed: A period older than the hourly window said "Nothing to show here yet", which read as though nobody had visited. It now explains that the hour of each visit is no longer kept for that period, and that the pageviews themselves are still counted.
+* Changed: "Replace or remove the database" on the Locations screen is a button rather than a line of text.
 
 = 0.8.5 =
 * Fixed: Removing the geo database used a function the plugin guidelines discourage, behind a suppression comment that had never applied. It now uses the WordPress function for deleting a file, so a host that filters deletions sees this one.
@@ -357,6 +365,9 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 * First release.
 
 == Upgrade Notice ==
+
+= 0.9.0 =
+Adds an All time range, and corrects a heatmap caption that named the retention setting rather than the days it had drawn. No change to how anything counts.
 
 = 0.8.5 =
 Packaging and code-standards corrections found by the plugin directory's own checker. No change to how anything counts.

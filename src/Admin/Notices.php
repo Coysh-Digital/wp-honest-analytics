@@ -45,6 +45,20 @@ final class Notices {
 	private const SPOOL_SNOOZE_SECONDS = 30 * DAY_IN_SECONDS;
 
 	/**
+	 * The option that remembers somebody said no to the spool warning for good.
+	 *
+	 * A flag beside the snooze timestamp, and site-wide for the same reason.
+	 * This silences the banner only: the fault is still reported by
+	 * {@see \HonestAnalytics\Scheduling\Health::problems()}, so it still
+	 * reaches the CLI, the health filter, `isHealthy()` and the Settings screen,
+	 * which is where somebody can actually act on it. Somebody who has looked at
+	 * the exposure and decided it is handled - a rule in front of the site, a
+	 * spool holding nothing they mind - should not be asked again every month
+	 * for the life of the install.
+	 */
+	private const SPOOL_DISMISSED = 'honest_analytics_spool_dismissed';
+
+	/**
 	 * Where the detection answer is cached between page loads.
 	 *
 	 * Suffixed, because what is stored here changed shape: it used to be a list
@@ -60,6 +74,7 @@ final class Notices {
 		add_action( 'admin_notices', [ self::class, 'render' ] );
 		add_action( 'admin_init', [ self::class, 'handleDismissal' ] );
 		add_action( 'admin_init', [ self::class, 'handleSpoolSnooze' ] );
+		add_action( 'admin_init', [ self::class, 'handleSpoolDismissal' ] );
 	}
 
 	/**
@@ -114,6 +129,32 @@ final class Notices {
 	}
 
 	/**
+	 * Put the spool warning away for good.
+	 *
+	 * Separate from the snooze rather than a parameter on it: the two are
+	 * different decisions, and a query argument that could mean either would be
+	 * one typo away from silencing a security warning somebody meant to defer.
+	 */
+	public static function handleSpoolDismissal(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET['honest_dismiss_spool_forever'] ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( Capabilities::MANAGE ) ) {
+			return;
+		}
+
+		check_admin_referer( 'honest-analytics-dismiss-spool-forever' );
+
+		update_option( self::SPOOL_DISMISSED, 'dismissed', false );
+
+		wp_safe_redirect( remove_query_arg( [ 'honest_dismiss_spool_forever', '_wpnonce' ] ) );
+
+		exit;
+	}
+
+	/**
 	 * Render the notices.
 	 */
 	public static function render(): void {
@@ -163,11 +204,18 @@ final class Notices {
 	}
 
 	/**
-	 * The spool warning, dismissible for a while.
+	 * The spool warning, dismissible for a while or for good.
 	 *
 	 * Snoozing does not fix the exposure, so this reappears once the snooze
 	 * runs out - but only if the spool is still actually public then. A site
 	 * that fixed its nginx config in the meantime never sees it again.
+	 *
+	 * The second link puts it away permanently. That silences the banner and
+	 * nothing else: {@see Health::problems()} still reports the fault to the
+	 * CLI, the health filter and `isHealthy()`, and the Settings screen still
+	 * says so in context - which is why {@see render()} stands down there. The
+	 * warning stays findable by anybody who goes looking; it just stops
+	 * interrupting somebody who has already decided about it.
 	 *
 	 * @param Health $health Health.
 	 */
@@ -180,23 +228,34 @@ final class Notices {
 			return;
 		}
 
+		if ( 'dismissed' === get_option( self::SPOOL_DISMISSED, '' ) ) {
+			return;
+		}
+
 		$snoozedUntil = (int) get_option( self::SPOOL_SNOOZE, 0 );
 
 		if ( $snoozedUntil > time() ) {
 			return;
 		}
 
-		$dismiss = wp_nonce_url(
+		$snooze = wp_nonce_url(
 			add_query_arg( 'honest_dismiss_spool', '1' ),
 			'honest-analytics-dismiss-spool'
 		);
 
+		$dismiss = wp_nonce_url(
+			add_query_arg( 'honest_dismiss_spool_forever', '1' ),
+			'honest-analytics-dismiss-spool-forever'
+		);
+
 		printf(
-			'<div class="notice notice-warning"><p><strong>%s</strong> %s</p><p><a href="%s">%s</a></p></div>',
+			'<div class="notice notice-warning"><p><strong>%s</strong> %s</p><p><a href="%s">%s</a> &middot; <a href="%s">%s</a></p></div>',
 			esc_html__( 'Honest Analytics:', 'honest-analytics' ),
 			esc_html__( 'The write spool can be read over the web. It holds no addresses, but it is not public data. On nginx this needs a rule in the server config - the exact block is in the caching guide at https://github.com/Coysh-Digital/wp-honest-analytics/blob/main/docs/caching.md. On Apache or IIS, check that the .htaccess or web.config in the spool directory has not been removed.', 'honest-analytics' ),
+			esc_url( $snooze ),
+			esc_html__( 'Remind me again in 30 days', 'honest-analytics' ),
 			esc_url( $dismiss ),
-			esc_html__( 'Remind me again in 30 days', 'honest-analytics' )
+			esc_html__( 'Don’t show this again', 'honest-analytics' )
 		);
 	}
 

@@ -7,6 +7,49 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-09-01
+
+### Added
+
+- **An "All time" range.** The toolbar stopped at twelve months, so a site with
+  more history than that had no way to see it. All time starts at the earliest
+  day anything was recorded - imported history included - and the grouping
+  control offers Year on its own once the span is long enough. The start is
+  looked up only when somebody actually asks for it, so the other presets cost
+  nothing. A site with nothing recorded yet falls back to the ordinary thirty
+  days rather than to a single day, which would switch every chart to an hourly
+  axis to say the same "nothing here".
+- **A permanent dismissal on the write spool warning.** It could only ever be
+  snoozed for thirty days, which for somebody who has looked at the exposure and
+  decided it is handled is a reminder every month for the life of the install.
+  "Don't show this again" sits beside the snooze. It silences the banner and
+  nothing else: Health still reports the fault to the CLI, the health filter and
+  the Settings screen, so the warning stays findable by anybody who goes looking.
+
+### Fixed
+
+- **Changing the date range on a page detail view returned to the Pages list.**
+  Every range, grouping and comparison button was built from the state that
+  crosses screens, and the path being looked at is deliberately not part of
+  that. It is now kept by any link that stays on the screen it was built on, and
+  still dropped by one that moves - so "back to Pages" and the drilldown links
+  from the Dashboard behave exactly as before. The custom range picker had the
+  same hole and is fixed with it.
+- **"When people visit" said "Last 7 days" whatever it had actually covered.**
+  The grid cannot follow the selected range: past the hourly retention window
+  the rows have been folded into daily totals and the hour genuinely is not
+  recorded any more. What was wrong was the card, which printed the retention
+  setting rather than the window it drew. It now names the dates it covered,
+  says plainly when the selected range asked for more than is kept, and offers
+  the setting that widens it. A period entirely older than the window gets its
+  own answer rather than "nothing to show here yet", which read as "nobody came"
+  about a period that may have been the site's busiest.
+
+### Changed
+
+- **"Replace or remove the database" on Locations is a button.** It opens the
+  same panel in the same place; it just no longer looks like a caption.
+
 ## [0.8.5] - 2026-08-26
 
 Everything here came out of running Plugin Check, the plugin directory's own

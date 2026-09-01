@@ -4,12 +4,14 @@
  *
  * @package HonestAnalytics
  *
- * @var array<string,mixed> $heatmap
- * @var string              $from
- * @var int                 $days
+ * @var array<string,mixed>                            $heatmap
+ * @var array{from:string,to:string,clipped:bool}|null  $window
+ * @var int                                             $days
  */
 
 declare(strict_types=1);
+
+use HonestAnalytics\Support\Timezone;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -18,38 +20,82 @@ if ( ! defined( 'ABSPATH' ) ) {
 global $wp_locale;
 
 $ha_grid = $heatmap;
+
+// Where to go to widen the window. Settings is one long page with no tabs and
+// every control's id is `ha-` plus its key, so the anchor lands on the field
+// rather than at the top of a screen full of other settings.
+$ha_settings = admin_url( 'admin.php?page=honest-analytics-settings#ha-hourlyWindowDays' );
+
+$ha_dates = null !== $window
+	? sprintf(
+		/* translators: 1: start date, 2: end date. */
+		__( '%1$s - %2$s', 'honest-analytics' ),
+		wp_date( 'j M Y', (int) Timezone::middayOn( $window['from'] ) ),
+		wp_date( 'j M Y', (int) Timezone::middayOn( $window['to'] ) )
+	)
+	: '';
+
+// Why the grid is empty, which is two different answers. A period older than
+// the window had its hours recorded and then deliberately discarded, and
+// saying "nothing to show" there would read as "nobody came".
+if ( null === $window ) {
+	$ha_empty_title = __( 'Older than the hourly window', 'honest-analytics' );
+	$ha_empty_body  = sprintf(
+		/* translators: %d: number of days of hourly detail kept. */
+		_n(
+			'Hourly detail is kept for %d day before it is folded into daily totals, and this period is older than that, so the hour of each visit is no longer recorded for it. The pageviews themselves are still counted everywhere else on this screen.',
+			'Hourly detail is kept for %d days before it is folded into daily totals, and this period is older than that, so the hour of each visit is no longer recorded for it. The pageviews themselves are still counted everywhere else on this screen.',
+			$days,
+			'honest-analytics'
+		),
+		$days
+	);
+} else {
+	// Named by the dates it actually covered, not by the setting: a range
+	// shorter than the window covers less than the window, and quoting the
+	// setting there would be the same quiet inaccuracy in a smaller place.
+	$ha_empty_title = __( 'Nothing to show here yet', 'honest-analytics' );
+	$ha_empty_body  = sprintf(
+		/* translators: %s: a date range, for example "9 Nov 2026 - 15 Nov 2026". */
+		__( 'This grid covers %s, which is as far back as hourly detail is kept before it is folded into daily totals. Nothing has been recorded in it yet.', 'honest-analytics' ),
+		$ha_dates
+	);
+}
 ?>
 <div class="ha-card">
 	<div class="ha-card-head">
 		<h2 class="ha-card-title"><?php esc_html_e( 'When people visit', 'honest-analytics' ); ?></h2>
 		<span class="ha-card-note">
-			<?php
-			echo esc_html(
-				sprintf(
-					/* translators: %d: number of days of hourly detail kept. */
-					_n( 'Last %d day - the hourly retention window', 'Last %d days - the hourly retention window', $days, 'honest-analytics' ),
-					$days
-				)
-			);
-			?>
+			<?php if ( null === $window ) : ?>
+				<?php esc_html_e( 'Outside the hourly window', 'honest-analytics' ); ?>
+			<?php elseif ( $window['clipped'] ) : ?>
+				<?php
+				echo esc_html( $ha_dates ) . ' - ';
+				echo esc_html(
+					sprintf(
+						/* translators: %d: number of days of hourly detail kept. */
+						_n(
+							'hourly detail is only kept for %d day, so this covers the recent part of your range.',
+							'hourly detail is only kept for %d days, so this covers the recent part of your range.',
+							$days,
+							'honest-analytics'
+						),
+						$days
+					)
+				);
+				?>
+				<a href="<?php echo esc_url( $ha_settings ); ?>"><?php esc_html_e( 'Keep hourly detail for longer', 'honest-analytics' ); ?></a>
+			<?php else : ?>
+				<?php echo esc_html( $ha_dates ); ?>
+			<?php endif; ?>
 		</span>
 	</div>
 
 	<div class="ha-card-body">
 		<?php if ( ! $ha_grid['covered'] ) : ?>
 			<div class="ha-empty">
-				<div class="ha-empty-title"><?php esc_html_e( 'Nothing to show here yet', 'honest-analytics' ); ?></div>
-				<p class="ha-muted">
-					<?php
-					echo esc_html(
-						sprintf(
-							/* translators: %d: number of days. */
-							__( 'This grid covers the last %d days, which is how long hourly detail is kept before it is folded into daily totals. Nothing has been recorded in that window yet.', 'honest-analytics' ),
-							$days
-						)
-					);
-					?>
-				</p>
+				<div class="ha-empty-title"><?php echo esc_html( $ha_empty_title ); ?></div>
+				<p class="ha-muted"><?php echo esc_html( $ha_empty_body ); ?></p>
 			</div>
 		<?php else : ?>
 			<div class="ha-scroll">

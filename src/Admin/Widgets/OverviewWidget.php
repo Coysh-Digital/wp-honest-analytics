@@ -108,8 +108,13 @@ final class OverviewWidget {
 
 		$plugin      = Plugin::instance();
 		$preferences = self::preferences();
-		$range       = DateRange::fromPreset( $preferences['range'] );
 		$siteId      = get_current_blog_id();
+		$range       = DateRange::fromPreset(
+			$preferences['range'],
+			null,
+			null,
+			static fn (): ?string => $plugin->stats()->firstRecordedDate( $siteId )
+		);
 
 		$totals = $plugin->stats()->totals( $siteId, $range );
 		$trend  = $plugin->stats()->trend( $siteId, $range );

@@ -51,7 +51,8 @@ final class DateRange {
 	 *
 	 * `custom` is deliberately absent: it cannot be saved as a scheduled report
 	 * period or a widget setting, because a saved range with fixed dates stops
-	 * being true the day after it is saved.
+	 * being true the day after it is saved. `all` is present for the opposite
+	 * reason - it names no dates at all, so it is still true tomorrow.
 	 *
 	 * @return array<string,string>
 	 */
@@ -65,6 +66,7 @@ final class DateRange {
 			'this-month' => __( 'This month', 'honest-analytics' ),
 			'last-month' => __( 'Last month', 'honest-analytics' ),
 			'12mo'       => __( 'Last 12 months', 'honest-analytics' ),
+			'all'        => __( 'All time', 'honest-analytics' ),
 		];
 	}
 
@@ -73,11 +75,18 @@ final class DateRange {
 	 *
 	 * An unknown preset quietly becomes thirty days.
 	 *
+	 * `$earliest` is a callable rather than a date because this class does no
+	 * database work - it is the one part of the reporting stack that can be
+	 * reasoned about without a site - and because only `all` needs the answer.
+	 * Passing the closure means the query behind it runs when somebody asks for
+	 * all time and never on the seven other presets.
+	 *
 	 * @param string            $preset   Preset handle.
 	 * @param int|null          $now      Timestamp.
 	 * @param DateTimeZone|null $timezone Timezone override.
+	 * @param callable|null     $earliest Resolves the earliest recorded date, `Y-m-d` or null.
 	 */
-	public static function fromPreset( string $preset, ?int $now = null, ?DateTimeZone $timezone = null ): self {
+	public static function fromPreset( string $preset, ?int $now = null, ?DateTimeZone $timezone = null, ?callable $earliest = null ): self {
 		$today  = self::today( $now, $timezone );
 		$labels = self::presets();
 
@@ -92,6 +101,10 @@ final class DateRange {
 			'this-month' => [ $today->modify( 'first day of this month' ), $today ],
 			'last-month' => [ $today->modify( 'first day of last month' ), $today->modify( 'last day of last month' ) ],
 			'12mo'       => [ $today->modify( '-1 year' )->modify( '+1 day' ), $today ],
+			// Nothing recorded yet falls back to the ordinary default rather
+			// than to today: a single-day range would switch every chart to an
+			// hourly axis to say the same "nothing here" a thirty-day one says.
+			'all'        => [ self::earliestRecorded( $earliest, $today, $timezone ) ?? $today->modify( '-29 days' ), $today ],
 			default      => [ $today->modify( '-29 days' ), $today ],
 		};
 
@@ -114,15 +127,16 @@ final class DateRange {
 	 * @param string            $value    Parameter value.
 	 * @param int|null          $now      Timestamp.
 	 * @param DateTimeZone|null $timezone Timezone override.
+	 * @param callable|null     $earliest Resolves the earliest recorded date, for `all`.
 	 */
-	public static function fromParam( string $value, ?int $now = null, ?DateTimeZone $timezone = null ): self {
+	public static function fromParam( string $value, ?int $now = null, ?DateTimeZone $timezone = null, ?callable $earliest = null ): self {
 		$token = self::parseToken( $value, $timezone );
 
 		if ( null !== $token ) {
 			return self::custom( $token[0], $token[1], $now, $timezone );
 		}
 
-		return self::fromPreset( $value, $now, $timezone );
+		return self::fromPreset( $value, $now, $timezone, $earliest );
 	}
 
 	/**
@@ -328,6 +342,34 @@ final class DateRange {
 		return ( new DateTimeImmutable( '@' . ( $now ?? time() ) ) )
 			->setTimezone( $timezone ?? Timezone::site() )
 			->setTime( 0, 0 );
+	}
+
+	/**
+	 * The earliest recorded date, as a date, or null when there is not one.
+	 *
+	 * Anything the resolver cannot be trusted to return - no resolver at all, a
+	 * null, an empty string, a malformed date, or a date in the future - lands
+	 * on null and lets the caller fall back. A report screen must not become an
+	 * error page because a rollup table said something unexpected.
+	 *
+	 * @param callable|null     $earliest Resolver.
+	 * @param DateTimeImmutable $today    Midnight today.
+	 * @param DateTimeZone|null $timezone Timezone override.
+	 */
+	private static function earliestRecorded( ?callable $earliest, DateTimeImmutable $today, ?DateTimeZone $timezone = null ): ?DateTimeImmutable {
+		if ( null === $earliest ) {
+			return null;
+		}
+
+		$value = $earliest();
+
+		if ( ! is_string( $value ) ) {
+			return null;
+		}
+
+		$date = self::parseDate( $value, $timezone );
+
+		return null !== $date && $date <= $today ? $date : null;
 	}
 
 	/**

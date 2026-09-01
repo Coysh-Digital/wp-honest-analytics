@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace HonestAnalytics\Admin;
 
 use HonestAnalytics\Charts\ChartData;
+use HonestAnalytics\Plugin;
 use HonestAnalytics\Stats\DateRange;
 use HonestAnalytics\Stats\Granularity;
 
@@ -92,7 +93,7 @@ final class RequestParams {
 		// the combined token, so there is only one shape of URL to reason about.
 		$this->range = ( '' !== $from && '' !== $to )
 			? DateRange::custom( $from, $to )
-			: DateRange::fromParam( '' !== $rangeParam ? $rangeParam : $stored['range'] );
+			: DateRange::fromParam( '' !== $rangeParam ? $rangeParam : $stored['range'], null, null, self::earliestRecorded() );
 
 		$hasExplicitGranularity = isset( $_GET['granularity'] );
 		$granularityParam       = $hasExplicitGranularity ? sanitize_key( wp_unslash( (string) $_GET['granularity'] ) ) : $stored['granularity'];
@@ -187,6 +188,21 @@ final class RequestParams {
 	public function url( array $overrides = [], ?string $screen = null ): string {
 		$args = array_merge( $this->carried(), $overrides );
 
+		// `path` names a row on one screen and means nothing on any other, so
+		// it follows a link that stays put and is dropped by one that moves -
+		// which is why it is not in carried(), the set that crosses screens.
+		// Without this, every range, grouping and comparison button on a page
+		// detail view quietly returned the reader to the list.
+		//
+		// array_key_exists, not isset: page.php passes an explicit null to
+		// clear the path for its "back to Pages" link, and that null has to
+		// count as having been asked for.
+		if ( ( null === $screen || $screen === $this->screen )
+			&& '' !== $this->path
+			&& ! array_key_exists( 'path', $overrides ) ) {
+			$args['path'] = $this->path;
+		}
+
 		foreach ( $args as $key => $value ) {
 			if ( null === $value || '' === $value ) {
 				unset( $args[ $key ] );
@@ -242,6 +258,17 @@ final class RequestParams {
 	 */
 	private static function normalizeComparePeriod( string $value ): string {
 		return 'none' === $value ? '' : $value;
+	}
+
+	/**
+	 * How "All time" finds its start.
+	 *
+	 * Handed to {@see DateRange} as a closure rather than a date, so the query
+	 * behind it only runs on a request that actually asked for all time - which
+	 * is most requests avoided, this being constructed on every report screen.
+	 */
+	private static function earliestRecorded(): callable {
+		return static fn (): ?string => Plugin::instance()->stats()->firstRecordedDate( get_current_blog_id() );
 	}
 
 	/**

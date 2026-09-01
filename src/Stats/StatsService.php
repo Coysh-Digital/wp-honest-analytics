@@ -941,6 +941,30 @@ final class StatsService {
 		return is_string( $date ) && '' !== $date ? $date : null;
 	}
 
+	/**
+	 * The first day anything at all was recorded.
+	 *
+	 * What "All time" starts from. Read from the pageviews rollup because every
+	 * measured hit and every imported day writes a row there, so it is the one
+	 * table whose earliest date is the site's earliest date. The rollup's
+	 * `bucket` index leads on `siteId,date`, which makes this an index seek
+	 * rather than a scan, so it is cheap enough to ask on the request that
+	 * needs it instead of being cached and going stale after an import.
+	 *
+	 * @param int $siteId Site ID.
+	 */
+	public function firstRecordedDate( int $siteId ): ?string {
+		global $wpdb;
+
+		$table = Tables::name( Tables::PAGES_ROLLUP );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
+		$date = $wpdb->get_var( $wpdb->prepare( "SELECT MIN(date) FROM `$table` WHERE siteId = %d", $siteId ) );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+
+		return is_string( $date ) && '' !== $date ? $date : null;
+	}
+
 	// --------------------------------------------------------------- sources
 
 	/**
