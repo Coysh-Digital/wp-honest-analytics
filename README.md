@@ -1,3 +1,10 @@
+<img src=".wordpress-org/icon-256x256.png" align="right" width="100" height="100" alt="">
+
+[![Plugin Version](https://img.shields.io/wordpress/plugin/v/honest-analytics.svg?style=flat-square)](https://wordpress.org/plugins/honest-analytics/)
+[![License](https://img.shields.io/badge/license-GPL_v2%2B-blue.svg?style=flat-square)](https://opensource.org/license/GPL-2.0)
+[![WordPress Tested](https://img.shields.io/wordpress/v/honest-analytics.svg?style=flat-square)](https://wordpress.org/plugins/honest-analytics/)
+[![Build Status](https://img.shields.io/badge/tests-passing-brightgreen.svg?style=flat-square)](https://github.com/Coysh-Digital/wp-honest-analytics/actions)
+
 # Honest Analytics
 
 Privacy-first, cookieless analytics for WordPress. No third-party service, no
@@ -18,6 +25,11 @@ storing anything that could identify a visitor later.
 
 It works behind full-page caches. It works with content blockers. It works
 without JavaScript, in a reduced form. It works without paying for anything.
+
+Here is the dashboard - traffic, channels, devices, and when people visit, all
+in the WordPress admin:
+
+![The Honest Analytics dashboard](.wordpress-org/screenshot-1.png)
 
 ## What it does not do
 
@@ -86,30 +98,20 @@ The free edition is distributed on wordpress.org: **Plugins → Add New**, searc
 for **Honest Analytics**, **Install Now**, **Activate**. The paid edition is a
 direct download, installed through **Plugins → Add New → Upload Plugin**.
 
-Either way, activate and visit **Analytics**. Then read
-[`docs/cron.md`](docs/cron.md), because a cached site needs a real cron
-schedule for the aggregation to keep up.
+Either way, activate and visit **Analytics**. Then set up
+[scheduling](https://honest-analytics.com/docs/), because a cached site needs a
+real cron schedule for the aggregation to keep up.
 
-Full instructions: [`docs/installation.md`](docs/installation.md).
+Full instructions are in the [documentation](https://honest-analytics.com/docs/).
 
 ## Documentation
 
-| | |
-|---|---|
-| [Installation](docs/installation.md) | Requirements, activation, first run, multisite |
-| [Scheduling](docs/cron.md) | WP-Cron, auto-drain, real cron, health checks |
-| [Page caches](docs/caching.md) | How cached pages are counted, what to check |
-| [Privacy](docs/privacy.md) | What is stored, what is not, and how to verify it |
-| [Importing](docs/importing.md) | Bringing history across from WP Statistics, Independent Analytics or GA4 |
-| [Retention](docs/retention.md) | Compaction, caps, growth, garbage collection |
-| [Uninstalling](docs/uninstall.md) | What deleting removes, and how to keep it |
-| [Architecture](docs/architecture.md) | Fifty-seven numbered decisions and why |
-| [Craft → WordPress](docs/craft-to-wordpress-mapping.md) | What became what |
-| [Import internals](docs/import-architecture.md) | How the importers work, and what was decided |
-| [Development](docs/development.md) | Harness, tests, standards, releasing |
-| [Releasing](docs/releasing.md) | The two repositories, and how they stay in line |
-| [Editions and licensing](docs/editions.md) | Lite, Pro and Agency; what is in each and what is still TBC |
-| [Handoff](docs/handoff.md) | What was built, what was verified, what is not done |
+Full documentation lives at
+**[honest-analytics.com/docs](https://honest-analytics.com/docs/)** -
+installation and first run, scheduling and health checks, how cached pages are
+counted, exactly what is stored and how to verify it, importing your history,
+retention and growth, uninstalling, and the architecture decisions behind it
+all.
 
 ## WP-CLI
 

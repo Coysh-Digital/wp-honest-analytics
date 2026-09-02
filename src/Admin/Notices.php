@@ -87,7 +87,8 @@ final class Notices {
 	 * {@see render()} stays confined to the plugin's own screens, but a welcome
 	 * shown only once somebody has already found their way to an Analytics
 	 * screen is a welcome nobody sees. This one is allowed onto the main
-	 * dashboard as well - and nowhere else, and only until it is acted on.
+	 * dashboard and the plugins list as well - where activation lands - and
+	 * nowhere else, and only until it is acted on.
 	 *
 	 * Shown only while the state is exactly `pending`. It is never defaulted
 	 * into being: an install that predates the wizard has no state option at
@@ -106,9 +107,13 @@ final class Notices {
 
 		$screenId = (string) $screen->id;
 
-		// The plugin's own screens, plus the main dashboard. Not the wizard
-		// itself, where it would be pointing at the page somebody is already on.
-		$welcome_here = str_contains( $screenId, 'honest-analytics' ) || 'dashboard' === $screenId;
+		// The plugin's own screens, the main dashboard, and the plugins list -
+		// which is where activation lands, and so the first place a welcome is
+		// likely to be seen. Not the wizard itself, where it would be pointing
+		// at the page somebody is already on.
+		$welcome_here = str_contains( $screenId, 'honest-analytics' )
+			|| 'dashboard' === $screenId
+			|| 'plugins' === $screenId;
 
 		if ( ! $welcome_here || str_contains( $screenId, 'honest-analytics-setup' ) ) {
 			return;

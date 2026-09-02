@@ -7,6 +7,21 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-09-02
+
+### Changed
+
+- **The setup wizard now covers more, and its welcome reaches the plugins
+  screen.** The banner appears on the plugins list too, which is where WordPress
+  lands after activation, so the welcome is seen when it is most useful. The
+  wizard itself adds four settings beside the original three: whether your own
+  signed-in team is counted, whether known bots are kept out of the numbers,
+  whether query parameters like `utm_source` are ignored so one page is not
+  split into many, and whether your history is kept or removed if the plugin is
+  ever deleted. All remain optional, all still live on the Settings screen, and
+  the destructive uninstall choice is only ever written when the form actually
+  carried it.
+
 ## [0.9.1] - 2026-09-02
 
 ### Added

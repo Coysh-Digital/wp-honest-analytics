@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.9.1
+Stable tag: 0.9.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -119,6 +119,14 @@ The Privacy screen states exactly what the configuration permits, in as many wor
 
 Usually higher, because content blockers do not stop server-side counting. Where they are lower it is normally GPC: visitors who ask not to be counted are not counted, at all.
 
+= Can I import my history from Google Analytics? =
+
+Yes, and from the free edition - GA4 import is not held back for the paid one. Analytics -> Import data connects to the property, shows you the range Google has, and brings it across a chunk at a time; progress is saved as it goes, so you can close the tab and come back. Only permission to read is requested, nothing is written back to Google, and the connection can be removed from the same screen.
+
+The one-off part is Google's: nothing may read your analytics until you have registered the thing asking. That is free, needs no card, and takes about five minutes. The Import screen prints each step with your own site's values already filled in.
+
+WP Statistics and Independent Analytics import too, and those need no setup at all - the data is already in your database. Expect pageviews to line up closely and visitor counts not to: GA4 counts users its own way, and a unique visitor here is a daily estimate. Importing the same dates again replaces what was imported before rather than doubling it.
+
 = Why do unique visitors not add up across days? =
 
 Because the identity is destroyed every 24 hours. Unique visitors are daily estimates, and adding two days together would double-count anybody who came on both. The plugin merges the underlying sketches rather than summing them, and says so wherever the number appears.
@@ -164,6 +172,9 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.9.2 =
+* Changed: The setup wizard covers more, and its welcome now appears on the plugins screen as well - which is where WordPress lands after activation. The wizard adds four settings beside the original three: whether your own signed-in team is counted, whether known bots are kept out of the numbers, whether query parameters like utm_source are ignored so one page is not split into many, and whether your history is kept or removed if the plugin is ever deleted. All remain optional, and all still live on the Settings screen.
 
 = 0.9.1 =
 * Added: An optional first-run setup wizard. A newly activated site shows a dismissible welcome, on the plugin's own screens and the main dashboard, offering to set how visits are counted, how long data is kept, and which browser privacy signals are honoured. It is optional in every sense: the plugin counts from the moment it is activated, everything the wizard offers also lives on the Settings screen, and the welcome never returns once it is finished or skipped.
@@ -369,6 +380,9 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 * First release.
 
 == Upgrade Notice ==
+
+= 0.9.2 =
+Expands the optional first-run setup wizard and shows its welcome on the plugins screen. No change to how anything counts.
 
 = 0.9.1 =
 Adds an optional first-run setup wizard, and corrects a scheduled report that covered the wrong span. No change to how anything counts.

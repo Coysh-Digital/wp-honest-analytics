@@ -148,6 +148,10 @@ final class SetupScreen extends Screen {
 				'rollupRetentionMonths' => isset( $_POST['rollupRetentionMonths'] ) ? (int) $_POST['rollupRetentionMonths'] : null,
 				'honourGpc'             => isset( $_POST['honourGpc'] ),
 				'honourDnt'             => isset( $_POST['honourDnt'] ),
+				'excludeLoggedIn'       => isset( $_POST['excludeLoggedIn'] ),
+				'keepDataOnUninstall'   => isset( $_POST['keepDataOnUninstall'] ),
+				'blockCrawlers'         => isset( $_POST['blockCrawlers'] ),
+				'stripQueryString'      => isset( $_POST['stripQueryString'] ),
 				// phpcs:enable WordPress.Security.NonceVerification.Missing
 			],
 			Plugin::instance()->settings()
@@ -169,7 +173,8 @@ final class SetupScreen extends Screen {
 	 * an unknown or missing tracking mode keeps the current one rather than
 	 * being written, and the retention window is clamped to the ceiling the
 	 * aggregate store is allowed to hold. A missing or null value for either
-	 * leaves the current setting in place; a checkbox is a plain boolean.
+	 * leaves the current setting in place; every checkbox is a plain boolean,
+	 * absent meaning off, because the wizard always renders each one.
 	 *
 	 * @param array<string,mixed> $input   Raw values, keyed by setting name.
 	 * @param Settings            $current Settings as they stand.
@@ -191,6 +196,10 @@ final class SetupScreen extends Screen {
 			'rollupRetentionMonths' => $months,
 			'honourGpc'             => ! empty( $input['honourGpc'] ),
 			'honourDnt'             => ! empty( $input['honourDnt'] ),
+			'excludeLoggedIn'       => ! empty( $input['excludeLoggedIn'] ),
+			'keepDataOnUninstall'   => ! empty( $input['keepDataOnUninstall'] ),
+			'blockCrawlers'         => ! empty( $input['blockCrawlers'] ),
+			'stripQueryString'      => ! empty( $input['stripQueryString'] ),
 		];
 	}
 
