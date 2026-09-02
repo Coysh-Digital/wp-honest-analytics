@@ -14,6 +14,10 @@ Cookieless website analytics in your WordPress dashboard. No third-party service
 
 Honest Analytics counts your traffic and shows it in the WordPress admin. Nothing is sent anywhere, and nothing is stored that could identify a visitor later.
 
+= See it running =
+
+Click around a live dashboard with a year of seeded traffic before you install anything - one-click sign-in, no account needed: [demo.honest-analytics.com](https://demo.honest-analytics.com/demo-login).
+
 = What it never stores =
 
 * **No IP addresses.** Not in a table, not in a log, not in a cache key, not in the write spool. The address exists as a variable inside one function, is hashed, and is gone.
@@ -67,6 +71,10 @@ Campaigns, locations, events, goals, funnels, crawler reporting, and integration
 = On compliance =
 
 This plugin is **cookieless by default** and is **designed not to require an analytics consent banner in its default configuration**. Whether that is true of your site depends on your site, your jurisdiction and what else you run, and this plugin cannot tell you that - nobody's plugin can. What it can do is tell you exactly what it stores, which the Privacy screen does, in plain words, so that the person advising you has something factual to work from.
+
+= Source and releases =
+
+The free edition's full source and every release are on GitHub: [github.com/Coysh-Digital/wp-honest-analytics](https://github.com/Coysh-Digital/wp-honest-analytics).
 
 == Installation ==
 
