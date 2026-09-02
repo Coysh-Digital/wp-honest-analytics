@@ -7,6 +7,32 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-09-02
+
+### Added
+
+- **An optional first-run setup wizard.** A newly activated install now shows a
+  dismissible welcome banner - on the plugin's own screens and the main
+  dashboard, nowhere else - inviting the administrator to set the three things
+  people ask about most: how visits are counted, how long data is kept, and
+  which browser privacy signals are honoured. It is an invitation, not a gate:
+  the plugin records visits on its defaults from the moment it is activated, and
+  every setting the wizard offers also lives on the Settings screen. The banner
+  is written only when a site has no settings of its own yet, so upgrading an
+  install configured long ago never brings it back, and it disappears for good
+  the moment setup is finished or skipped.
+
+### Fixed
+
+- **A twelve-month scheduled report covered twelve days.** The span was scraped
+  out of the period token with a digits-only pattern, which is right for the
+  three tokens that are a number and a unit letter and wrong for every other one
+  the setting accepts. `12mo` came back as twelve, so the email described a
+  fortnight while calling itself a year, and went out every Monday rather than
+  monthly. `today` and `yesterday` have no digits at all, so both fell to the
+  seven-day default. Each period is now read off a list of what it actually
+  covers.
+
 ## [0.9.0] - 2026-09-01
 
 ### Added

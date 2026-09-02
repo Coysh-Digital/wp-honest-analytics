@@ -25,6 +25,7 @@ return array(
     'HonestAnalytics\\Admin\\Screens\\RealtimeScreen' => $baseDir . '/src/Admin/Screens/RealtimeScreen.php',
     'HonestAnalytics\\Admin\\Screens\\Screen' => $baseDir . '/src/Admin/Screens/Screen.php',
     'HonestAnalytics\\Admin\\Screens\\SettingsScreen' => $baseDir . '/src/Admin/Screens/SettingsScreen.php',
+    'HonestAnalytics\\Admin\\Screens\\SetupScreen' => $baseDir . '/src/Admin/Screens/SetupScreen.php',
     'HonestAnalytics\\Admin\\Screens\\SourcesScreen' => $baseDir . '/src/Admin/Screens/SourcesScreen.php',
     'HonestAnalytics\\Admin\\Views\\View' => $baseDir . '/src/Admin/Views/View.php',
     'HonestAnalytics\\Admin\\Widgets\\LiveWidget' => $baseDir . '/src/Admin/Widgets/LiveWidget.php',

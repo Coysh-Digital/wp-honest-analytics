@@ -35,6 +35,25 @@ final class Installer {
 	public const VERSION_OPTION = 'honest_analytics_db_version';
 
 	/**
+	 * Where the first-run setup prompt remembers where it stands.
+	 *
+	 * Written once, on a genuinely fresh install (see `installSite()`), and read
+	 * by the banner and the wizard. Its absence means an install that predates
+	 * the wizard, which must never be greeted by it - so the value is only ever
+	 * created here, never defaulted into existence by a reader.
+	 */
+	public const SETUP_OPTION = 'honest_analytics_setup';
+
+	/** A fresh install that has not yet been through, or dismissed, setup. */
+	public const SETUP_PENDING = 'pending';
+
+	/** Setup was completed from the wizard. */
+	public const SETUP_COMPLETE = 'complete';
+
+	/** Setup was skipped, from the banner or the wizard. */
+	public const SETUP_DISMISSED = 'dismissed';
+
+	/**
 	 * Sites handled per query when walking a network.
 	 *
 	 * A page size rather than a ceiling. On a large network the request may
@@ -125,6 +144,12 @@ final class Installer {
 
 		if ( false === get_option( SettingsRepository::OPTION, false ) ) {
 			add_option( SettingsRepository::OPTION, Settings::defaults(), '', true );
+
+			// The one moment the setup wizard is offered: a site with no settings
+			// of its own yet. Keyed to the absence of the settings option rather
+			// than to the activation hook so that reactivating, or upgrading an
+			// install configured long ago, never brings the welcome banner back.
+			add_option( self::SETUP_OPTION, self::SETUP_PENDING, '', false );
 		}
 
 		Capabilities::grant();

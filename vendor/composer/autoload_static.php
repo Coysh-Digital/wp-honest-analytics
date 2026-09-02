@@ -68,6 +68,7 @@ class ComposerStaticInit60d78dfd625e10b67fd73270f6c41d95
         'HonestAnalytics\\Admin\\Screens\\RealtimeScreen' => __DIR__ . '/../..' . '/src/Admin/Screens/RealtimeScreen.php',
         'HonestAnalytics\\Admin\\Screens\\Screen' => __DIR__ . '/../..' . '/src/Admin/Screens/Screen.php',
         'HonestAnalytics\\Admin\\Screens\\SettingsScreen' => __DIR__ . '/../..' . '/src/Admin/Screens/SettingsScreen.php',
+        'HonestAnalytics\\Admin\\Screens\\SetupScreen' => __DIR__ . '/../..' . '/src/Admin/Screens/SetupScreen.php',
         'HonestAnalytics\\Admin\\Screens\\SourcesScreen' => __DIR__ . '/../..' . '/src/Admin/Screens/SourcesScreen.php',
         'HonestAnalytics\\Admin\\Views\\View' => __DIR__ . '/../..' . '/src/Admin/Views/View.php',
         'HonestAnalytics\\Admin\\Widgets\\LiveWidget' => __DIR__ . '/../..' . '/src/Admin/Widgets/LiveWidget.php',

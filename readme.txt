@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.9.0
+Stable tag: 0.9.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -164,6 +164,10 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.9.1 =
+* Added: An optional first-run setup wizard. A newly activated site shows a dismissible welcome, on the plugin's own screens and the main dashboard, offering to set how visits are counted, how long data is kept, and which browser privacy signals are honoured. It is optional in every sense: the plugin counts from the moment it is activated, everything the wizard offers also lives on the Settings screen, and the welcome never returns once it is finished or skipped.
+* Fixed: A twelve-month scheduled report covered twelve days. The period was read with a digits-only pattern, so "12mo" became twelve days and the email described a fortnight while calling itself a year. Each period is now read off what it actually covers.
 
 = 0.9.0 =
 * Added: An "All time" range on every report screen and on the dashboard widget. It starts at the earliest day anything was recorded, imported history included, and the chart grouping offers Year once the span is long enough.
@@ -365,6 +369,9 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 * First release.
 
 == Upgrade Notice ==
+
+= 0.9.1 =
+Adds an optional first-run setup wizard, and corrects a scheduled report that covered the wrong span. No change to how anything counts.
 
 = 0.9.0 =
 Adds an All time range, and corrects a heatmap caption that named the retention setting rather than the days it had drawn. No change to how anything counts.

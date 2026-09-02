@@ -11,6 +11,7 @@ namespace HonestAnalytics\Admin;
 
 use HonestAnalytics\Capabilities\Capabilities;
 use HonestAnalytics\Import\ImporterInterface;
+use HonestAnalytics\Schema\Installer;
 use HonestAnalytics\Scheduling\Health;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -72,9 +73,107 @@ final class Notices {
 	 */
 	public static function register(): void {
 		add_action( 'admin_notices', [ self::class, 'render' ] );
+		add_action( 'admin_notices', [ self::class, 'renderSetupPrompt' ] );
 		add_action( 'admin_init', [ self::class, 'handleDismissal' ] );
 		add_action( 'admin_init', [ self::class, 'handleSpoolSnooze' ] );
 		add_action( 'admin_init', [ self::class, 'handleSpoolDismissal' ] );
+		add_action( 'admin_init', [ self::class, 'handleSetupDismissal' ] );
+	}
+
+	/**
+	 * Invite a brand-new install through the setup wizard.
+	 *
+	 * A separate `admin_notices` callback from {@see render()} on purpose:
+	 * {@see render()} stays confined to the plugin's own screens, but a welcome
+	 * shown only once somebody has already found their way to an Analytics
+	 * screen is a welcome nobody sees. This one is allowed onto the main
+	 * dashboard as well - and nowhere else, and only until it is acted on.
+	 *
+	 * Shown only while the state is exactly `pending`. It is never defaulted
+	 * into being: an install that predates the wizard has no state option at
+	 * all, and must not be greeted by a setup it has already, in effect, done.
+	 */
+	public static function renderSetupPrompt(): void {
+		if ( ! current_user_can( Capabilities::MANAGE ) ) {
+			return;
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+		if ( ! $screen ) {
+			return;
+		}
+
+		$screenId = (string) $screen->id;
+
+		// The plugin's own screens, plus the main dashboard. Not the wizard
+		// itself, where it would be pointing at the page somebody is already on.
+		$welcome_here = str_contains( $screenId, 'honest-analytics' ) || 'dashboard' === $screenId;
+
+		if ( ! $welcome_here || str_contains( $screenId, 'honest-analytics-setup' ) ) {
+			return;
+		}
+
+		// The one-time confirmation the wizard redirects back with. Display only,
+		// gone the moment the query argument is dropped, so it needs no nonce.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( isset( $_GET['ha_welcome'] ) ) {
+			printf(
+				'<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+				esc_html__( 'You’re all set. Honest Analytics is recording visits for this site, and you can change anything under Settings.', 'honest-analytics' )
+			);
+
+			return;
+		}
+
+		if ( Installer::SETUP_PENDING !== get_option( Installer::SETUP_OPTION, '' ) ) {
+			return;
+		}
+
+		$start = add_query_arg(
+			[ 'page' => 'honest-analytics-setup' ],
+			admin_url( 'admin.php' )
+		);
+
+		$dismiss = wp_nonce_url(
+			add_query_arg( 'honest_dismiss_setup', '1' ),
+			'honest-analytics-dismiss-setup'
+		);
+
+		printf(
+			'<div class="notice notice-info"><p><strong>%s</strong> %s</p><p><a class="button button-primary" href="%s">%s</a> <a href="%s">%s</a></p></div>',
+			esc_html__( 'Welcome to Honest Analytics.', 'honest-analytics' ),
+			esc_html__( 'It is already recording visits on privacy-preserving defaults. Take a minute to choose how visits are counted, how long data is kept, and which privacy signals to respect - or skip it and change these any time in Settings.', 'honest-analytics' ),
+			esc_url( $start ),
+			esc_html__( 'Start setup', 'honest-analytics' ),
+			esc_url( $dismiss ),
+			esc_html__( 'Skip for now', 'honest-analytics' )
+		);
+	}
+
+	/**
+	 * Put the setup prompt away, permanently.
+	 *
+	 * The same shape as {@see handleDismissal()}: skipping the wizard is a
+	 * decision, and a welcome that came back would be nagging.
+	 */
+	public static function handleSetupDismissal(): void {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET['honest_dismiss_setup'] ) ) {
+			return;
+		}
+
+		if ( ! current_user_can( Capabilities::MANAGE ) ) {
+			return;
+		}
+
+		check_admin_referer( 'honest-analytics-dismiss-setup' );
+
+		update_option( Installer::SETUP_OPTION, Installer::SETUP_DISMISSED, false );
+
+		wp_safe_redirect( remove_query_arg( [ 'honest_dismiss_setup', '_wpnonce' ] ) );
+
+		exit;
 	}
 
 	/**

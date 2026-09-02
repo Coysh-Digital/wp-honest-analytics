@@ -26,6 +26,7 @@ use HonestAnalytics\Admin\Screens\PrivacyScreen;
 use HonestAnalytics\Admin\Screens\RealtimeScreen;
 use HonestAnalytics\Admin\Screens\SearchConsoleScreen;
 use HonestAnalytics\Admin\Screens\SettingsScreen;
+use HonestAnalytics\Admin\Screens\SetupScreen;
 use HonestAnalytics\Admin\Screens\ShareScreen;
 use HonestAnalytics\Admin\Screens\SourcesScreen;
 use HonestAnalytics\Capabilities\Capabilities;
@@ -209,6 +210,21 @@ final class Menu {
 
 			$screen->register( self::SLUG );
 		}
+
+		// The setup wizard has no place in the menu: it is a one-time flow
+		// reached from the welcome banner or by URL, not a screen somebody
+		// returns to. A `null` parent makes it routable without a row. It ships
+		// in both editions, so it needs no edition check.
+		$setup = new SetupScreen();
+		$hook  = (string) add_submenu_page(
+			'',
+			$setup->title(),
+			$setup->menuLabel(),
+			$setup->capability(),
+			$setup->slug(),
+			[ $setup, 'renderPage' ]
+		);
+		$setup->bind( $hook );
 	}
 
 	/**

@@ -1687,3 +1687,29 @@ tr:hover .ha-row-edit,
 .ha-measure + .ha-measure {
 	margin-top: 10px;
 }
+
+/* -------------------------------------------------------------- setup wizard */
+
+/* Narrower than the settings screen: three short cards read better as a column
+   than stretched to the full prose width. */
+.ha-setup {
+	max-width: 680px;
+}
+
+.ha-setup-lede {
+	font-size: 15px;
+	line-height: 1.6;
+	color: var(--ha-ink);
+	margin: 0 0 20px;
+}
+
+.ha-setup-actions {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	margin-top: 24px;
+}
+
+.ha-setup-skip {
+	color: var(--ha-muted);
+}
