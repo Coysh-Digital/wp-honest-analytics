@@ -46,14 +46,17 @@ The two numbers are not comparable as a measure of the code: the Pro build
 vendors dompdf for the shareable PDF, which is most of the difference.
 
 `bin/pro-manifest.txt` is the difference between them: a readable list of what
-is Pro-only, and what legitimately mentions a stripped class from behind an
-edition check. It has a third section for what ought to be Pro-only and cannot
-be stripped yet, each with the reason; it is currently empty, which is the
-target rather than the default. `bin/check-lite-build.php` refuses to package a Lite build that still
-reaches for something the strip removed, telling load-time references
-(`extends`, trait `use`, constant initialisers) apart from runtime ones - and
-`bin/check-classes-load.php` then autoloads every class in each staged build,
-because parsing is not booting.
+is Pro-only, and what legitimately mentions a stripped class from behind a
+check. Its third section, for things that ought to be Pro-only and cannot be
+stripped yet, is empty and should stay that way.
+
+Since 0.9.3 the free package contains **no reference to a paid edition at all** -
+no licence key, no `Edition` class, no gate, no menu row. It is a complete
+plugin that publishes hooks, and the paid package attaches to them from
+`src/Extensions/Extension.php`, which `Bootstrap::extensions()` includes by path
+if it is there. Anything the paid edition adds goes through that file; if it
+cannot, the shared file it needs is missing an extension point and adding the
+point is the fix. See [ADR 61](architecture.md#adr-61---the-free-package-does-not-know-a-paid-one-exists).
 
 `HONEST_ANALYTICS_HAS_PRO` is stamped at package time and identifies the build.
 The working tree defines nothing, and undefined means Pro, which is what a

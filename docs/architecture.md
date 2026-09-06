@@ -25,7 +25,7 @@ reversed, the entry stays and gains a note.
 - [Editions and licensing](#editions-and-licensing) - ADR 44-48
 - [What was dropped](#what-was-dropped) - ADR 49-52
 - [Importing](#importing) - ADR 53-56
-- [Editions, continued](#adr-57---the-paid-reports-are-named-in-the-free-menu-and-described) - ADR 57, 59, 60
+- [Editions, continued](#adr-57---the-paid-reports-are-named-in-the-free-menu-and-described) - ADR 57, 59-61
 - [Schema and migrations](#adr-58---migrations-run-from-cron-and-the-cli-never-from-a-page-load) - ADR 58
 
 ---
@@ -778,16 +778,18 @@ because a per-row query on a list table is how list tables become slow.
 ### ADR 44 - One question, asked in one place
 
 **Decision.** `Edition::isPro()` reads the build constant, then the development
-constant, then a filter, then the licence state. Nothing else in the codebase
-asks the question.
+constant, then a filter, then the licence state. Nothing else asks the
+question - and since ADR 61 the class is not in the free package at all, so
+nothing there can.
 
 **Why.** Edition checks scattered through templates rot. One gate can be
 tested, and can be flipped in development with a single constant.
 
 **Consequence.** The check sits in front of the query, not in front of the
-markup, so a downgraded site does not quietly keep computing figures it will
-not show. Lite has no Pro rows at all; a Pro build with no active licence keeps
-them, leading to a page that describes the report rather than a 403 (ADR 59).
+markup, so a site whose licence has lapsed does not quietly keep computing
+figures it will not show. It reaches those queries at all only because the
+package contains them: the free one has no rows, no screens and no gate
+(ADR 59, ADR 61).
 
 ### ADR 45 - Three editions, two behaviours
 
@@ -1095,6 +1097,59 @@ constructs a no-op. `LiteFallbacksTest` injects them deliberately and drives
 capture, drain, session close and a Dashboard render through the set - which
 matters because `HitApplier` and `Drainer` both catch `Throwable`, so a missing
 dependency there does not white-screen anybody. It stops counting.
+
+### ADR 61 - The free package does not know a paid one exists
+
+**Decision.** Nothing outside `src/Extensions/` names `Edition`, a licence, or
+a paid report. `src/Edition/` strips alongside `src/Licensing/`. The plugin
+publishes hooks; the paid package attaches to them from
+`src/Extensions/Extension.php`, which `Bootstrap::extensions()` includes **by
+path** if that file happens to exist and ignores if it does not.
+
+**Why.** ADR 59 removed the paid reports from the free menu, and ADR 60 removed
+the paid code from the free package. What was left was the shape of the thing:
+`Bootstrap` naming three handlers it might not have, `Cron` naming a mailer,
+`Menu` holding eighteen class names of which ten were absent, the Settings form
+carrying 285 lines of controls for features that build had none of. Every one
+inert, every one guarded, and every one a sentence saying "there is a bigger
+version of this".
+
+A gate is a statement about what is missing. Enough of them and the free
+edition reads as a demonstration of the paid one, which is what the plugin
+directory objected to in the first place and what the guidelines are actually
+about. The only way to stop saying it is to stop asking.
+
+**Consequence.** The free package is a complete plugin with extension points,
+and the paid one is a package that uses them. That is a better description of
+what both have always been, and it is testable: a scan for "pro", "edition" or
+"licence" in the built free package returns two hits, both about the terms of
+the geolocation database somebody may install.
+
+The extension points are ordinary and documented, and most are ones this plugin
+should arguably have published anyway - a screen list, card slots on two
+reports, a settings section, registration moments on the front end and in the
+admin, a daily hook, a label filter. Nothing is a private back door.
+
+Three consequences worth writing down, because each was found the hard way:
+
+- **`do_action()` calls a no-argument hook with the empty string.** Attaching a
+  method with an optional typed parameter is a TypeError on every request.
+  `Registry::register( ?Settings $settings = null )` is why the paid build now
+  attaches through a closure.
+- **A hook has to be attached before the thing that fires it runs.** The
+  extension loads before `Bootstrap::always()` for that reason alone.
+- **Moving a filter changes when it runs.** The licence provider was registered
+  by `Menu::register()`, which runs in the admin. Registering it from the
+  extension made it every request, so anything merely asking which edition this
+  was would have had a commerce API on the other end. It is admin-only again,
+  and the reason is in the code.
+
+**What this does not do.** It does not make the free package testable as
+itself. The suite runs against the whole tree, which is the paid build, so the
+free build's stand-in objects are only ever exercised by `LiteFallbacksTest`
+and by installing the zip. It also means the paid build's wiring lives in one
+file that only `bin/build-pro.sh` exercises, which is a narrower safety net
+than the rest of the plugin has.
 
 ### ADR 58 - Migrations run from cron and the CLI, never from a page load
 
