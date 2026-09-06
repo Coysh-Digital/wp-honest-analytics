@@ -78,7 +78,7 @@ final class Routes {
 	 * The route a visitor's consent decision posts to.
 	 *
 	 * Registered only when the controller is in this build. The consented tier
-	 * is Pro-only and strips whole, and a route whose callback names a missing
+	 * is not in every package, and a route whose callback names a missing
 	 * class is not a 404 - it is an uncaught Error inside the REST dispatcher,
 	 * which is a 500 with a stack trace in the log.
 	 */

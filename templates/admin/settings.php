@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 use HonestAnalytics\Admin\MaintenanceHandler;
 use HonestAnalytics\Support\Losses;
+use HonestAnalytics\Admin\Views\SettingFields;
 use HonestAnalytics\Admin\Views\View;
-use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Scheduling\Cron;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Settings\SettingsRepository;
@@ -608,292 +608,21 @@ $ha_submitted = [
 		</div>
 	</div>
 
-	<?php if ( $isPro ) : ?>
-		<div class="ha-card">
-			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'What gets tracked', 'honest-analytics' ); ?></h2></div>
-			<div class="ha-settings-body">
-				<?php
-				$ha_row(
-					'enableCampaigns',
-					__( 'Campaigns and attribution', 'honest-analytics' ),
-					$ha_switch( 'enableCampaigns', $settings->enableCampaigns, __( 'Read utm_ tags and ad click IDs', 'honest-analytics' ), $overrides( 'enableCampaigns' ) ),
-					__( 'Shows which tagged links brought people, and what they did next. The tags are stripped from stored paths either way, so this does not change the Pages report.', 'honest-analytics' )
-				);
-
-				$ha_row(
-					'attributionModel',
-					__( 'Attribution model', 'honest-analytics' ),
-					$ha_select(
-						'attributionModel',
-						$settings->attributionModel,
-						[
-							'last-click'  => __( 'Last non-direct click', 'honest-analytics' ),
-							'first-click' => __( 'First click', 'honest-analytics' ),
-							'linear'      => __( 'Linear', 'honest-analytics' ),
-						],
-						$overrides( 'attributionModel' )
-					),
-					__( 'How a session with more than one campaign touch divides the credit. With a single touch, every model agrees.', 'honest-analytics' )
-				);
-
-				$ha_row(
-					'enableGeo',
-					__( 'Geography', 'honest-analytics' ),
-					$ha_switch( 'enableGeo', $settings->enableGeo, __( 'Record which country a visit came from', 'honest-analytics' ), $overrides( 'enableGeo' ) ),
-					$geo['installed']
-						? __( 'Resolved on this server from a local database. No lookup service is ever called, and nothing more precise than a country is derived.', 'honest-analytics' )
-						: __( 'Needs a local database, which is not downloaded automatically. Install one from the Locations screen: upload the .mmdb file, or give it an address to fetch once. No terminal needed.', 'honest-analytics' )
-				);
-
-				$ha_row(
-					'enableEvents',
-					__( 'Events and interactions', 'honest-analytics' ),
-					$ha_switch( 'enableEvents', $settings->enableEvents, __( 'Record custom events, outbound clicks, downloads, scroll depth and marked clicks', 'honest-analytics' ), $overrides( 'enableEvents' ), '[data-ha-events]' ),
-					__( 'Loads a small extra script. Left off, none of these are recorded and the core tracker stays smaller.', 'honest-analytics' )
-				);
-				?>
-
-				<div data-ha-events>
-					<?php
-					$ha_row(
-						'trackOutbound',
-						__( 'Outbound links', 'honest-analytics' ),
-						$ha_switch( 'trackOutbound', $settings->trackOutbound, __( 'Count clicks that leave the site', 'honest-analytics' ), $overrides( 'trackOutbound' ) ),
-						__( 'The destination URL is recorded, so keep an eye on it if your outbound links carry anything sensitive in their query strings.', 'honest-analytics' )
-					);
-
-					$ha_row(
-						'trackDownloads',
-						__( 'Downloads', 'honest-analytics' ),
-						$ha_switch( 'trackDownloads', $settings->trackDownloads, __( 'Count clicks on downloadable files', 'honest-analytics' ), $overrides( 'trackDownloads' ) ),
-						__( 'Same-site links whose extension is listed below.', 'honest-analytics' )
-					);
-
-					$ha_row(
-						'downloadExtensions',
-						__( 'Download extensions', 'honest-analytics' ),
-						$ha_list( 'downloadExtensions', $settings->downloadExtensions, $overrides( 'downloadExtensions' ), "pdf\nzip" ),
-						__( 'One per line, without the dot.', 'honest-analytics' )
-					);
-
-					$ha_row(
-						'trackScroll',
-						__( 'Scroll depth', 'honest-analytics' ),
-						$ha_switch( 'trackScroll', $settings->trackScroll, __( 'Record how far down each page people read', 'honest-analytics' ), $overrides( 'trackScroll' ) ),
-						__( 'Rides the existing pageview beacon, so it adds no extra request.', 'honest-analytics' )
-					);
-
-					$ha_row(
-						'trackClicks',
-						__( 'Clicks on anything else', 'honest-analytics' ),
-						$ha_switch( 'trackClicks', $settings->trackClicks, __( 'Count clicks on elements marked to be tracked', 'honest-analytics' ), $overrides( 'trackClicks' ) ),
-						__( 'Two ways to mark an element: add a data-honest-event="name" attribute in the block editor, or list a CSS selector below. Only the event name you choose is ever recorded - never the element\'s text, its id, or anything a visitor typed.', 'honest-analytics' )
-					);
-
-					$ha_clickSelectorLines = array_map(
-						static fn ( array $pair ): string => $pair['selector'] . ' => ' . $pair['eventName'],
-						$settings->clickSelectors
-					);
-
-					$ha_row(
-						'clickSelectors',
-						__( 'Selectors', 'honest-analytics' ),
-						$ha_list( 'clickSelectors', $ha_clickSelectorLines, $overrides( 'clickSelectors' ), ".pricing-cta => pricing-click\n#newsletter-form button => newsletter-click" ),
-						sprintf(
-							/* translators: %d: maximum number of selectors. */
-							__( 'One per line, as "selector => event name". Up to %d; anything past that is not stored. An invalid selector simply never matches - it will not break the others.', 'honest-analytics' ),
-							Settings::MAX_CLICK_SELECTORS
-						)
-					);
-					?>
-				</div>
-
-				<?php
-				$ha_row(
-					'trackSiteSearch',
-					__( 'Site search', 'honest-analytics' ),
-					$ha_switch( 'trackSiteSearch', $settings->trackSiteSearch, __( 'Record what people search for on this site', 'honest-analytics' ), $overrides( 'trackSiteSearch' ), '[data-ha-search]' ),
-					__( 'Read from the search URL, so it needs no JavaScript. The term goes to its own report and is removed from the stored path.', 'honest-analytics' )
-				);
-				?>
-
-				<div data-ha-search>
-					<?php
-					$ha_row(
-						'siteSearchParam',
-						__( 'Search parameter', 'honest-analytics' ),
-						$ha_text( 'siteSearchParam', $settings->siteSearchParam, $overrides( 'siteSearchParam' ), 's', 'small-text' ),
-						__( 'The query-string parameter holding the search term. WordPress uses “s”; change it only if a search plugin uses something else.', 'honest-analytics' )
-					);
-					?>
-				</div>
-			</div>
-		</div>
-
-		<div class="ha-card">
-			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Consent and durable tracking', 'honest-analytics' ); ?></h2></div>
-			<div class="ha-settings-body">
-				<?php
-				$ha_row(
-					'enableConsent',
-					__( 'Consented tracking', 'honest-analytics' ),
-					$ha_switch( 'enableConsent', $settings->enableConsent, __( 'Allow a first-party cookie for visitors who agree', 'honest-analytics' ), $overrides( 'enableConsent' ), '[data-ha-consent]' ),
-					__( 'Lets visitors who affirmatively agree be counted across days and sessions.', 'honest-analytics' ),
-					__( 'Turning this on sets a cookie, so the cookieless default no longer applies. You will need a consent mechanism and a privacy notice entry.', 'honest-analytics' )
-				);
-				?>
-
-				<div data-ha-consent>
-					<?php
-					$ha_row(
-						'consentCookieName',
-						__( 'Cookie name', 'honest-analytics' ),
-						$ha_text( 'consentCookieName', $settings->consentCookieName, $overrides( 'consentCookieName' ), '_ha_vid', 'small-text' ),
-						__( 'The name of the first-party cookie set for consenting visitors.', 'honest-analytics' )
-					);
-
-					$ha_row(
-						'consentCookieDuration',
-						__( 'Cookie lifetime', 'honest-analytics' ),
-						$ha_number( 'consentCookieDuration', $settings->consentCookieDuration, 3600, Settings::CONSENT_COOKIE_MAX_DURATION, $overrides( 'consentCookieDuration' ), __( 'seconds', 'honest-analytics' ) ),
-						__( 'Hard capped at 24 months. Guidance in several jurisdictions expects consent to be refreshed at least annually.', 'honest-analytics' )
-					);
-
-					$ha_row(
-						'cmpCookieName',
-						__( 'Consent platform cookie', 'honest-analytics' ),
-						$ha_text( 'cmpCookieName', $settings->cmpCookieName, $overrides( 'cmpCookieName' ), 'cookieyes-consent', 'regular-text' ),
-						__( 'If you already run a consent platform, name its cookie and this will read it server-side. A value that is not on the accept list is treated as a refusal, not as “not asked”.', 'honest-analytics' )
-					);
-
-					$ha_row(
-						'associateUserId',
-						__( 'Link to WordPress accounts', 'honest-analytics' ),
-						$ha_switch( 'associateUserId', $settings->associateUserId, __( 'Join consented analytics to user accounts', 'honest-analytics' ), $overrides( 'associateUserId' ) ),
-						__( 'Records which signed-in account a consented visit belonged to.', 'honest-analytics' ),
-						__( 'Being measured and being named are different agreements. Ask for the second one separately.', 'honest-analytics' )
-					);
-
-					$ha_row(
-						'enableJourneys',
-						__( 'Stored journeys', 'honest-analytics' ),
-						$ha_switch( 'enableJourneys', $settings->enableJourneys, __( 'Keep per-visitor page histories', 'honest-analytics' ), $overrides( 'enableJourneys' ) ),
-						__( 'The only table in this plugin that grows with traffic rather than with the number of distinct pages.', 'honest-analytics' ),
-						__( 'This is personal data, with export and erasure obligations attached.', 'honest-analytics' )
-					);
-
-					$ha_row(
-						'journeyRetentionDays',
-						__( 'Journey retention', 'honest-analytics' ),
-						$ha_number( 'journeyRetentionDays', $settings->journeyRetentionDays, 1, Settings::JOURNEY_MAX_RETENTION_DAYS, $overrides( 'journeyRetentionDays' ), __( 'days', 'honest-analytics' ) ),
-						__( 'Hard capped at 26 months.', 'honest-analytics' )
-					);
-
-					$ha_row(
-						'consentLogRetentionDays',
-						__( 'Consent log retention', 'honest-analytics' ),
-						$ha_number( 'consentLogRetentionDays', $settings->consentLogRetentionDays, 0, 36500, $overrides( 'consentLogRetentionDays' ), __( 'days, 0 to keep indefinitely', 'honest-analytics' ) ),
-						__( 'Kept indefinitely by default. The record is the evidence that processing you have already carried out was lawful, which is why erasing a visitor deliberately leaves it behind.', 'honest-analytics' )
-					);
-
-					$ha_row(
-						'policyVersion',
-						__( 'Policy version', 'honest-analytics' ),
-						$ha_text( 'policyVersion', $settings->policyVersion, $overrides( 'policyVersion' ), '1', 'small-text' ),
-						__( 'Recorded against every consent decision. Bump it when your privacy notice changes materially, so old consents can be told apart from new ones.', 'honest-analytics' )
-					);
-					?>
-				</div>
-			</div>
-		</div>
-
-		<div class="ha-card">
-			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Scheduled reports', 'honest-analytics' ); ?></h2></div>
-			<div class="ha-settings-body">
-				<?php
-				$ha_row(
-					'enableScheduledReports',
-					__( 'Email summary', 'honest-analytics' ),
-					$ha_switch( 'enableScheduledReports', $settings->enableScheduledReports, __( 'Send a plain-text summary on a schedule', 'honest-analytics' ), $overrides( 'enableScheduledReports' ) ),
-					__( 'No images and no tracking of any kind in the email itself. Needs at least one recipient below to actually send anything.', 'honest-analytics' )
-				);
-
-				$ha_row(
-					'reportPeriod',
-					__( 'Period', 'honest-analytics' ),
-					$ha_select(
-						'reportPeriod',
-						$settings->reportPeriod,
-						[
-							'7d'  => __( 'Weekly', 'honest-analytics' ),
-							'30d' => __( 'Monthly', 'honest-analytics' ),
-						],
-						$overrides( 'reportPeriod' )
-					),
-					__( 'A weekly report goes out on a Monday and a monthly one on the first, each covering the whole period that just finished.', 'honest-analytics' )
-				);
-
-				$ha_row(
-					'reportRecipients',
-					__( 'Recipients', 'honest-analytics' ),
-					$ha_list( 'reportRecipients', $settings->reportRecipients, $overrides( 'reportRecipients' ), 'person@example.com' ),
-					__( 'One email address per line.', 'honest-analytics' )
-				);
-				?>
-			</div>
-		</div>
-
-		<div class="ha-card">
-			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Traffic alerts', 'honest-analytics' ); ?></h2></div>
-			<div class="ha-settings-body">
-				<?php
-				$ha_row(
-					'enableAlerts',
-					__( 'Spike and drop alerts', 'honest-analytics' ),
-					$ha_switch( 'enableAlerts', $settings->enableAlerts, __( 'Email somebody when traffic departs from its own recent baseline', 'honest-analytics' ), $overrides( 'enableAlerts' ) ),
-					__( 'Compares the last six hours against the same six hours on recent weeks of the same weekday. Below roughly twenty sessions in that window, nothing fires - traffic that quiet is too noisy to alert on either way.', 'honest-analytics' )
-				);
-
-				$ha_row(
-					'alertSensitivity',
-					__( 'Sensitivity', 'honest-analytics' ),
-					$ha_select(
-						'alertSensitivity',
-						$settings->alertSensitivity,
-						[
-							'cautious'  => __( 'Cautious - only a large move', 'honest-analytics' ),
-							'balanced'  => __( 'Balanced', 'honest-analytics' ),
-							'sensitive' => __( 'Sensitive - a smaller move is enough', 'honest-analytics' ),
-						],
-						$overrides( 'alertSensitivity' )
-					),
-					__( 'How far traffic has to move from its baseline before an email goes out. A drop to zero always clears every threshold, because tracking silently breaking is worth knowing about regardless.', 'honest-analytics' )
-				);
-
-				$ha_row(
-					'alertRecipients',
-					__( 'Recipients', 'honest-analytics' ),
-					$ha_list( 'alertRecipients', $settings->alertRecipients, $overrides( 'alertRecipients' ), get_option( 'admin_email' ) ),
-					__( 'One email address per line. Left empty, alerts go to the site\'s admin email.', 'honest-analytics' )
-				);
-				?>
-			</div>
-		</div>
-
-		<div class="ha-card">
-			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Client reports', 'honest-analytics' ); ?></h2></div>
-			<div class="ha-settings-body">
-				<?php
-				$ha_row(
-					'reportBrandName',
-					__( 'Report name', 'honest-analytics' ),
-					$ha_text( 'reportBrandName', $settings->reportBrandName, $overrides( 'reportBrandName' ), get_bloginfo( 'name' ) ),
-					__( 'Shown instead of this site\'s own name on a shared report and its PDF - an agency\'s own name, for a report handed to a client. Left empty, the report uses this site\'s name.', 'honest-analytics' )
-				);
-				?>
-			</div>
-		</div>
-	<?php endif; ?>
+	<?php
+	/**
+	 * Fires between the tracking settings and the retention settings.
+	 *
+	 * Where anything with settings of its own adds them, built from the same
+	 * controls the rows above are, so a card added here looks like the rest of
+	 * the form rather than like a guest in it.
+	 *
+	 * @param SettingFields $fields The controls this form is built from.
+	 */
+	do_action(
+		'honest_analytics_settings_cards',
+		new SettingFields( $settings, $overrides, $ha_row, $ha_switch, $ha_select, $ha_number, $ha_text, $ha_list )
+	);
+	?>
 
 	<div class="ha-card">
 		<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'When the plugin is deleted', 'honest-analytics' ); ?></h2></div>
@@ -916,9 +645,13 @@ $ha_submitted = [
 	</div>
 </form>
 
-<?php if ( Edition::hasPro() ) : ?>
-	<p class="ha-footnote">
-		<?php esc_html_e( 'A licence key is not a setting, so it lives on its own screen:', 'honest-analytics' ); ?>
-		<a href="<?php echo esc_url( $params->url( [], 'honest-analytics-licence' ) ); ?>"><?php esc_html_e( 'Licence', 'honest-analytics' ); ?></a>
-	</p>
-<?php endif; ?>
+<?php
+/**
+ * Fires at the very bottom of the settings form.
+ *
+ * For a footnote pointing somewhere else - anything that is emphatically not a
+ * setting but that somebody looking at this screen may be hunting for.
+ *
+ * @param RequestParams $params The toolbar state, for building a URL.
+ */
+do_action( 'honest_analytics_settings_footer', $params );

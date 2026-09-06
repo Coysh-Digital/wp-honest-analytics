@@ -9,8 +9,6 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Scheduling;
 
-use HonestAnalytics\Alerts\AlertChecker;
-use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Gc\GcService;
 use HonestAnalytics\Import\ImportJob;
 use HonestAnalytics\Import\ImportRepository;
@@ -172,16 +170,19 @@ final class Fallback {
 			Log::warning( 'The tidy-up could not finish from a page request: ' . $e->getMessage() );
 		}
 
-		// Rides the same daily throttle as the tidy-up above, so a site with no
-		// WP-Cron still gets checked once a day from whatever admin page happens
-		// to load first.
-		if ( Edition::isPro() && class_exists( AlertChecker::class ) ) {
-			try {
-				AlertChecker::maybeCheck();
-			} catch ( \Throwable $e ) {
-				Log::warning( 'The traffic alert check could not run from a page request: ' . $e->getMessage() );
-			}
-		}
+		/**
+		 * Fires once a day from a page request, on a site whose cron never runs.
+		 *
+		 * The same hook the cron event fires, on the same daily throttle, so a
+		 * site with no WP-Cron still gets its daily work from whichever admin
+		 * page happens to load first.
+		 *
+		 * @param string $source 'fallback', because somebody is waiting for
+		 *                       this page. Sending mail from here would put an
+		 *                       SMTP round trip inside their page load, which
+		 *                       is why the summary sits this one out.
+		 */
+		do_action( 'honest_analytics_daily', 'fallback' );
 	}
 
 	/**

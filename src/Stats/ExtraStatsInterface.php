@@ -1,6 +1,6 @@
 <?php
 /**
- * The queries only the paid reports run.
+ * The queries only some reports run.
  *
  * @package HonestAnalytics
  */
@@ -16,17 +16,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Campaigns, locations, events, outbound clicks, searches and scroll depth.
  *
- * A seam that exists for one reason: DashboardScreen and PagesScreen ship in
- * every build and ask the container for this, behind an edition ternary. The
- * ternary decides whether the query runs; it cannot decide whether the class is
- * there to name, and Plugin is loaded on every request.
- *
- * Wider than the free build needs - six of these eleven are reached from
- * screens that survive the strip and five only from ones that do not - because
- * the container returns this type either way, and the stripped screens have to
- * typecheck against it too.
+ * A seam that exists because Plugin is loaded on every request and cannot name
+ * a class that may not be in this package. What answers it in a package with
+ * none of these reports is NoExtraStats, and nothing asks it anything.
  */
-interface ProStatsInterface {
+interface ExtraStatsInterface {
 
 	/**
 	 * Sessions and conversions by campaign.

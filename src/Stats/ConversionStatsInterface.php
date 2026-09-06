@@ -21,8 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Goal does not survive the strip - an interface naming one would only move the
  * problem to whichever file declared it.
  *
- * DashboardScreen calls goals() behind an edition ternary and ships in every
- * build, which is why the container cannot simply omit this.
+ * The container returns this type whatever is in the package, which is why it
+ * cannot simply omit it.
  */
 interface ConversionStatsInterface {
 

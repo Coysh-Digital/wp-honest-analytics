@@ -19,10 +19,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Nothing to match against, so nothing happens.
  *
- * Not a disabled GoalMatcher: the free build contains no goals to match, no
- * screen to define one on and no table row that could hold one. This is what
- * the write path is handed instead, so that applying a batch is the same call
- * in every edition.
+ * Not a disabled GoalMatcher: a package without goals has none to match, no
+ * screen to define one on and no row that could hold one. This is what the
+ * write path is handed instead, so applying a batch is the same call either way.
  */
 final class NoGoalMatching implements GoalMatcherInterface {
 

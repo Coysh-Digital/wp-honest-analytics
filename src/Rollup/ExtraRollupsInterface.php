@@ -1,6 +1,6 @@
 <?php
 /**
- * The Pro half of a rollup write.
+ * The rollup rows beyond the core ones.
  *
  * @package HonestAnalytics
  */
@@ -18,20 +18,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * The rows only the paid reports read, written beside the ones every build does.
+ * The rows only some reports read, written beside the ones every build writes.
  *
  * DbRollupSink holds one of these and calls it while flushing a batch, inside
- * the transaction that makes a day whole. A build with no Pro reports writes
- * no Pro rows and the rest of the flush is unchanged.
+ * the transaction that makes a day whole. A build with no reports for these
+ * rows writes none of them, and the rest of the flush is unchanged.
  *
  * Every type on this contract survives the strip - Session, DimensionCapper,
  * InteractionBuckets and DateTimeZone are all shared. That is what makes this
  * a seam rather than the same problem one file further along.
  */
-interface ProRollupWriterInterface {
+interface ExtraRollupsInterface {
 
 	/**
-	 * Write what a finished session contributes to the Pro reports.
+	 * Write what a finished session contributes beyond the core rollups.
 	 *
 	 * @param Session         $session  Session.
 	 * @param string          $date     Local date the session started.

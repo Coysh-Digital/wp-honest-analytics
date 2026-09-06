@@ -62,7 +62,7 @@ final class InfoCommand {
 		}
 
 		$rows = [
-			[ __( 'Edition', 'honest-analytics' ), (string) $summary['edition'] ],
+			[ __( 'Build', 'honest-analytics' ), (string) $summary['build'] ],
 			[ __( 'Schema', 'honest-analytics' ), $summary['schemaCurrent'] ? __( 'current', 'honest-analytics' ) : __( 'needs upgrading', 'honest-analytics' ) ],
 			[ __( 'Write driver', 'honest-analytics' ), (string) $summary['writeDriver'] ],
 			[ __( 'Session store', 'honest-analytics' ), (string) $summary['sessionStore'] ],

@@ -41,30 +41,30 @@ final class DbRollupSink implements RollupSinkInterface {
 	private DimensionCapper $capper;
 	private UniqueCounterInterface $counter;
 	private ChannelClassifier $channels;
-	private ProRollupWriterInterface $pro;
+	private ExtraRollupsInterface $extras;
 	private DateTimeZone $timezone;
 
 	/**
-	 * @param Settings                 $settings Settings.
-	 * @param DimensionCapper          $capper   Dimension capper.
-	 * @param UniqueCounterInterface   $counter  Unique counter.
-	 * @param ChannelClassifier        $channels Channel classifier.
-	 * @param ProRollupWriterInterface $pro      Pro rollup writer.
-	 * @param DateTimeZone|null        $timezone Site timezone.
+	 * @param Settings               $settings Settings.
+	 * @param DimensionCapper        $capper   Dimension capper.
+	 * @param UniqueCounterInterface $counter  Unique counter.
+	 * @param ChannelClassifier      $channels Channel classifier.
+	 * @param ExtraRollupsInterface  $extras   The rollup rows beyond the core ones.
+	 * @param DateTimeZone|null      $timezone Site timezone.
 	 */
 	public function __construct(
 		Settings $settings,
 		DimensionCapper $capper,
 		UniqueCounterInterface $counter,
 		ChannelClassifier $channels,
-		ProRollupWriterInterface $pro,
+		ExtraRollupsInterface $extras,
 		?DateTimeZone $timezone = null
 	) {
 		$this->settings = $settings;
 		$this->capper   = $capper;
 		$this->counter  = $counter;
 		$this->channels = $channels;
-		$this->pro      = $pro;
+		$this->extras   = $extras;
 		$this->timezone = $timezone ?? Timezone::site();
 	}
 
@@ -87,7 +87,7 @@ final class DbRollupSink implements RollupSinkInterface {
 		if ( null !== $interactions && ! $interactions->isEmpty() ) {
 			$this->writeCrawlers( $interactions );
 			$this->writePageSources( $interactions );
-			$this->pro->writeInteractions( $interactions, $this->capper );
+			$this->extras->writeInteractions( $interactions, $this->capper );
 		}
 	}
 
@@ -201,7 +201,7 @@ final class DbRollupSink implements RollupSinkInterface {
 	 * the same way, by channel and by device family.
 	 *
 	 * Entry and exit pages are left per session: they are keyed by path, so
-	 * there is nothing much to collapse, and the Pro writer keeps its own
+	 * there is nothing much to collapse, and the extras writer keeps its own
 	 * per-session contract.
 	 *
 	 * @param Session[] $sessions Finished sessions.
@@ -224,7 +224,7 @@ final class DbRollupSink implements RollupSinkInterface {
 
 			$this->writeEntryAndExit( $session, $date, $hour );
 
-			$this->pro->writeSession( $session, $date, $this->capper, $this->timezone );
+			$this->extras->writeSession( $session, $date, $this->capper, $this->timezone );
 		}
 
 		foreach ( $totals as $group ) {

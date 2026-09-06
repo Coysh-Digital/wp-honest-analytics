@@ -41,6 +41,12 @@ Installed into `vendor/` and included in the distributed zip.
 
 ### maxmind-db/reader
 
+**Paid edition only, since 0.9.3.** Country reporting is Pro, so the reader is
+removed when the free edition is packaged - along with dompdf and its own
+dependencies, which belong to the shareable PDF. `bin/pro-manifest.txt` is the
+list; `composer.json` still requires all of them, because there is one source
+tree and the paid build needs them.
+
 - **Licence** Apache-2.0
 - **Home** <https://github.com/maxmind/MaxMind-DB-Reader-php>
 - **Used for** reading a local GeoLite2 or DB-IP database when country
@@ -49,9 +55,8 @@ Installed into `vendor/` and included in the distributed zip.
 
 Apache-2.0 is compatible with GPLv3 and not with GPLv2 on its own. The plugin
 is licensed **GPL-2.0-or-later**, so the combination is distributed under
-GPLv3 by anybody who needs GPLv3 terms, and the question does not arise. This
-is the only Apache-2.0 component, and it is the only one worth stating
-explicitly, since it ships in the free edition as well as the paid one.
+GPLv3 by anybody who needs GPLv3 terms, and the question does not arise. It is
+the only Apache-2.0 component either edition carries.
 
 ---
 

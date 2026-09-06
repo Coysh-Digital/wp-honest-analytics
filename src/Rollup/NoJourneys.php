@@ -19,9 +19,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Nothing durable to record against, so nothing is recorded.
  *
  * A journey is a sequence of pages joined by an identity that outlives the day,
- * which the free edition has no way to obtain: it is cookieless by default and
- * its consented tier is Pro-only. `isEnabled()` answering false is the true
- * state of that build rather than a switch held down.
+ * which a package with no consented tier has no way to obtain - it is cookieless
+ * by default. `isEnabled()` answering false is the true state of that build
+ * rather than a switch held down.
  */
 final class NoJourneys implements JourneyRecorderInterface {
 

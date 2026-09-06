@@ -9,8 +9,6 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Cli;
 
-use HonestAnalytics\Edition\Edition;
-use HonestAnalytics\Email\ReportMailer;
 use HonestAnalytics\Export\Csv;
 use HonestAnalytics\Export\Exporter;
 use HonestAnalytics\Plugin;
@@ -149,34 +147,22 @@ final class ReportCommand {
 	 * @param DateRange $range Period.
 	 */
 	private function email( DateRange $range ): void {
-		$settings = Plugin::instance()->settings();
-
-		// Scheduled summaries are Pro, and the free build ships without the
-		// mailer at all rather than with it switched off.
-		if ( ! Edition::isPro() || ! class_exists( ReportMailer::class ) ) {
-			\WP_CLI::error( __( 'Scheduled summaries are part of Honest Analytics Pro.', 'honest-analytics' ) );
+		// Nothing in this package sends a summary on a schedule, so there is
+		// nothing here to send now either. Whatever does is what answers this.
+		if ( ! has_action( 'honest_analytics_cli_send_report' ) ) {
+			\WP_CLI::error( __( 'This build does not send scheduled summaries.', 'honest-analytics' ) );
 
 			return;
 		}
 
-		if ( [] === ReportMailer::recipients( $settings ) ) {
-			\WP_CLI::error( __( 'No valid recipients are configured on the Settings screen.', 'honest-analytics' ) );
-
-			return;
-		}
-
-		if ( ! ReportMailer::send( $settings, $range ) ) {
-			\WP_CLI::error( __( 'The email could not be sent. Check this site can send mail at all.', 'honest-analytics' ) );
-
-			return;
-		}
-
-		\WP_CLI::success(
-			sprintf(
-				/* translators: %s: comma separated email addresses. */
-				__( 'Sent to %s.', 'honest-analytics' ),
-				implode( ', ', ReportMailer::recipients( $settings ) )
-			)
-		);
+		/**
+		 * Fires when somebody asks for the scheduled summary to be sent now.
+		 *
+		 * The listener reports success or failure to WP-CLI itself, because
+		 * only it knows what could go wrong on the way.
+		 *
+		 * @param DateRange $range The period to cover.
+		 */
+		do_action( 'honest_analytics_cli_send_report', $range );
 	}
 }

@@ -42,9 +42,9 @@ final class PlainEndpoint {
 	 *
 	 * A method rather than a constant, because a constant initialiser is
 	 * resolved when the class loads and this one has to ask whether the consent
-	 * controller is in this build. It is not, in the free edition - the whole
-	 * consented tier strips - and answering 204 to a beacon nothing could have
-	 * sent is worse than not answering the route at all.
+	 * controller is in this build. Where the consented tier is not, answering
+	 * 204 to a beacon nothing could have sent is worse than not answering the
+	 * route at all.
 	 *
 	 * @return string[]
 	 */

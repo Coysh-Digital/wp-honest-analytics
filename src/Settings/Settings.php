@@ -96,7 +96,7 @@ final class Settings {
 	public bool $blockCrawlers = true;
 	public bool $trackCrawlers = true;
 
-	// Pro reports.
+	// Settings for reports not every build has.
 	public bool $enableCampaigns    = true;
 	public string $attributionModel = 'last-click';
 	public bool $enableGeo          = false;
@@ -133,7 +133,7 @@ final class Settings {
 	public int $consentLogRetentionDays  = 0;
 	public string $policyVersion         = '1';
 
-	// Third-party integrations. Pro; the WordPress-native surfaces - the
+	// Third-party integrations. Not every build has them; the WordPress-native surfaces - the
 	// dashboard widgets, the post-list column, the editor panel - are not
 	// integrations in this sense and are always on.
 	public bool $enableIntegrations = true;
@@ -172,8 +172,6 @@ final class Settings {
 	 */
 	public string $reportBrandName = '';
 
-	// Licence and lifecycle.
-	public string $licenceKey = '';
 
 	/**
 	 * Whether deleting the plugin leaves the analytics tables behind.

@@ -11,7 +11,6 @@ namespace HonestAnalytics\Admin\Screens;
 
 use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Capabilities\Capabilities;
-use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Privacy\PrivacyService;
 
@@ -135,7 +134,6 @@ final class PrivacyScreen extends Screen {
 				'posture'   => $service->posture(),
 				'counts'    => $service->counts( $this->siteId() ),
 				'settings'  => $plugin->settings(),
-				'isPro'     => Edition::isPro(),
 				'result'    => $this->requestResult,
 				'canManage' => current_user_can( Capabilities::MANAGE ),
 			]

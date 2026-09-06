@@ -39,7 +39,7 @@ final class DimensionCapper {
 	 * because it is a fixed enum stored inline, not a dimension at all.
 	 * SearchQuery is absent for a third reason: it is not live-captured at all.
 	 * Search Console data arrives as a complete, already-aggregated day, with
-	 * click counts known upfront, so the Search Console rollup writer (Pro) can
+	 * click counts known upfront, so the Search Console rollup writer can
 	 * sort by clicks and keep the true top fifty per page rather than guessing
 	 * with a first-N-per-arrival rule built for traffic nobody can see the end
 	 * of yet.

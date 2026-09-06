@@ -58,10 +58,16 @@ final class Connection {
 	 * The broker when there is one, the site's own Google client otherwise, and
 	 * filterable so a different arrangement can be dropped in without touching
 	 * a gate.
+	 *
+	 * The broker is named inside a class_exists() because it is not in every
+	 * build, and no broker exists yet for anything to talk to - so a package
+	 * that has no use for one does not carry it.
+	 * GA4 import itself is in both editions and goes on working through the
+	 * site's own Google client, which is the only route anybody has today.
 	 */
 	public static function provider(): Ga4ProviderInterface {
-		$broker = new BrokerProvider();
-		$chosen = $broker->isConfigured() ? $broker : new GoogleClientProvider();
+		$broker = class_exists( BrokerProvider::class ) ? new BrokerProvider() : null;
+		$chosen = ( null !== $broker && $broker->isConfigured() ) ? $broker : new GoogleClientProvider();
 
 		/**
 		 * Filters the Google connection provider.

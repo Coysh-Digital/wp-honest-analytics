@@ -9,11 +9,7 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Scheduling;
 
-use HonestAnalytics\Alerts\AlertChecker;
-use HonestAnalytics\Edition\Edition;
-use HonestAnalytics\Email\ReportMailer;
 use HonestAnalytics\Gc\GcService;
-use HonestAnalytics\Import\Gsc\DailySync;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Schema\Upgrader;
 use HonestAnalytics\Support\Log;
@@ -131,9 +127,9 @@ final class Cron {
 		if ( ! wp_next_scheduled( self::GSC_SYNC_HOOK ) ) {
 			// Scheduled unconditionally, on every site, the same way the other
 			// three are - Lite included. runGscSync() is what actually gates on
-			// the edition and on class_exists(), so this event is cheap and
+			// whether anything is listening, so this event is cheap and
 			// silent everywhere it is not applicable rather than being a second
-			// thing that has to agree with the licence state.
+			// thing that has to agree with what is actually connected.
 			wp_schedule_event( time() + 600, 'daily', self::GSC_SYNC_HOOK );
 		}
 	}
@@ -193,45 +189,36 @@ final class Cron {
 			Log::error( 'Scheduled maintenance failed: ' . $e->getMessage() );
 		}
 
-		// Scheduled summaries are Pro, and the free build is packaged without
-		// the mailer at all. Without this guard the nightly job logs a fatal
-		// every night on wordpress.org installs - caught, so nothing breaks,
-		// and therefore never noticed.
-		if ( Edition::isPro() && class_exists( ReportMailer::class ) ) {
-			try {
-				ReportMailer::maybeSend();
-			} catch ( \Throwable $e ) {
-				Log::error( 'The scheduled report could not be sent: ' . $e->getMessage() );
-			}
-		}
-
-		// Same reasoning, same guard: alerts are Pro, and the free build is
-		// packaged without the checker at all.
-		if ( Edition::isPro() && class_exists( AlertChecker::class ) ) {
-			try {
-				AlertChecker::maybeCheck();
-			} catch ( \Throwable $e ) {
-				Log::error( 'The traffic alert check failed: ' . $e->getMessage() );
-			}
-		}
+		/**
+		 * Fires once a day, after the tidy-up.
+		 *
+		 * For work that belongs on a daily schedule and is not maintenance.
+		 * Anything hooked here runs inside the same cron event, so it should
+		 * catch its own failures rather than taking the rest of the night's
+		 * work down with it.
+		 *
+		 * @param string $source 'cron' here; 'fallback' when a site with no
+		 *                       working cron reaches the same point from a page
+		 *                       request. Work that should not happen during
+		 *                       somebody's page load can test for it.
+		 */
+		do_action( 'honest_analytics_daily', 'cron' );
 	}
 
 	/**
-	 * Re-pull the last week of Search Console data, if this site is connected.
+	 * The daily slot for pulling data back from somewhere else.
 	 *
-	 * Search Console is Pro, and the free build is packaged without
-	 * {@see DailySync} at all - guarded the same way the nightly summary and
-	 * the traffic alert check are, so this event is scheduled on every site but
-	 * does nothing on a Lite one or an unlicensed Pro one.
+	 * Scheduled on every site and does nothing unless something is listening.
+	 * Separate from `honest_analytics_daily` because re-reading somebody else's
+	 * API is a different kind of work from maintenance, and a site with no such
+	 * connection should not carry the event's failures in the same log line.
 	 */
 	public static function runGscSync(): void {
-		if ( Edition::isPro() && class_exists( DailySync::class ) ) {
-			try {
-				DailySync::run();
-			} catch ( \Throwable $e ) {
-				Log::error( 'The Search Console daily sync failed: ' . $e->getMessage() );
-			}
-		}
+		/**
+		 * Fires once a day, for re-reading an external source this site is
+		 * connected to.
+		 */
+		do_action( 'honest_analytics_daily_sync' );
 	}
 
 	/**

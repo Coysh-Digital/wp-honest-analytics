@@ -9,27 +9,24 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Distribution;
 
-use HonestAnalytics\Edition\Edition;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Only one edition runs at a time, and swapping them moves no data.
+ * Only one copy runs at a time, and swapping them moves no data.
  *
- * The free build comes from wordpress.org as `honest-analytics` and the paid
- * one is a direct download as `honest-analytics-pro`. They are separate plugin
- * folders, so nothing stops somebody activating both - at which point the
- * second to load redefines constants the first already defined, and the site
- * fills up with notices while one of the two silently does nothing.
+ * Two packages can be installed side by side: one comes from the plugin
+ * directory as `honest-analytics`, another may be installed by hand under a
+ * different folder. They are separate plugin entries as far as WordPress is
+ * concerned, so both can be active at once - and both would then define the
+ * same constants, register the same hooks and drain the same spool.
  *
- * So: Pro wins, Lite stands down, and the administrator is told plainly that
- * nothing was deleted. That last part is the whole point of the notice. Both
- * builds read and write the same tables, the same options, the same cache
- * groups and the same scheduled events - none of which are derived from the
- * plugin slug - so history collected under one appears unchanged under the
- * other, in either direction.
+ * So: one stands down, the administrator is told plainly that nothing was
+ * deleted, and which one stays is decided by
+ * `honest_analytics_coexistence_precedence` rather than by either copy knowing
+ * what the other is.
  */
 final class Coexistence {
 
@@ -44,7 +41,7 @@ final class Coexistence {
 	private const ENTRY = '/honest-analytics.php';
 
 	/**
-	 * Watch for the other edition.
+	 * Watch for another copy.
 	 */
 	public static function register(): void {
 		// Only in the admin: deactivating a plugin needs wp-admin includes, and
@@ -59,27 +56,35 @@ final class Coexistence {
 	}
 
 	/**
-	 * Deactivate whichever edition should not be running.
+	 * Deactivate whichever copy should not be running.
 	 */
 	public static function standDown(): void {
-		$other = self::otherEdition();
+		$other = self::otherCopy();
 
 		if ( null === $other ) {
 			return;
 		}
 
-		// Pro is the paid build and the one with more to offer, so it is the
-		// one that stays. Whichever of the two notices this, the outcome is
-		// the same, which is what stops them deactivating each other in turn.
+		/**
+		 * Filters this copy's precedence when two are installed.
+		 *
+		 * Both copies run this code and both reach their own answer, which is what
+		 * stops them deactivating each other in turn: the one that carries more
+		 * says so, the plain one does not, and they agree without talking.
+		 *
+		 * @param int $precedence Higher stays. Zero is the plain package.
+		 */
+		$precedence = (int) apply_filters( 'honest_analytics_coexistence_precedence', 0 );
+
 		// Silently, in both branches. The deactivation hook clears the scheduled
-		// events and those belong to the data, not to the build - letting Lite
-		// run its hook on the way out would unschedule the drain that Pro is
-		// about to rely on.
-		// The third argument matters on a network: deactivating a
-		// network-activated plugin per-site leaves it active network-wide and
-		// loading again on the next request, which would be a stand-down that
-		// never happened.
-		if ( Edition::hasPro() ) {
+		// events and those belong to the data, not to the copy - letting the one
+		// standing down run its hook would unschedule the drain the other is about
+		// to rely on.
+		//
+		// The third argument matters on a network: deactivating a network-activated
+		// plugin per-site leaves it active network-wide and loading again on the
+		// next request, which would be a stand-down that never happened.
+		if ( $precedence > 0 ) {
 			deactivate_plugins( $other, true, self::isNetworkActive( $other ) );
 
 			set_transient( self::NOTICE, 'lite-stood-down', WEEK_IN_SECONDS );
@@ -123,8 +128,8 @@ final class Coexistence {
 
 		printf(
 			'<div class="notice notice-info is-dismissible"><p><strong>%s</strong> %s</p></div>',
-			esc_html__( 'Honest Analytics Pro is running, so the free edition has been deactivated.', 'honest-analytics' ),
-			esc_html__( 'Nothing was deleted. Both editions use the same tables, so every figure you had before is still there and still counting.', 'honest-analytics' )
+			esc_html__( 'Two copies of Honest Analytics were installed, so one has been deactivated.', 'honest-analytics' ),
+			esc_html__( 'Nothing was deleted. Both use the same tables, so every figure you had before is still there and still counting.', 'honest-analytics' )
 		);
 	}
 
@@ -161,25 +166,25 @@ final class Coexistence {
 	}
 
 	/**
-	 * The other edition's basename, if it is active.
+	 * The other copy's basename, if it is active.
 	 *
 	 * Matched on the entry file rather than the folder, because a folder can be
 	 * renamed on the way in and a plugin that only recognises its twin by
 	 * directory name would then miss it. The text domain confirms it, so an
 	 * unrelated plugin that happens to share a filename is not caught.
 	 */
-	private static function otherEdition(): ?string {
+	private static function otherCopy(): ?string {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
 		$mine = self::self();
 
 		// Network-activated plugins are not in `active_plugins`; they are keys
 		// of `active_sitewide_plugins`, a network option. Reading only the
-		// first meant that on a network where either edition is
-		// network-activated this returned null on every site, neither stood
-		// down, and `honest-analytics.php` made whichever loaded second return
-		// before defining anything. Network-activated plugins load first, so a
-		// network-wide Lite silently and permanently beat a per-site Pro.
+		// first meant that on a network where either copy is network-activated
+		// this returned null on every site, neither stood down, and
+		// `honest-analytics.php` made whichever loaded second return before
+		// defining anything. Network-activated plugins load first, so a
+		// network-wide copy silently and permanently beat a per-site one.
 		foreach ( self::activePlugins() as $basename ) {
 			if ( $basename === $mine || ! str_ends_with( $basename, self::ENTRY ) ) {
 				continue;

@@ -274,7 +274,7 @@ final class Schema {
 	KEY by_date (date)
 ) ENGINE=InnoDB $charset;";
 
-		// --------------------------------------------------------- pro rollups
+		// ------------------------------------------------------- extra rollups
 
 		$out[] = "CREATE TABLE {$p}honest_campaigns_rollup (
 	id bigint(20) unsigned NOT NULL auto_increment,

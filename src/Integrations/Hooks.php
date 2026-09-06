@@ -28,11 +28,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * of names, addresses and card details - and pass along an identifier and a
  * total. That restraint is the integration.
  *
- * The action itself is not gated: a theme calling it on the free edition gets
- * `false` back from `Plugin::trackEvent()` rather than a fatal, which is the
- * behaviour a theme author can code against. The third-party integrations are
- * gated, in `Registry::register()`, because attaching five sets of hooks that
- * can never record anything is waste.
+ * The action itself is always attached: a theme calling it on a build that
+ * records no events gets `false` back from `Plugin::trackEvent()` rather than a
+ * fatal, which is the behaviour a theme author can code against.
  */
 final class Hooks {
 
@@ -51,7 +49,13 @@ final class Hooks {
 			4
 		);
 
-		Registry::register();
+		/**
+		 * Fires while the event API is being attached.
+		 *
+		 * Where anything that turns somebody else's plugin into an event -
+		 * a form submission, a completed order - attaches its own listeners.
+		 */
+		do_action( 'honest_analytics_register_integrations' );
 	}
 
 	/**
@@ -74,11 +78,20 @@ final class Hooks {
 	/**
 	 * Turn a stored event name into something a person can read.
 	 *
-	 * A convenience over `Registry::label()`, for the report screens.
+	 * Most event names are exactly what somebody typed into the action, so the
+	 * default is the name itself. Anything that mints a name of its own -
+	 * a form integration encoding which form and which field - filters this to
+	 * decode it again.
 	 *
 	 * @param string $eventName The stored event name.
 	 */
 	public static function label( string $eventName ): string {
-		return Registry::label( $eventName );
+		/**
+		 * Filters the human-readable label for a stored event name.
+		 *
+		 * @param string $label     The label to show.
+		 * @param string $eventName The name as stored.
+		 */
+		return (string) apply_filters( 'honest_analytics_event_label', $eventName, $eventName );
 	}
 }

@@ -8,6 +8,7 @@
 declare(strict_types=1);
 
 use HonestAnalytics\Support\Timezone;
+use HonestAnalytics\Stats\DateRange;
 
 use HonestAnalytics\Admin\Screens\DashboardScreen;
 use HonestAnalytics\Admin\Views\View;
@@ -171,158 +172,17 @@ $ha_kpis = [
 		</div>
 	</div>
 
-	<?php if ( $isPro ) : ?>
-		<div class="ha-card">
-			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Scroll depth', 'honest-analytics' ); ?></h2></div>
-
-			<div class="ha-card-body">
-				<?php if ( null === $scroll ) : ?>
-					<p class="ha-muted"><?php esc_html_e( 'Nothing recorded for this page yet.', 'honest-analytics' ); ?></p>
-				<?php else : ?>
-					<?php
-					$ha_base = max( 1, (int) $scroll['reached25'] );
-
-					foreach ( [ 25, 50, 75, 100 ] as $ha_depth ) :
-						$ha_reached = (int) $scroll[ 'reached' . $ha_depth ];
-						$ha_share   = round( $ha_reached / $ha_base * 100, 1 );
-						?>
-						<div class="ha-gap-below">
-							<div class="ha-meter-row">
-								<span><?php echo esc_html( sprintf( /* translators: %d: percentage of the page. */ __( 'Reached %d%%', 'honest-analytics' ), $ha_depth ) ); ?></span>
-								<span class="ha-muted"><?php echo esc_html( number_format_i18n( $ha_reached ) ); ?></span>
-							</div>
-							<div class="ha-meter"><div class="ha-meter-fill" style="width:<?php echo esc_attr( (string) min( 100, $ha_share ) ); ?>%"></div></div>
-						</div>
-					<?php endforeach; ?>
-				<?php endif; ?>
-
-				<?php if ( ! $beacon ) : ?>
-					<p class="ha-muted ha-fine is-snug"><?php esc_html_e( 'Requires hybrid or client tracking mode.', 'honest-analytics' ); ?></p>
-				<?php endif; ?>
-			</div>
-		</div>
-
-		<div class="ha-card">
-			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Events on this page', 'honest-analytics' ); ?></h2></div>
-
-			<div class="ha-card-body">
-				<?php
-				$ha_rows = [];
-
-				foreach ( $events as $ha_event ) {
-					$ha_rows[] = [
-						'label' => $ha_event['label'],
-						'hits'  => Format::count( $ha_event['hits'] ),
-						'_bar'  => $ha_event['hits'],
-					];
-				}
-
-				View::render(
-					'admin/partials/ranked-table',
-					[
-						'rows'    => $ha_rows,
-						'max'     => Format::largest( $events, 'hits' ),
-						'empty'   => $beacon
-							? __( 'No events recorded on this page.', 'honest-analytics' )
-							: __( 'Events arrive on the beacon, which server-only mode does not use.', 'honest-analytics' ),
-						'columns' => [
-							[
-								'key'   => 'label',
-								'label' => __( 'Event', 'honest-analytics' ),
-							],
-							[
-								'key'     => 'hits',
-								'label'   => __( 'Count', 'honest-analytics' ),
-								'numeric' => true,
-							],
-						],
-					]
-				);
-				?>
-			</div>
-		</div>
-
-		<div class="ha-card">
-			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Search Console queries', 'honest-analytics' ); ?></h2></div>
-
-			<div class="ha-card-body">
-				<?php
-				$ha_rows = [];
-
-				foreach ( $queries as $ha_query ) {
-					$ha_isOther = \HonestAnalytics\Dimensions\DimensionType::OTHER_VALUE === $ha_query['query'];
-
-					$ha_rows[] = [
-						'label'  => $ha_isOther ? __( 'Other search terms', 'honest-analytics' ) : (string) $ha_query['query'],
-						'clicks' => Format::count( (int) $ha_query['clicks'] ),
-						'_bar'   => (int) $ha_query['clicks'],
-					];
-				}
-
-				View::render(
-					'admin/partials/ranked-table',
-					[
-						'rows'    => $ha_rows,
-						'max'     => Format::largest( $queries, 'clicks' ),
-						'empty'   => __( 'No Search Console clicks recorded for this page in this period.', 'honest-analytics' ),
-						'columns' => [
-							[
-								'key'   => 'label',
-								'label' => __( 'Search term', 'honest-analytics' ),
-							],
-							[
-								'key'     => 'clicks',
-								'label'   => __( 'Clicks', 'honest-analytics' ),
-								'numeric' => true,
-							],
-						],
-					]
-				);
-				?>
-
-				<p class="ha-muted ha-fine">
-					<?php esc_html_e( 'From Google Search Console, on Google\'s own count - shown here on its own, never added to the views above.', 'honest-analytics' ); ?>
-				</p>
-			</div>
-		</div>
-
-		<div class="ha-card">
-			<div class="ha-card-head"><h2 class="ha-card-title"><?php esc_html_e( 'Outbound links and downloads', 'honest-analytics' ); ?></h2></div>
-
-			<div class="ha-card-body">
-				<?php
-				$ha_rows = [];
-
-				foreach ( $outbound as $ha_link ) {
-					$ha_rows[] = [
-						'label' => (string) ( $ha_link['url'] ?? $ha_link['host'] ),
-						'hits'  => Format::count( (int) $ha_link['hits'] ),
-						'_bar'  => (int) $ha_link['hits'],
-					];
-				}
-
-				View::render(
-					'admin/partials/ranked-table',
-					[
-						'rows'    => $ha_rows,
-						'max'     => Format::largest( $outbound, 'hits' ),
-						'empty'   => __( 'No clicks away from this page recorded.', 'honest-analytics' ),
-						'columns' => [
-							[
-								'key'   => 'label',
-								'label' => __( 'Destination', 'honest-analytics' ),
-								'mono'  => true,
-							],
-							[
-								'key'     => 'hits',
-								'label'   => __( 'Clicks', 'honest-analytics' ),
-								'numeric' => true,
-							],
-						],
-					]
-				);
-				?>
-			</div>
-		</div>
-	<?php endif; ?>
+	<?php
+	/**
+	 * Fires after the sources card on a page's detail view.
+	 *
+	 * Where anything with more to say about one page adds its own cards -
+	 * how far down it was read, what was clicked on it, what people searched
+	 * to reach it.
+	 *
+	 * @param string    $path  The page being looked at.
+	 * @param DateRange $range The period on screen.
+	 */
+	do_action( 'honest_analytics_page_detail_cards', $path, $params->range );
+	?>
 </div>

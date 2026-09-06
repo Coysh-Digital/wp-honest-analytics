@@ -12,7 +12,6 @@ namespace HonestAnalytics\Admin\Screens;
 use HonestAnalytics\Admin\MaintenanceHandler;
 use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Capabilities\Capabilities;
-use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Integrations\CacheDetector;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Scheduling\Health;
@@ -89,7 +88,6 @@ final class SettingsScreen extends Screen {
 			[
 				'params'       => $this->params(),
 				'settings'     => $settings,
-				'isPro'        => Edition::isPro(),
 				'health'       => $health,
 				'caches'       => CacheDetector::detected(),
 				'delaysJs'     => CacheDetector::delaysJavaScript(),
@@ -97,7 +95,6 @@ final class SettingsScreen extends Screen {
 				'objectCache'  => StoreFactory::usingObjectCache(),
 				'sessionStore' => $plugin->sessions()->name(),
 				'writer'       => $plugin->writer()->name(),
-				'geo'          => $plugin->geo()->databaseInfo(),
 				'presets'      => DateRange::presets(),
 				'overrides'    => static fn ( string $key ): ?string => SettingsRepository::overrideSource( $key ),
 				'maintenance'  => MaintenanceHandler::takeNotice(),

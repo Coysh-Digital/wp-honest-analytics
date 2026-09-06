@@ -40,9 +40,10 @@ final class OptimizerExclusions {
 	 *
 	 * Derived from this build's own folder rather than hardcoded. It used to
 	 * read `honest-analytics/assets/js/`, and `bin/build.sh` packages the paid
-	 * build as `honest-analytics-pro` - of which that is not a substring - so
+	 * build under another folder name - of which that is not a substring - so
 	 * every exclusion here, and `skipTagMinification()` with them, silently did
-	 * nothing at all on Pro. ADR 42's promise about delay-JS features did not
+	 * nothing at all under another folder. ADR 42's promise about delay-JS
+	 * features did not
 	 * hold for the customers who paid for it, or for anybody who renamed the
 	 * folder.
 	 */
@@ -109,13 +110,22 @@ final class OptimizerExclusions {
 	 * @return string[]
 	 */
 	private static function paths(): array {
-		return [
+		$paths = [
 			self::path(),
 			'tracker.js',
 			ScriptInjector::HANDLE,
-			ScriptInjector::HANDLE_PRO,
-			ScriptInjector::HANDLE_CONSENT,
 		];
+
+		/**
+		 * Filters the handles and paths optimisers are asked to leave alone.
+		 *
+		 * The same list `honest_analytics_tracker_handles` answers, said to a
+		 * different audience: that one decorates the tag, this one asks the
+		 * optimiser not to move it. A script added to one wants adding to both.
+		 *
+		 * @param string[] $paths Handles and path fragments.
+		 */
+		return (array) apply_filters( 'honest_analytics_optimizer_exclusions', $paths );
 	}
 
 	/**

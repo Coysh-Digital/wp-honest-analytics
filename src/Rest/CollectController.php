@@ -18,7 +18,7 @@ use HonestAnalytics\Channels\Campaign;
 use HonestAnalytics\Consent\ConsentResolverInterface;
 use HonestAnalytics\Devices\Device;
 use HonestAnalytics\Devices\DeviceParser;
-use HonestAnalytics\Edition\Edition;
+use HonestAnalytics\Capture\Interactions;
 use HonestAnalytics\Geo\GeoLookupInterface;
 use HonestAnalytics\Identity\IdentityService;
 use HonestAnalytics\Plugin;
@@ -309,7 +309,7 @@ final class CollectController {
 			return Hit::KIND_VIEW;
 		}
 
-		if ( ! Edition::isPro() || ! $this->settings->enableEvents ) {
+		if ( ! Interactions::recorded( $this->settings ) ) {
 			return null;
 		}
 
@@ -380,7 +380,7 @@ final class CollectController {
 	 * @param array<string,string> $params Posted fields.
 	 */
 	private function scrollBucket( array $params ): ?int {
-		if ( ! Edition::isPro() || ! $this->settings->enableEvents || ! $this->settings->trackScroll ) {
+		if ( ! Interactions::recorded( $this->settings ) || ! $this->settings->trackScroll ) {
 			return null;
 		}
 

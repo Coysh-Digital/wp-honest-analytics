@@ -14,7 +14,7 @@ use HonestAnalytics\Capture\CaptureService;
 use HonestAnalytics\Channels\Campaign;
 use HonestAnalytics\Devices\Device;
 use HonestAnalytics\Devices\DeviceParser;
-use HonestAnalytics\Edition\Edition;
+use HonestAnalytics\Capture\Interactions;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Support\Timezone;
@@ -192,7 +192,7 @@ final class Seeder {
 	}
 
 	/**
-	 * Events, outbound clicks and downloads, when the edition has them.
+	 * Events, outbound clicks and downloads, when anything records them.
 	 *
 	 * @param int    $siteId      Site ID.
 	 * @param string $visitorHash Visitor hash.
@@ -204,7 +204,7 @@ final class Seeder {
 	 * @return Hit[]
 	 */
 	private function interactions( int $siteId, string $visitorHash, string $sessionKey, int $timestamp, string $path, string $device ): array {
-		if ( ! Edition::isPro() || ! $this->settings->enableEvents || random_int( 1, 100 ) > 12 ) {
+		if ( ! Interactions::recorded( $this->settings ) || random_int( 1, 100 ) > 12 ) {
 			return [];
 		}
 
@@ -436,7 +436,7 @@ final class Seeder {
 	 * How far down the page a visitor read.
 	 */
 	private function scroll(): ?int {
-		if ( ! Edition::isPro() || ! $this->settings->enableEvents || ! $this->settings->trackScroll ) {
+		if ( ! Interactions::recorded( $this->settings ) || ! $this->settings->trackScroll ) {
 			return null;
 		}
 

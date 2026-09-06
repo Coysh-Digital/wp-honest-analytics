@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * The seam between the capture path and a feature the free build does not
  * carry. `CaptureService` and `CollectController` each hold one of these as a
  * typed constructor dependency and call it on every hit, and the Settings
- * screen and the health check ask the container for one with no edition test
+ * screen and the health check ask the container for one with no test
  * in front of them - so this cannot be a class that might be absent. A build
  * without the lookup gets {@see NoGeoLookup}, which answers "no database" to
  * everything, and nothing else changes.

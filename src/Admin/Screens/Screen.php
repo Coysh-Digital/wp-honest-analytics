@@ -13,7 +13,6 @@ use HonestAnalytics\Admin\Assets;
 use HonestAnalytics\Admin\RequestParams;
 use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Capabilities\Capabilities;
-use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Plugin;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -64,12 +63,6 @@ abstract class Screen {
 		return Capabilities::VIEW;
 	}
 
-	/**
-	 * Whether this screen is part of the Pro edition.
-	 */
-	public function isPro(): bool {
-		return false;
-	}
 
 	/**
 	 * Whether this screen has a date range and an export button.
@@ -161,13 +154,6 @@ abstract class Screen {
 				esc_html__( 'Not allowed', 'honest-analytics' ),
 				[ 'response' => 403 ]
 			);
-		}
-
-		// The gate sits in front of the queries, not in front of the markup: a
-		// site that has lapsed to Lite still has its Pro rows, and a template
-		// check would happily render them.
-		if ( $this->isPro() ) {
-			Edition::requirePro();
 		}
 
 		// No migration here. This used to be the only place `maybeUpgrade()` ran

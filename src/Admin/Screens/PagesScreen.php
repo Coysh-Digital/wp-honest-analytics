@@ -13,7 +13,6 @@ use HonestAnalytics\Admin\Posts\PostLinks;
 use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Charts\ChartData;
 use HonestAnalytics\Dimensions\DimensionType;
-use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Stats\Comparison;
 use HonestAnalytics\Stats\Granularity;
@@ -160,7 +159,6 @@ final class PagesScreen extends Screen {
 		$comparison = $params->comparisonRange();
 		$totals     = $stats->pageTotals( $siteId, $range, $pathDimId );
 		$previous   = null !== $comparison ? $stats->pageTotals( $siteId, $comparison, $pathDimId ) : null;
-		$isPro      = Edition::isPro();
 
 		$trend           = $stats->trend( $siteId, $range, $pathDimId, $params->granularity );
 		$comparisonTrend = null !== $comparison ? $stats->trend( $siteId, $comparison, $pathDimId, $params->granularity ) : null;
@@ -178,12 +176,7 @@ final class PagesScreen extends Screen {
 				'sources'      => $stats->pageSources( $siteId, $range, $pathDimId ),
 				'sourcesSince' => $stats->pageSourcesSince( $siteId ),
 				'editUrl'      => $totals['postId'] > 0 ? PostLinks::editUrl( (int) $totals['postId'] ) : null,
-				'isPro'        => $isPro,
 				'beacon'       => $plugin->settings()->usesBeacon(),
-				'scroll'       => $isPro ? ( $plugin->proStats()->scrollDepth( $siteId, $range, 1, $pathDimId )[0] ?? null ) : null,
-				'events'       => $isPro ? $plugin->proStats()->events( $siteId, $range, 20, $pathDimId ) : [],
-				'outbound'     => $isPro ? $plugin->proStats()->outbound( $siteId, $range, 20, $pathDimId ) : [],
-				'queries'      => $isPro ? $plugin->proStats()->searchConsoleQueries( $siteId, $range, 20, $pathDimId ) : [],
 			]
 		);
 	}

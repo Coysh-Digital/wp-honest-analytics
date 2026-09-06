@@ -25,7 +25,7 @@ Click around a live dashboard with a year of seeded traffic before you install a
 * **No full user-agent strings.** Parsed into browser, operating system and device type, then discarded.
 * **No raw pageview records.** Reports are built from aggregate rollups.
 * **No cookies** in the default configuration.
-* **No third parties in the counting.** No telemetry, no CDN, no fonts, no map tiles, no licence check, no update check. Measuring a visit never leaves your server. The only requests that go anywhere else are the ones you start yourself - importing your history from Google Analytics, or fetching a geo database from an address you type. Both are described under External services below.
+* **No third parties in the counting.** No telemetry, no CDN, no fonts, no map tiles, no licence check, no update check. Measuring a visit never leaves your server. The only request that goes anywhere else is one you start yourself - importing your history from Google Analytics - and it is described under External services below.
 
 = How it counts people without identifying them =
 
@@ -92,7 +92,7 @@ Requires WordPress 6.4+, PHP 8.1+, MySQL 5.7+ or MariaDB 10.4+.
 
 This plugin makes no outbound request in the course of measuring your traffic. Nothing about your site or your visitors is sent to us or to anybody else, and there is no telemetry, licence check or update check in the free edition.
 
-Two features contact somewhere else, and one more answers a request from somewhere else. All three are optional, all three are started by an administrator, and none of them runs unless you use it.
+One feature contacts somewhere else, and one more answers a request from somewhere else. Both are optional, both are started by an administrator, and neither runs unless you use it.
 
 = Google Analytics, when you import your history =
 
@@ -109,17 +109,11 @@ What is sent: your own OAuth credentials, the property identifier you picked, an
 
 This is Google's service, governed by Google's terms and privacy policy, not ours: [terms](https://policies.google.com/terms), [privacy policy](https://policies.google.com/privacy). The API is documented at [Google Analytics Data API](https://developers.google.com/analytics/devguides/reporting/data/v1).
 
-= A geo database, if you install one =
-
-Country and region reporting needs a MaxMind-format database, which is not bundled with the plugin. You can upload a file, or give the plugin an HTTPS address to fetch it from.
-
-No address is built into the plugin and nothing downloads on its own. The request goes only to the URL you type, sends nothing but the request for that file, and is refused unless it is HTTPS and the response is a valid database. Common sources are [MaxMind GeoLite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) and [DB-IP Lite](https://db-ip.com/db/lite.php), each under its own terms; whichever you choose, the terms are between you and them.
-
 = A reporting tool you connect, if you connect one =
 
 The plugin can let an external reporting tool read this site's figures. It is off until an administrator pastes a connection code into *Analytics -> Reporting API*, and clearing that code switches it off again.
 
-This one runs the other way round from the two above: the plugin makes no request, it answers one. A tool holding the code can ask for the same aggregate figures the dashboard already shows - pageviews, sessions, bounce rate, top pages, sources, devices - for a date range it names. Requests are signed with the code rather than carrying it, are refused if the signature is older than a few minutes or is replayed, and are read-only. There is no visitor-level data in the reply because there is none in the tables.
+This one runs the other way round from the one above: the plugin makes no request, it answers one. A tool holding the code can ask for the same aggregate figures the dashboard already shows - pageviews, sessions, bounce rate, top pages, sources, devices - for a date range it names. Requests are signed with the code rather than carrying it, are refused if the signature is older than a few minutes or is replayed, and are read-only. There is no visitor-level data in the reply because there is none in the tables.
 
 Which tool that is, and whose terms govern it, is your choice: the plugin has no service of its own at the other end and no address built into it. Nothing is sent anywhere until you save a code.
 
@@ -171,7 +165,7 @@ Yes. Each site gets its own tables, settings and reports.
 
 No. Nothing about your site, your traffic or your use of the plugin is ever sent anywhere, and there is nothing in it that reports back - no telemetry, no licence check, no update check, no remote configuration.
 
-The plugin does make outbound requests in two situations, both of which you start and neither of which sends us anything: importing your history from Google Analytics, and downloading a geo database from an address you supply. It can also answer a reporting tool you connect to it, which is off unless you do. It also calls *your own site* once a day to check that the collection endpoint answers and that the write spool is not readable over the web. External services below says exactly what each one is.
+The plugin makes one kind of outbound request, which you start and which sends us nothing: importing your history from Google Analytics. It can also answer a reporting tool you connect to it, which is off unless you do. It calls *your own site* once a day to check that the collection endpoint answers and that the write spool is not readable over the web. External services below says exactly what each one is.
 
 = What happens to my data if I upgrade to the paid edition? =
 
@@ -200,6 +194,9 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 * Fixed: The Dashboard widget's settings form now checks its own nonce and capability before saving your choice of range and metrics, rather than relying on the check WordPress does around it.
 * Fixed: Two admin screens printed a style block into the page instead of enqueueing it. Both now go through the stylesheet the rest of the admin uses.
 * Fixed: Translations are no longer loaded twice. WordPress.org serves this edition its own language packs and has loaded them without being asked since 4.6.
+* Fixed: External services no longer describes downloading a geolocation database. Country reporting is part of the paid edition, so this one never made that request; the section now lists only what this edition actually contacts.
+* Fixed: A further sweep for anything that only made sense in the paid edition removed the last of it - the shared half of the form integrations, the country-name and attribution lookups, the unfinished Google connection broker, and the call that loads translations this edition gets from WordPress.org anyway.
+* Changed: This edition no longer contains any reference to the paid one - not a licence key field, not an edition check, not a menu row. It is a complete plugin that publishes hooks; the paid edition is a separate package that attaches to them.
 
 = 0.9.2 =
 * Changed: The setup wizard covers more, and its welcome now appears on the plugins screen as well - which is where WordPress lands after activation. The wizard adds four settings beside the original three: whether your own signed-in team is counted, whether known bots are kept out of the numbers, whether query parameters like utm_source are ignored so one page is not split into many, and whether your history is kept or removed if the plugin is ever deleted. All remain optional, and all still live on the Settings screen.

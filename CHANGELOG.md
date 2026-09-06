@@ -66,6 +66,56 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 - `CapabilitiesTest` asserts the whole REST route list, and had been failing on
   `main` since the reporting API added `/report` and `/verify` without updating
   it.
+- `readme.txt`'s External services section described fetching a geolocation
+  database, which the free edition has never done - country reporting is Pro,
+  and as of this release the reader is not even in the package. It now lists
+  only what this edition actually contacts.
+- **The free build no longer contains any reference to a paid edition.** Not a
+  licence key, not an `Edition` class, not a gate, not a menu row - the
+  `src/Edition/` namespace strips with `src/Licensing/`. What was a plugin that
+  knew about a bigger version of itself is now a complete plugin that publishes
+  hooks, and a paid package that attaches to them from
+  `src/Extensions/Extension.php` - a file the free build does not have and does
+  not name, included by path if it happens to be present.
+- The extension points that made that possible, all of them things this plugin
+  arguably should have published anyway: `honest_analytics_admin_screens`,
+  `_dashboard_cards`, `_page_detail_cards`, `_settings_cards`,
+  `_settings_footer`, `_register_front`, `_register_admin`,
+  `_register_integrations`, `_register_import_sources`, `_enqueue_tracker_extras`,
+  `_tracker_handles`, `_script_attributes`, `_optimizer_exclusions`,
+  `_records_interactions`, `_event_label`, `_health_problems`, `_build_name`,
+  `_coexistence_precedence`, `_cli_send_report`, `_daily`, `_daily_sync` and
+  `_reset`.
+- The licence key moved out of `Settings` into the licensing layer's own option,
+  with its own wp-config constant and a migration for keys stored by older
+  builds.
+- `ProRollupWriterInterface`, `NoProRollups`, `ProStatsInterface` and
+  `NoProStats` are `ExtraRollupsInterface`, `NoExtraRollups`,
+  `ExtraStatsInterface` and `NoExtraStats`. A seam named after the thing on one
+  side of it is a seam that leaks.
+
+- A second sweep, driven by re-reading the review rather than the diff, found
+  more code in the free build that only made sense in the paid one and removed
+  it: `Integrations\FormIntegration` and the `ResolvesPage` trait (the shared
+  half of five stripped integrations, referenced by nothing that remained),
+  `Support\CountryNames` (read only by the stripped Locations template),
+  `Channels\AttributionModel` (read only by stripped campaign code, while
+  `Sanitizer` validates the setting against string literals), and
+  `Import\Ga4\BrokerProvider` - an unfinished hosted broker with no URL to
+  talk to, which was the last thing in the free build reading a licence key.
+  GA4 import is unaffected and still connects through the site's own Google
+  client, which is the only route that works today.
+- `load_plugin_textdomain()` moved into `Support\Translations`, which strips.
+  Guarding the call left it in the file, where Plugin Check reports it and a
+  reader has to work out that it never runs.
+- `README.md` described the free edition inaccurately - it listed campaigns,
+  goals and crawler reporting as things this build does, offered CLI commands
+  it does not have, and repeated the geolocation claim.
+- `RequestParams` writes a reader's remembered range to their own user meta,
+  and said in a suppression comment that it had "no side effects". It now says
+  what it does, why these links are deliberately not nonced (they are ordinary
+  navigation and meant to be bookmarked), and checks the view capability
+  before the one write it makes.
 
 ## [0.9.2] - 2026-09-02
 

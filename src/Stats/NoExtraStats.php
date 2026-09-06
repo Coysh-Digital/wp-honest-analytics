@@ -1,6 +1,6 @@
 <?php
 /**
- * The paid reports' queries, in a build that has no paid reports.
+ * These queries, in a build that has none of the reports behind them.
  *
  * @package HonestAnalytics
  */
@@ -17,11 +17,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Nothing to report, said without touching the database.
  *
  * Empty rather than absent, and the distinction is the point: the screens that
- * would draw these are not in this build either, so nothing renders an empty
+ * would draw these are not in the package either, so nothing renders an empty
  * table. What this prevents is Plugin naming a class that is not there, on
- * every request, for the sake of a call no free build makes.
+ * every request, for the sake of a call this package never makes.
  */
-final class NoProStats implements ProStatsInterface {
+final class NoExtraStats implements ExtraStatsInterface {
 
 	/**
 	 * Sessions and conversions by campaign.

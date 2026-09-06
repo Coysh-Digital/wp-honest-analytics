@@ -12,7 +12,6 @@ namespace HonestAnalytics\Admin\Screens;
 use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Charts\ChartData;
 use HonestAnalytics\Charts\Heatmap;
-use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Import\ImportSource;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Schema\Schema;
@@ -138,7 +137,6 @@ final class DashboardScreen extends Screen {
 		$siteId     = $this->siteId();
 		$range      = $params->range;
 		$comparison = $params->comparisonRange();
-		$isPro      = Edition::isPro();
 
 		$totals       = $stats->totals( $siteId, $range );
 		$totalsBefore = null !== $comparison ? $stats->totals( $siteId, $comparison ) : null;
@@ -149,7 +147,6 @@ final class DashboardScreen extends Screen {
 		$data = [
 			'params'        => $params,
 			'range'         => $range,
-			'isPro'         => $isPro,
 			'accuracy'      => $stats->uniquesAccuracy(),
 			// The banner prints one number, so ask for one number. snapshot()
 			// selects and JSON-decodes 200 session blobs to build a list of
@@ -168,16 +165,6 @@ final class DashboardScreen extends Screen {
 			'channels'      => $stats->channels( $siteId, $range ),
 			'devices'       => $stats->devices( $siteId, $range, 'deviceType' ),
 			'postTypes'     => $plugin->contentStats()->byPostType( $siteId, $range, 5 ),
-			// The check sits in front of the query rather than in front of the
-			// markup, so a build that will not show these does not compute them
-			// either. In Lite the cards are simply not on the screen; on a Pro
-			// build whose licence has lapsed this is what stops rollup rows the
-			// site still holds being rendered.
-			'crawlers'      => $isPro ? $stats->crawlers( $siteId, $range, 4 ) : [],
-			'crawlerHits'   => $isPro ? $stats->crawlerRequests( $siteId, $range ) : 0,
-			'goals'         => $isPro ? array_slice( $plugin->conversionStats()->goals( $siteId, $range ), 0, 4 ) : [],
-			'campaigns'     => $isPro ? $plugin->proStats()->campaigns( $siteId, $range, 4 ) : [],
-			'countries'     => $isPro ? $plugin->proStats()->countries( $siteId, $range, 5 ) : [],
 			'emptyHint'     => 0 === $totals['views'] ? $this->emptyHint( $plugin->settings() ) : null,
 			'boundary'      => $this->importBoundary( $siteId, $range->from, $range->to ),
 		];

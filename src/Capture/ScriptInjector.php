@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Capture;
 
-use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Support\Url;
 
@@ -30,9 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 final class ScriptInjector {
 
-	public const HANDLE         = 'honest-analytics';
-	public const HANDLE_PRO     = 'honest-analytics-pro';
-	public const HANDLE_CONSENT = 'honest-analytics-consent';
+	public const HANDLE = 'honest-analytics';
 
 	private Settings $settings;
 
@@ -90,31 +87,16 @@ final class ScriptInjector {
 			$this->pendingNonce = ( new NonceRegistry( $this->settings ) )->issue();
 		}
 
-		if ( Edition::isPro() && $this->settings->enableEvents ) {
-			wp_enqueue_script(
-				self::HANDLE_PRO,
-				HONEST_ANALYTICS_URL . 'assets/js/pro.js',
-				[ self::HANDLE ],
-				HONEST_ANALYTICS_VERSION,
-				[
-					'in_footer' => true,
-					'strategy'  => 'defer',
-				]
-			);
-		}
-
-		if ( Edition::isPro() && $this->settings->enableConsent ) {
-			wp_enqueue_script(
-				self::HANDLE_CONSENT,
-				HONEST_ANALYTICS_URL . 'assets/js/consent.js',
-				[ self::HANDLE ],
-				HONEST_ANALYTICS_VERSION,
-				[
-					'in_footer' => true,
-					'strategy'  => 'defer',
-				]
-			);
-		}
+		/**
+		 * Fires after the tracker is enqueued, on a page it will count.
+		 *
+		 * Where anything that measures more than a page view adds its own
+		 * script. `ScriptInjector::HANDLE` is enqueued by now, so a script
+		 * added here can depend on it.
+		 *
+		 * @param Settings $settings The settings in force.
+		 */
+		do_action( 'honest_analytics_enqueue_tracker_extras', $this->settings );
 	}
 
 	/**
@@ -151,7 +133,19 @@ final class ScriptInjector {
 		$id     = isset( $attributes['id'] ) ? (string) $attributes['id'] : '';
 		$handle = str_ends_with( $id, '-js' ) ? substr( $id, 0, -3 ) : '';
 
-		if ( ! in_array( $handle, [ self::HANDLE, self::HANDLE_PRO, self::HANDLE_CONSENT ], true ) ) {
+		/**
+		 * Filters which script handles this plugin decorates.
+		 *
+		 * A handle listed here gets the optimiser markers below and a chance to
+		 * add attributes of its own. Anything enqueued on
+		 * `honest_analytics_enqueue_tracker_extras` wants to be in this list,
+		 * or an optimiser will defer it away from the tag it depends on.
+		 *
+		 * @param string[] $handles Script handles.
+		 */
+		$handles = (array) apply_filters( 'honest_analytics_tracker_handles', [ self::HANDLE ] );
+
+		if ( ! in_array( $handle, $handles, true ) ) {
 			return $attributes;
 		}
 
@@ -172,42 +166,22 @@ final class ScriptInjector {
 			}
 		}
 
-		if ( self::HANDLE_PRO === $handle ) {
-			$attributes['data-endpoint']        = $this->collectUrl();
-			$attributes['data-events']          = $this->settings->enableEvents ? '1' : '0';
-			$attributes['data-outbound']        = $this->settings->enableEvents && $this->settings->trackOutbound ? '1' : '0';
-			$attributes['data-downloads']       = $this->settings->enableEvents && $this->settings->trackDownloads ? '1' : '0';
-			$attributes['data-scroll']          = $this->settings->enableEvents && $this->settings->trackScroll ? '1' : '0';
-			$attributes['data-extensions']      = implode( ',', $this->settings->downloadExtensions );
-			$attributes['data-clicks']          = $this->settings->enableEvents && $this->settings->trackClicks ? '1' : '0';
-			$attributes['data-click-attribute'] = 'data-honest-event';
-			$attributes['data-click-selectors'] = self::encodeClickSelectors( $this->settings->clickSelectors );
-		}
-
-		if ( self::HANDLE_CONSENT === $handle ) {
-			$attributes['data-consent-endpoint'] = $this->consentUrl();
-		}
-
-		return $attributes;
+		/**
+		 * Filters the attributes on one of this plugin's script tags.
+		 *
+		 * The tracker's own are set above. This is where a script added on
+		 * `honest_analytics_enqueue_tracker_extras` configures itself, by the
+		 * same mechanism and for the same reason: a tag that reads its own
+		 * attributes survives an optimiser that moves it and a policy that
+		 * forbids inline script.
+		 *
+		 * @param array<string,string|bool> $attributes The attributes so far.
+		 * @param string                    $handle     The handle being printed.
+		 * @param Settings                  $settings   The settings in force.
+		 */
+		return (array) apply_filters( 'honest_analytics_script_attributes', $attributes, $handle, $this->settings );
 	}
 
-	/**
-	 * Pack the configured selectors into one attribute value.
-	 *
-	 * "=>" separates a pair and "||" separates pairs - neither sequence is
-	 * valid CSS, so there is nothing a configured selector could contain that
-	 * would be mistaken for the packing itself.
-	 *
-	 * @param array<int,array{selector:string,eventName:string}> $pairs Configured selectors.
-	 */
-	private static function encodeClickSelectors( array $pairs ): string {
-		$encoded = array_map(
-			static fn ( array $pair ): string => $pair['selector'] . '=>' . $pair['eventName'],
-			$pairs
-		);
-
-		return implode( '||', $encoded );
-	}
 
 	/**
 	 * Note that a theme template rendered.

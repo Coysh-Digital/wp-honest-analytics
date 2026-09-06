@@ -212,9 +212,6 @@ final class Sanitizer {
 
 				return '' !== $version ? $version : null;
 
-			case 'licenceKey':
-				return substr( trim( sanitize_text_field( (string) $value ) ), 0, 128 );
-
 			case 'reportBrandName':
 				return substr( trim( sanitize_text_field( (string) $value ) ), 0, 191 );
 

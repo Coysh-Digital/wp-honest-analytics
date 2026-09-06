@@ -1,6 +1,6 @@
 <?php
 /**
- * The Pro half of a rollup write, in a build that has no Pro reports.
+ * The extra rollup rows, in a build that has no reports for them.
  *
  * @package HonestAnalytics
  */
@@ -20,13 +20,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * No campaign, event, goal or crawler rows, because nothing would read them.
  *
- * The tables themselves still exist - both editions share a schema, and that is
- * what makes moving between them lose nothing - so this writes no rows rather
- * than failing to find somewhere to put them. A site that upgrades starts
- * filling those tables from that moment; history it never collected is simply
- * absent, which is the honest answer and the one documented in editions.md.
+ * The tables themselves still exist - every build shares one schema, and that is
+ * what makes moving between packages lose nothing - so this writes no rows
+ * rather than failing to find somewhere to put them. A site that gains those
+ * reports starts filling the tables from that moment; history it never
+ * collected is simply absent, which is the honest answer.
  */
-final class NoProRollups implements ProRollupWriterInterface {
+final class NoExtraRollups implements ExtraRollupsInterface {
 
 	/**
 	 * @param Session         $session  Session, ignored.

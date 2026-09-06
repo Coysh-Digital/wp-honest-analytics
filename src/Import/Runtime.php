@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Import;
 
-use HonestAnalytics\Edition\Edition;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -21,10 +20,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Each part guards on `class_exists` so that a build, or a work-in-progress
  * tree, missing one piece still boots. That is not defensiveness for its own
  * sake: the free build strips code, and an import system that white-screens
- * wordpress.org because a Pro-only class went missing would be a poor advert
+ * the plugin directory because a class that is not in that package went
+ * missing would be a poor advert
  * for a plugin whose whole pitch is that switching to it is easy.
  *
- * Importing is deliberately in the free edition, all three sources. Charging
+ * Importing is deliberately in every build, all three sources. Charging
  * somebody to bring their own history across would be a strange way to make
  * switching feel easy.
  */
@@ -47,20 +47,17 @@ final class Runtime {
 		}
 
 		// Google Analytics: the OAuth callback and the token store. Ships in
-		// Lite, so this is a plain class_exists() guard rather than an edition
-		// check - GA4 import is not Pro.
+		// every build, so this is a plain class_exists() guard and nothing more.
 		if ( class_exists( Ga4\Connection::class ) ) {
 			Ga4\Connection::register();
 		}
 
-		// Search Console: the OAuth callback and the token store. This one is
-		// Pro, and stripped from Lite entirely, so a Lite build never reaches
-		// class_exists() finding anything here. A Pro build with no active
-		// licence still has the class, which is why Gsc\Connection also checks
-		// Edition::isPro() itself on every action rather than relying on this
-		// registration guard alone.
-		if ( Edition::isPro() && class_exists( Gsc\Connection::class ) ) {
-			Gsc\Connection::register();
-		}
+		/**
+		 * Fires while the import system is being attached.
+		 *
+		 * Where a source that is not part of this package registers its own
+		 * connection - an OAuth callback, a token store, a daily sync.
+		 */
+		do_action( 'honest_analytics_register_import_sources' );
 	}
 }

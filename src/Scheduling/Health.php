@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace HonestAnalytics\Scheduling;
 
 use HonestAnalytics\Dimensions\DimensionType;
-use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Schema\Tables;
 use HonestAnalytics\Schema\Upgrader;
@@ -185,14 +184,6 @@ final class Health {
 			);
 		}
 
-		// The edition test is not redundant with isAvailable(), which is false
-		// in a build with no lookup at all. Without it, a site downgraded from
-		// Pro keeps enableGeo set and would be told to install a database for a
-		// report this build does not have and no screen to install it from.
-		if ( Edition::isPro() && $this->settings->enableGeo && ! Plugin::instance()->geo()->isAvailable() ) {
-			$problems[] = __( 'Country reporting is switched on but no geo database is installed, so nothing is being recorded against it.', 'honest-analytics' );
-		}
-
 		$loopback = $this->loopback();
 
 		if ( $this->spoolPublic() ) {
@@ -201,10 +192,6 @@ final class Health {
 
 		if ( ! $loopback['endpoint'] && $this->settings->usesBeacon() ) {
 			$problems[] = __( 'The collection endpoint did not answer when the site asked itself for it, so nothing sent from a browser is being counted. If a security plugin has disabled the REST API, switch the collect endpoint to the plain URL on this screen.', 'honest-analytics' );
-		}
-
-		if ( $this->settings->enableConsent && ! Edition::isPro() ) {
-			$problems[] = __( 'Consented tracking is switched on but this site is running the free edition, so the consented layer is inactive.', 'honest-analytics' );
 		}
 
 		/**
@@ -499,7 +486,15 @@ final class Health {
 		$plugin = Plugin::instance();
 
 		return [
-			'edition'       => Edition::name(),
+			/**
+			 * Filters the build name shown in diagnostics.
+			 *
+			 * A package that is more than this one says so here. What it is
+			 * called is its own business; nothing reads this but a person.
+			 *
+			 * @param string $name The build name.
+			 */
+			'build'         => (string) apply_filters( 'honest_analytics_build_name', 'Honest Analytics' ),
 			'schemaCurrent' => Upgrader::isCurrent(),
 			'writeDriver'   => $plugin->writer()->name(),
 			'sessionStore'  => $this->sessionStoreName(),

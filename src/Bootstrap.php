@@ -22,22 +22,18 @@ use HonestAnalytics\Capture\RequestContext;
 use HonestAnalytics\Capture\ShutdownRunner;
 use HonestAnalytics\Cli\CommandRegistrar;
 use HonestAnalytics\Distribution\Coexistence;
-use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Export\ExportHandler;
-use HonestAnalytics\Geo\GeoHandler;
 use HonestAnalytics\Integrations\Hooks;
 use HonestAnalytics\Integrations\OptimizerExclusions;
 use HonestAnalytics\Privacy\PersonalData;
 use HonestAnalytics\Privacy\PolicyContent;
 use HonestAnalytics\Rest\NoContent;
 use HonestAnalytics\Rest\PlainEndpoint;
-use HonestAnalytics\Rest\ReportEndpoint;
 use HonestAnalytics\Rest\RestUnlock;
 use HonestAnalytics\Rest\Routes;
 use HonestAnalytics\Schema\Installer;
 use HonestAnalytics\Scheduling\Cron;
 use HonestAnalytics\Settings\SettingsRepository;
-use HonestAnalytics\Sharing\SharePdfHandler;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -66,6 +62,7 @@ final class Bootstrap {
 
 		self::$booted = true;
 
+		self::extensions();
 		self::always();
 
 		if ( is_admin() ) {
@@ -80,29 +77,34 @@ final class Bootstrap {
 	}
 
 	/**
-	 * Load the plugin's own translations.
+	 * Load an extension, if this package contains one.
+	 *
+	 * Everything below this line is the whole plugin. Anything a package adds
+	 * on top of it - more reports, more capture, more scheduled work - arrives
+	 * as a directory of its own that registers through the same hooks and
+	 * filters any other code would use, and this is the only thing that knows
+	 * such a directory might exist.
+	 *
+	 * A path rather than a class name, and included rather than called, so that
+	 * a package without one names nothing that is not in it. The file registers
+	 * its own hooks as it loads; there is no interface to implement and no
+	 * contract beyond the ones the rest of the plugin already publishes.
+	 *
+	 * Before everything else, because a hook has to be attached before the
+	 * thing that fires it runs.
 	 */
-	public static function loadTextdomain(): void {
-		load_plugin_textdomain( 'honest-analytics', false, dirname( HONEST_ANALYTICS_BASENAME ) . '/languages' );
+	private static function extensions(): void {
+		$extension = HONEST_ANALYTICS_DIR . 'src/Extensions/bootstrap.php';
+
+		if ( is_file( $extension ) ) {
+			require_once $extension;
+		}
 	}
 
 	/**
 	 * Hooks that belong in every context.
 	 */
 	private static function always(): void {
-		// Not called at all in the free build: wordpress.org serves it language
-		// packs and core has loaded those unasked since 4.6, so the call is
-		// dead weight that only risks loading translations too early. The paid
-		// build is not hosted there, gets no pack of its own and keeps it.
-		//
-		// On `init` when it does run, not here. Called during `plugins_loaded`
-		// it resolved the locale before a multilingual plugin had had the
-		// chance to set it, and forced the current user to be resolved early in
-		// the admin.
-		if ( Edition::hasPro() ) {
-			add_action( 'init', [ self::class, 'loadTextdomain' ], 1 );
-		}
-
 		Capabilities::register();
 		Cron::register();
 		Routes::register();
@@ -138,12 +140,13 @@ final class Bootstrap {
 			PlainEndpoint::register();
 		}
 
-		// Stripped from Lite along with the rest of src/Sharing/, and inert on a
-		// Pro build with no active licence: a link nobody can currently create
-		// or manage should not go on quietly answering requests.
-		if ( Edition::isPro() && class_exists( ReportEndpoint::class ) ) {
-			ReportEndpoint::register();
-		}
+		/**
+		 * Fires while the capture path is being wired up.
+		 *
+		 * For anything that answers a front-end request and is not part of
+		 * counting a page view.
+		 */
+		do_action( 'honest_analytics_register_front' );
 
 		// Snapshotted at the last hook before a plugin can redirect and exit,
 		// and while the main query is still the current one.
@@ -173,19 +176,13 @@ final class Bootstrap {
 		Notices::register();
 		ExportHandler::register();
 
-		// Stripped from Lite along with the rest of src/Sharing/, and inert on a
-		// Pro build with no active licence, the same reason front() guards
-		// ReportEndpoint this way.
-		if ( Edition::isPro() && class_exists( SharePdfHandler::class ) ) {
-			SharePdfHandler::register();
-		}
-
-		// Stripped from Lite along with the rest of the geo family, and inert on
-		// a Pro build with no active licence, the same reason admin() guards
-		// SharePdfHandler four lines above.
-		if ( Edition::isPro() && class_exists( GeoHandler::class ) ) {
-			GeoHandler::register();
-		}
+		/**
+		 * Fires while the admin is being wired up.
+		 *
+		 * After the menu, so a screen added here can hang off it, and before
+		 * the widgets and the post-list column.
+		 */
+		do_action( 'honest_analytics_register_admin' );
 
 		MaintenanceHandler::register();
 		OverviewWidget::register();

@@ -31,12 +31,11 @@ final class PrivacyService {
 	/**
 	 * The two states the consent log stores, as stored.
 	 *
-	 * Literals rather than Consent\ConsentState cases, for the same reason
-	 * Edition holds its tier names as literals: the consented tier is Pro-only
-	 * and the free build carries none of it, but the Privacy screen counts these
-	 * rows in every edition - the table is shared, and a site downgraded from Pro
-	 * still holds whatever it recorded. A class constant initialised from a
-	 * stripped enum fatals the first time the constant is read.
+	 * Literals rather than Consent\ConsentState cases. The consented tier is not
+	 * in every build, but this screen counts its rows in all of them - the table
+	 * is shared, and a site that had the tier and no longer does still holds
+	 * whatever it recorded. A class constant initialised from an enum that is
+	 * not there fatals the first time the constant is read.
 	 *
 	 * ConsentStateTest asserts these two stay identical to the enum.
 	 */

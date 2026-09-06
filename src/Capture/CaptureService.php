@@ -14,7 +14,7 @@ use HonestAnalytics\Channels\Campaign;
 use HonestAnalytics\Consent\ConsentResolverInterface;
 use HonestAnalytics\Devices\Device;
 use HonestAnalytics\Devices\DeviceParser;
-use HonestAnalytics\Edition\Edition;
+use HonestAnalytics\Capture\Interactions;
 use HonestAnalytics\Geo\GeoLookupInterface;
 use HonestAnalytics\Identity\IdentityService;
 use HonestAnalytics\Settings\Settings;
@@ -172,7 +172,7 @@ final class CaptureService {
 	public function trackEvent( string $name, ?float $value = null, ?string $path = null, ?int $postId = null ): bool {
 		$name = trim( $name );
 
-		if ( '' === $name || ! Edition::isPro() || ! $this->settings->enableEvents ) {
+		if ( '' === $name || ! Interactions::recorded( $this->settings ) ) {
 			return false;
 		}
 

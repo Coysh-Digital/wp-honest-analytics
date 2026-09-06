@@ -29,7 +29,6 @@ use HonestAnalytics\Capture\NonceRegistry;
 use HonestAnalytics\Capture\PathNormalizer;
 use HonestAnalytics\Capture\ScriptInjector;
 use HonestAnalytics\Capture\Trackability;
-use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Channels\ChannelClassifier;
 use HonestAnalytics\Consent\ConsentResolverInterface;
 use HonestAnalytics\Consent\NoConsent;
@@ -44,10 +43,10 @@ use HonestAnalytics\Rollup\Compactor;
 use HonestAnalytics\Rollup\DbRollupSink;
 use HonestAnalytics\Rollup\GoalMatcherInterface;
 use HonestAnalytics\Rollup\NoGoalMatching;
-use HonestAnalytics\Rollup\NoProRollups;
+use HonestAnalytics\Rollup\NoExtraRollups;
 use HonestAnalytics\Rollup\JourneyRecorderInterface;
 use HonestAnalytics\Rollup\NoJourneys;
-use HonestAnalytics\Rollup\ProRollupWriterInterface;
+use HonestAnalytics\Rollup\ExtraRollupsInterface;
 use HonestAnalytics\Rollup\RollupSinkInterface;
 use HonestAnalytics\Sessions\SessionStoreFactory;
 use HonestAnalytics\Sessions\SessionStoreInterface;
@@ -56,8 +55,8 @@ use HonestAnalytics\Settings\SettingsRepository;
 use HonestAnalytics\Stats\ContentStatsService;
 use HonestAnalytics\Stats\ConversionStatsInterface;
 use HonestAnalytics\Stats\NoConversionStats;
-use HonestAnalytics\Stats\NoProStats;
-use HonestAnalytics\Stats\ProStatsInterface;
+use HonestAnalytics\Stats\NoExtraStats;
+use HonestAnalytics\Stats\ExtraStatsInterface;
 use HonestAnalytics\Stats\RealtimeService;
 use HonestAnalytics\Stats\StatsService;
 use HonestAnalytics\Support\ClientIp;
@@ -115,14 +114,15 @@ final class Plugin {
 
 		SettingsRepository::flush();
 
-		// The edition verdict and the licence state are memoised statics too,
-		// and both are per-site questions. Flushing only the settings meant
-		// every site after the first in a `--network` CLI run, or after any
-		// `switch_to_blog()`, inherited the first site's answer - so a network
-		// where one site is licensed and the others are not reported Pro
-		// everywhere, or the reverse. `Edition::flush()` has existed all along
-		// and was called from the Licence screen and from tests, never here.
-		Edition::flush();
+		/**
+		 * Fires when the container is thrown away.
+		 *
+		 * For anything else memoised for the request. Everything here is a
+		 * per-site question, and the reason this hook exists at all: flushing only
+		 * the settings meant every site after the first in a `--network` CLI run,
+		 * or after any `switch_to_blog()`, inherited the first site's answers.
+		 */
+		do_action( 'honest_analytics_reset' );
 
 		// GoalsService memoises its definitions, and it used to be one of these
 		// services - so dropping the container was what cleared it between
@@ -258,13 +258,13 @@ final class Plugin {
 	 * loaded on every request, so it must not name a class that might be
 	 * missing. A build without one gets NoGeoLookup and every caller carries on
 	 * unchanged - which matters, because SettingsScreen and Health both ask for
-	 * this with no edition check in front of them.
+	 * this with nothing in front of them.
 	 *
-	 * The check is class_exists() and never Edition::isPro(). Services are
-	 * memoised for the request and Edition::flush() does not clear them, so an
-	 * edition-dependent factory would hand out whichever answer happened to be
-	 * true the first time something asked. The edition question is asked inside
-	 * GeoService::isAvailable(), where it already was.
+	 * The check is class_exists() and nothing else. Services are memoised for
+	 * the request, so a factory that consulted anything changeable would hand
+	 * out whichever answer happened to be true the first time something asked.
+	 * Whether a lookup is currently permitted is asked inside the object, in
+	 * front of the work, where ADR 44 puts it.
 	 */
 	public function geo(): GeoLookupInterface {
 		return $this->service(
@@ -296,7 +296,7 @@ final class Plugin {
 	 * not come back: everything they return is a Goal or a Funnel, neither of
 	 * which survives the strip, so this file cannot hold a factory for either
 	 * without naming a class the free build does not contain - on every
-	 * request, in every edition. Goals\GoalServices is the locator now, and it
+	 * request. Goals\GoalServices is the locator now, and it
 	 * strips with the rest of that namespace.
 	 */
 
@@ -331,15 +331,15 @@ final class Plugin {
 	}
 
 	/**
-	 * Pro rollup writes.
+	 * The rollup rows only some reports read.
 	 */
-	public function proRollups(): ProRollupWriterInterface {
+	public function extraRollups(): ExtraRollupsInterface {
 		return $this->service(
-			'proRollups',
-			function (): ProRollupWriterInterface {
+			'extraRollups',
+			function (): ExtraRollupsInterface {
 				$class = 'HonestAnalytics\\Rollup\\ProRollupWriter';
 
-				return class_exists( $class ) ? new $class( $this->settings() ) : new NoProRollups();
+				return class_exists( $class ) ? new $class( $this->settings() ) : new NoExtraRollups();
 			}
 		);
 	}
@@ -355,7 +355,7 @@ final class Plugin {
 				$this->capper(),
 				$this->uniques(),
 				$this->channels(),
-				$this->proRollups()
+				$this->extraRollups()
 			)
 		);
 	}
@@ -497,15 +497,15 @@ final class Plugin {
 	}
 
 	/**
-	 * Pro report queries.
+	 * The report queries this build may not have.
 	 */
-	public function proStats(): ProStatsInterface {
+	public function extraStats(): ExtraStatsInterface {
 		return $this->service(
-			'proStats',
-			static function (): ProStatsInterface {
+			'extraStats',
+			static function (): ExtraStatsInterface {
 				$class = 'HonestAnalytics\\Stats\\ProStatsService';
 
-				return class_exists( $class ) ? new $class() : new NoProStats();
+				return class_exists( $class ) ? new $class() : new NoExtraStats();
 			}
 		);
 	}

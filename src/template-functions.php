@@ -46,7 +46,7 @@ if ( ! function_exists( 'honest_analytics_track_event' ) ) {
 	 * return value tells the caller whether it was recorded, which an action
 	 * cannot.
 	 *
-	 * Returns false when the site is running the free edition, when events are
+	 * Returns false when nothing in this build records events, when events are
 	 * switched off, when the visitor has signalled a privacy preference, or
 	 * when the request came from a crawler. None of those are errors.
 	 *

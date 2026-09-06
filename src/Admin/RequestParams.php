@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Admin;
 
+use HonestAnalytics\Capabilities\Capabilities;
 use HonestAnalytics\Charts\ChartData;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Stats\DateRange;
@@ -79,7 +80,13 @@ final class RequestParams {
 
 		$stored = self::storedPreferences();
 
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only report state, no side effects.
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Which
+		// report to draw, chosen by following a link. Not nonced, deliberately:
+		// every one of these is ordinary navigation, and the URLs are meant to be
+		// bookmarked and shared between colleagues - a nonce would expire and
+		// turn a saved link into an error. Each value is matched against a fixed
+		// list before it is used or stored, and the only thing a forged link
+		// could achieve is changing which date range that reader sees first.
 		$rangeParam = isset( $_GET['range'] ) ? sanitize_text_field( wp_unslash( (string) $_GET['range'] ) ) : '';
 		$from       = isset( $_GET['from'] ) ? sanitize_text_field( wp_unslash( (string) $_GET['from'] ) ) : '';
 		$to         = isset( $_GET['to'] ) ? sanitize_text_field( wp_unslash( (string) $_GET['to'] ) ) : '';
@@ -314,6 +321,14 @@ final class RequestParams {
 	 */
 	private function rememberPreferences( array $stored, ?string $explicitRange, ?string $explicitGranularity, ?string $explicitCompare ): void {
 		if ( null === $explicitRange && null === $explicitGranularity && null === $explicitCompare ) {
+			return;
+		}
+
+		// The one write this class makes, so it checks for itself rather than
+		// trusting that every caller reached it through Screen::load(). All
+		// three values have been matched against a fixed list by now, and the
+		// row written belongs to the reader who asked for it.
+		if ( ! current_user_can( Capabilities::VIEW ) ) {
 			return;
 		}
 
