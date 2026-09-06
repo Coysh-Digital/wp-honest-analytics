@@ -213,7 +213,6 @@ class ComposerStaticInit60d78dfd625e10b67fd73270f6c41d95
         'HonestAnalytics\\Store\\StoreFactory' => __DIR__ . '/../..' . '/src/Store/StoreFactory.php',
         'HonestAnalytics\\Support\\Autoloader' => __DIR__ . '/../..' . '/src/Support/Autoloader.php',
         'HonestAnalytics\\Support\\ClientIp' => __DIR__ . '/../..' . '/src/Support/ClientIp.php',
-        'HonestAnalytics\\Support\\Clock' => __DIR__ . '/../..' . '/src/Support/Clock.php',
         'HonestAnalytics\\Support\\Db' => __DIR__ . '/../..' . '/src/Support/Db.php',
         'HonestAnalytics\\Support\\Format' => __DIR__ . '/../..' . '/src/Support/Format.php',
         'HonestAnalytics\\Support\\Lock' => __DIR__ . '/../..' . '/src/Support/Lock.php',

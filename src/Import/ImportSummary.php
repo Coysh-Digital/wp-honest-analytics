@@ -61,21 +61,4 @@ final class ImportSummary {
 
 		return (int) floor( ( $to - $from ) / DAY_IN_SECONDS ) + 1;
 	}
-
-	/**
-	 * Whether any mapping is only approximate.
-	 *
-	 * Drives the "your numbers may change" wording: a source whose every metric
-	 * maps exactly deserves a quieter note than one whose visitor definition is
-	 * a different thing wearing the same word.
-	 */
-	public function hasApproximateMappings(): bool {
-		foreach ( $this->mappings as $mapping ) {
-			if ( ! $mapping->isExact() ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
 }

@@ -51,6 +51,16 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Fixed
 
+- **Deactivating the plugin left a scheduled import batch behind.**
+  `Import\Runtime` has listened for `honest_analytics_deactivated` since the
+  batch runner existed and never once heard it - nothing fired the action. The
+  event was harmless, because WordPress drops one whose hook has no callback,
+  but it sat in the options table until somebody reinstalled.
+  `DeactivationTest` is new, because nothing covered deactivation at all.
+- A dead-code pass removed `Support\Clock` (added in the first commit, never
+  referenced), thirteen unused imports, fourteen methods nothing calls, both
+  email templates and one CSS rule. `ReportMailer` composes its body inline and
+  says why; the HTML template was the thing that decision rejected, left behind.
 - `OverviewWidget::control()` checks its own nonce and capability before writing
   user meta. Core already verified the dashboard-widget nonce and the write was
   to the current user's own meta, so this was not a hole - but a handler that

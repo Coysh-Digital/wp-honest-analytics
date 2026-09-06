@@ -10,8 +10,6 @@ declare(strict_types=1);
 namespace HonestAnalytics\Write;
 
 use HonestAnalytics\Capture\Hit;
-use HonestAnalytics\Capture\CaptureService;
-use HonestAnalytics\Identity\IdentityService;
 use HonestAnalytics\Rollup\Aggregator;
 use HonestAnalytics\Rollup\GoalMatcherInterface;
 use HonestAnalytics\Rollup\JourneyRecorderInterface;
@@ -27,7 +25,6 @@ use HonestAnalytics\Support\Db;
 use HonestAnalytics\Support\Lock;
 use HonestAnalytics\Support\Log;
 use HonestAnalytics\Support\Losses;
-use HonestAnalytics\Support\Paths;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;

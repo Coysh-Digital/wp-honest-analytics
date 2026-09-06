@@ -185,12 +185,35 @@ final class Installer {
 	 */
 	public static function deactivate( bool $networkWide = false ): void {
 		if ( $networkWide && is_multisite() ) {
-			self::eachSite( static fn () => Cron::unschedule() );
+			self::eachSite( static fn () => self::standDown() );
 
 			return;
 		}
 
+		self::standDown();
+	}
+
+	/**
+	 * Stop everything scheduled for one site.
+	 *
+	 * The plugin's own events go first, then anything else that scheduled work
+	 * of its own gets told. Import\Runtime has listened for this since the
+	 * batch runner existed and never once heard it: deactivation unscheduled
+	 * the drain and the tidy-up and left a chained import event behind,
+	 * pointing at a hook that was no longer listening. Nothing broke, because
+	 * a cron event whose hook has no callback is simply dropped - but the
+	 * event sat in the options table until somebody reinstalled.
+	 */
+	private static function standDown(): void {
 		Cron::unschedule();
+
+		/**
+		 * Fires when the plugin is deactivated on a site.
+		 *
+		 * For anything holding a scheduled event of its own. Runs once per site
+		 * on a network-wide deactivation, inside that site's context.
+		 */
+		do_action( 'honest_analytics_deactivated' );
 	}
 
 	/**

@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-06T15:18:50+01:00\n"
+"POT-Creation-Date: 2026-09-06T17:12:02+01:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: honest-analytics\n"
@@ -22,7 +22,6 @@ msgstr ""
 #: src/Privacy/PersonalData.php:35
 #: src/Privacy/PersonalData.php:51
 #: src/Privacy/PolicyContent.php:36
-#: templates/email/summary-html.php:99
 msgid "Honest Analytics"
 msgstr ""
 
@@ -358,8 +357,6 @@ msgstr ""
 #: src/Admin/Widgets/OverviewWidget.php:70
 #: src/Charts/ChartData.php:119
 #: templates/admin/dashboard.php:62
-#: templates/email/summary-html.php:65
-#: templates/email/summary-text.php:90
 msgid "Pageviews"
 msgstr ""
 
@@ -371,8 +368,6 @@ msgstr ""
 #: templates/admin/dashboard.php:64
 #: templates/admin/page.php:40
 #: templates/admin/page.php:88
-#: templates/email/summary-html.php:71
-#: templates/email/summary-text.php:91
 msgid "Unique visitors"
 msgstr ""
 
@@ -402,9 +397,6 @@ msgstr ""
 #: templates/admin/locations.php:177
 #: templates/admin/sources.php:79
 #: templates/admin/sources.php:124
-#: templates/email/summary-html.php:77
-#: templates/email/summary-html.php:218
-#: templates/email/summary-text.php:92
 #: templates/extensions/dashboard-cards.php:105
 #: templates/extensions/dashboard-cards.php:148
 #: templates/report/share-pdf.php:83
@@ -420,8 +412,6 @@ msgstr ""
 #: src/Admin/Widgets/OverviewWidget.php:73
 #: templates/admin/page.php:52
 #: templates/admin/pages.php:128
-#: templates/email/summary-html.php:83
-#: templates/email/summary-text.php:93
 #: templates/report/share-pdf.php:87
 #: templates/report/share.php:114
 msgid "Bounce rate"
@@ -518,84 +508,84 @@ msgstr ""
 msgid "You do not have permission to change what this site measures."
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:124
-#: src/Admin/Screens/ImportScreen.php:178
+#: src/Admin/Screens/ImportScreen.php:123
+#: src/Admin/Screens/ImportScreen.php:177
 #: templates/admin/import/details.php:65
 #: templates/admin/import/notes.php:24
 msgid "Import data"
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:162
+#: src/Admin/Screens/ImportScreen.php:161
 msgid "Import details"
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:165
+#: src/Admin/Screens/ImportScreen.php:164
 msgid "Importing"
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:168
+#: src/Admin/Screens/ImportScreen.php:167
 msgid "Import complete"
 msgstr ""
 
 #. translators: %s: the name of the analytics tool being imported from.
-#: src/Admin/Screens/ImportScreen.php:175
+#: src/Admin/Screens/ImportScreen.php:174
 #, php-format
 msgid "Import from %s"
 msgstr ""
 
 #. translators: %s: a number of records, already formatted.
-#: src/Admin/Screens/ImportScreen.php:279
+#: src/Admin/Screens/ImportScreen.php:278
 #: templates/admin/import/progress.php:89
 #, php-format
 msgid "%s records processed"
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:280
+#: src/Admin/Screens/ImportScreen.php:279
 msgid "Getting started…"
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:281
+#: src/Admin/Screens/ImportScreen.php:280
 msgid "Paused for a moment, then carrying on automatically."
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:282
+#: src/Admin/Screens/ImportScreen.php:281
 msgid "This is taking longer than expected. Your progress is saved, and the import will carry on in the background - you can safely leave this page."
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:683
+#: src/Admin/Screens/ImportScreen.php:682
 msgid "Importing is not available on this installation."
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:696
+#: src/Admin/Screens/ImportScreen.php:695
 msgid "The import could not be started. Nothing has been changed."
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:705
+#: src/Admin/Screens/ImportScreen.php:704
 msgid "The import could not be started. Nothing has been changed, and nothing in your other analytics tool has been touched."
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:753
+#: src/Admin/Screens/ImportScreen.php:752
 msgid "The import could not be stopped just now."
 msgstr ""
 
-#: src/Admin/Screens/ImportScreen.php:960
+#: src/Admin/Screens/ImportScreen.php:959
 msgid "Could not be checked"
 msgstr ""
 
-#: src/Admin/Screens/LicenceScreen.php:57
+#: src/Admin/Screens/LicenceScreen.php:56
 #: src/Extensions/Admin/SettingsCards.php:56
 msgid "Licence"
 msgstr ""
 
-#: src/Admin/Screens/LicenceScreen.php:112
+#: src/Admin/Screens/LicenceScreen.php:111
 msgid "Deactivated. The seat is free to use on another site, and every figure this site has collected is untouched."
 msgstr ""
 
-#: src/Admin/Screens/LicenceScreen.php:113
+#: src/Admin/Screens/LicenceScreen.php:112
 msgid "Deactivated here. The provider could not be reached to release the seat, so free it from your account portal before using the key elsewhere."
 msgstr ""
 
-#: src/Admin/Screens/LicenceScreen.php:130
+#: src/Admin/Screens/LicenceScreen.php:129
 msgid "Activated."
 msgstr ""
 
@@ -779,18 +769,18 @@ msgstr ""
 msgid "Search Console clicks are Google's own count, on Google's own rules - shown next to this plugin's figures, never added into them."
 msgstr ""
 
-#: src/Admin/Screens/PagesScreen.php:44
+#: src/Admin/Screens/PagesScreen.php:43
 #: src/Export/Exporter.php:104
 #: templates/admin/page.php:68
 #: templates/admin/realtime.php:52
 msgid "Pages"
 msgstr ""
 
-#: src/Admin/Screens/PagesScreen.php:152
+#: src/Admin/Screens/PagesScreen.php:151
 msgid "No analytics have been recorded for that page."
 msgstr ""
 
-#: src/Admin/Screens/PagesScreen.php:153
+#: src/Admin/Screens/PagesScreen.php:152
 #: src/Export/ExportHandler.php:91
 #: src/Sharing/SharePdfHandler.php:79
 msgid "Not found"
@@ -1275,7 +1265,6 @@ msgstr ""
 #: templates/admin/events.php:126
 #: templates/admin/pages.php:124
 #: templates/admin/search-console.php:326
-#: templates/email/summary-html.php:185
 #: templates/report/share-pdf.php:128
 #: templates/report/share.php:153
 msgid "Page"
@@ -1355,11 +1344,11 @@ msgstr ""
 msgid "Nothing was deleted. Both use the same tables, so every figure you had before is still there and still counting."
 msgstr ""
 
-#: src/Edition/Edition.php:178
+#: src/Edition/Edition.php:171
 msgid "This report is part of Honest Analytics Pro."
 msgstr ""
 
-#: src/Edition/Edition.php:179
+#: src/Edition/Edition.php:172
 msgid "Not available"
 msgstr ""
 
@@ -1386,8 +1375,6 @@ msgstr ""
 #: src/Email/ReportMailer.php:232
 #: templates/admin/layout/header.php:127
 #: templates/admin/partials/heatmap.php:32
-#: templates/email/summary-html.php:119
-#: templates/email/summary-text.php:77
 #, php-format
 msgid "%1$s - %2$s"
 msgstr ""
@@ -1707,42 +1694,22 @@ msgid "Scroll depth"
 msgstr ""
 
 #: src/Goals/GoalType.php:88
-msgid "Path"
-msgstr ""
-
-#: src/Goals/GoalType.php:89
-msgid "Event name"
-msgstr ""
-
-#: src/Goals/GoalType.php:90
-msgid "Post ID"
-msgstr ""
-
-#: src/Goals/GoalType.php:91
-msgid "Seconds"
-msgstr ""
-
-#: src/Goals/GoalType.php:92
-msgid "Percent"
-msgstr ""
-
-#: src/Goals/GoalType.php:101
 msgid "A path beginning with a slash. A trailing * matches everything below it, and the query string is ignored."
 msgstr ""
 
-#: src/Goals/GoalType.php:102
+#: src/Goals/GoalType.php:89
 msgid "The name passed to the event, matched exactly."
 msgstr ""
 
-#: src/Goals/GoalType.php:103
+#: src/Goals/GoalType.php:90
 msgid "The numeric ID of the post or page."
 msgstr ""
 
-#: src/Goals/GoalType.php:104
+#: src/Goals/GoalType.php:91
 msgid "Seconds spent on the site before the visit went idle."
 msgstr ""
 
-#: src/Goals/GoalType.php:105
+#: src/Goals/GoalType.php:92
 msgid "One of 25, 50, 75 or 100 - depth is recorded in quarters."
 msgstr ""
 
@@ -2245,7 +2212,6 @@ msgstr ""
 #: templates/admin/page.php:86
 #: templates/admin/page.php:151
 #: templates/admin/pages.php:125
-#: templates/email/summary-html.php:186
 #: templates/metabox/post-stats.php:19
 #: templates/report/share-pdf.php:75
 #: templates/report/share-pdf.php:129
@@ -3039,7 +3005,6 @@ msgstr ""
 
 #: templates/admin/campaigns.php:96
 #: templates/admin/sources.php:85
-#: templates/email/summary-html.php:219
 msgid "Bounce"
 msgstr ""
 
@@ -3215,7 +3180,6 @@ msgstr ""
 #: templates/admin/dashboard.php:197
 #: templates/admin/page.php:147
 #: templates/admin/sources.php:75
-#: templates/email/summary-html.php:217
 msgid "Channel"
 msgstr ""
 
@@ -4487,7 +4451,6 @@ msgstr ""
 
 #: templates/admin/page.php:46
 #: templates/admin/pages.php:126
-#: templates/email/summary-html.php:187
 msgid "Entrances"
 msgstr ""
 
@@ -5797,84 +5760,6 @@ msgstr ""
 
 #: templates/admin/sources.php:137
 msgid "Only the referring host is stored, never the full referrer URL, which can carry search terms. The referrer is read when PHP renders the page; the beacon never sends one, because a browser-supplied referrer is forgeable. A session that enters on a cached page is therefore reported as Direct. Campaign tags travel in the URL and are unaffected."
-msgstr ""
-
-#. translators: %s: the site name.
-#: templates/email/summary-html.php:107
-#: templates/email/summary-text.php:70
-#, php-format
-msgid "%s - analytics summary"
-msgstr ""
-
-#. translators: 1: previous start date, 2: previous end date.
-#: templates/email/summary-html.php:129
-#, php-format
-msgid " · compared with %1$s - %2$s"
-msgstr ""
-
-#: templates/email/summary-html.php:175
-msgid "Most-read pages"
-msgstr ""
-
-#: templates/email/summary-html.php:180
-#: templates/email/summary-text.php:106
-msgid "No pages were recorded in this period."
-msgstr ""
-
-#: templates/email/summary-html.php:207
-msgid "Where they came from"
-msgstr ""
-
-#: templates/email/summary-html.php:212
-#: templates/email/summary-text.php:119
-msgid "No sessions were recorded in this period."
-msgstr ""
-
-#: templates/email/summary-html.php:239
-msgid "Open the full report"
-msgstr ""
-
-#: templates/email/summary-html.php:247
-#: templates/email/summary-text.php:131
-msgid "Unique visitors are a daily estimate. Visitors are counted with a salted hash that is destroyed every 24 hours, so somebody who returns on two days counts on both - the figure cannot be added up across a period and is not a headcount."
-msgstr ""
-
-#. translators: 1: opening link tag to the site, 2: the site name, 3: closing link tag, 4: opening link tag to Settings, 5: closing link tag.
-#: templates/email/summary-html.php:254
-#, php-format
-msgid "Sent by Honest Analytics on %1$s%2$s%3$s. To stop these, turn off scheduled reports in %4$sSettings%5$s."
-msgstr ""
-
-#. translators: 1: previous start date, 2: previous end date.
-#: templates/email/summary-text.php:82
-#, php-format
-msgid " (compared with %1$s - %2$s)"
-msgstr ""
-
-#: templates/email/summary-text.php:94
-msgid "Avg. visit"
-msgstr ""
-
-#: templates/email/summary-text.php:103
-msgid "MOST-READ PAGES"
-msgstr ""
-
-#: templates/email/summary-text.php:116
-msgid "WHERE THEY CAME FROM"
-msgstr ""
-
-#: templates/email/summary-text.php:129
-msgid "Open the full report:"
-msgstr ""
-
-#. translators: %s: the site name.
-#: templates/email/summary-text.php:136
-#, php-format
-msgid "Sent by Honest Analytics on %s."
-msgstr ""
-
-#: templates/email/summary-text.php:140
-msgid "To stop these, turn off scheduled reports in Settings:"
 msgstr ""
 
 #: templates/extensions/dashboard-cards.php:52

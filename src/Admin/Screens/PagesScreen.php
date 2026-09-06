@@ -15,7 +15,6 @@ use HonestAnalytics\Charts\ChartData;
 use HonestAnalytics\Dimensions\DimensionType;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Stats\Comparison;
-use HonestAnalytics\Stats\Granularity;
 use HonestAnalytics\Support\Format;
 
 if ( ! defined( 'ABSPATH' ) ) {

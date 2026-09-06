@@ -115,21 +115,6 @@ final class Scheduler {
 	}
 
 	/**
-	 * Whether an import is currently waiting or running for this site.
-	 *
-	 * @param int $siteId Site.
-	 */
-	public static function hasActive( int $siteId ): bool {
-		foreach ( ( new ImportRepository() )->forSite( $siteId, 10 ) as $job ) {
-			if ( $job->isActive() ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
 	 * Drop the scheduled event. Called on deactivation.
 	 */
 	public static function unschedule(): void {

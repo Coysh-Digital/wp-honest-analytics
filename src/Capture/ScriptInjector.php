@@ -211,13 +211,6 @@ final class ScriptInjector {
 	}
 
 	/**
-	 * Whether the tracker tag was printed.
-	 */
-	public function tagPrinted(): bool {
-		return $this->tagPrinted;
-	}
-
-	/**
 	 * Whether a theme template rendered.
 	 */
 	public function templateRendered(): bool {
@@ -268,13 +261,6 @@ final class ScriptInjector {
 	 */
 	public function collectUrl(): string {
 		return self::endpointUrl( $this->settings, 'collect' );
-	}
-
-	/**
-	 * The URL consent decisions post to.
-	 */
-	public function consentUrl(): string {
-		return self::endpointUrl( $this->settings, 'consent' );
 	}
 
 	/**

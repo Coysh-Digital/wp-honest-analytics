@@ -441,11 +441,4 @@ final class ImportRunner {
 	public function repository(): ImportRepository {
 		return $this->repository;
 	}
-
-	/**
-	 * The coverage this runner uses.
-	 */
-	public function coverage(): Coverage {
-		return $this->coverage;
-	}
 }

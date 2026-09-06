@@ -274,16 +274,6 @@ final class Settings {
 	}
 
 	/**
-	 * Whether this configuration could write to a visitor's device.
-	 *
-	 * Deliberately conservative: it answers "could we", not "have we", because
-	 * "a cookie could be set" is the compliance-relevant fact.
-	 */
-	public function usesDeviceStorage(): bool {
-		return $this->enableConsent;
-	}
-
-	/**
 	 * Milliseconds a session may be idle before the next view starts a new one.
 	 */
 	public function sessionWindowSeconds(): int {

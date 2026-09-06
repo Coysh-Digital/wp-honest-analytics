@@ -69,13 +69,6 @@ final class CacheDetector {
 	}
 
 	/**
-	 * Whether anything is caching pages.
-	 */
-	public static function hasPageCache(): bool {
-		return [] !== self::detected();
-	}
-
-	/**
 	 * Whether an optimiser is holding scripts back until the visitor interacts.
 	 */
 	public static function delaysJavaScript(): bool {

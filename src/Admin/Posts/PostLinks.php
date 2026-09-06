@@ -71,32 +71,4 @@ final class PostLinks {
 
 		return is_string( $url ) && '' !== $url ? $url : null;
 	}
-
-	/**
-	 * Try to find the post behind a path.
-	 *
-	 * Used only for rows whose post id is still null - a page first recorded by
-	 * a beacon, where PHP never ran and never resolved one. Memoised because
-	 * `url_to_postid()` parses the rewrite rules and can query.
-	 *
-	 * @param string $path Stored path.
-	 */
-	public static function resolvePath( string $path ): ?int {
-		if ( '' === $path || str_contains( $path, '?' ) ) {
-			return null;
-		}
-
-		$key    = 'u2p:' . md5( $path );
-		$cached = wp_cache_get( $key, 'honest-analytics' );
-
-		if ( is_numeric( $cached ) ) {
-			return (int) $cached > 0 ? (int) $cached : null;
-		}
-
-		$postId = (int) url_to_postid( home_url( $path ) );
-
-		wp_cache_set( $key, $postId, 'honest-analytics', HOUR_IN_SECONDS );
-
-		return $postId > 0 ? $postId : null;
-	}
 }

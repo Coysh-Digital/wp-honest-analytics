@@ -188,39 +188,6 @@ final class Coverage {
 	}
 
 	/**
-	 * What one source covers, as a range and a count.
-	 *
-	 * @param int    $siteId Site.
-	 * @param string $source Source.
-	 *
-	 * @return array{days:int,from:string,to:string,records:int}
-	 */
-	public function forSource( int $siteId, string $source ): array {
-		global $wpdb;
-
-		$table = Tables::name( Tables::IMPORT_COVERAGE );
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The coverage table has no core API and is deliberately uncached; the identifier comes from Schema\Tables and every value is a placeholder.
-		$row = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT COUNT(*) AS days, MIN(date) AS dateFrom, MAX(date) AS dateTo, COALESCE(SUM(records),0) AS records
-				FROM `$table` WHERE siteId = %d AND source = %s",
-				$siteId,
-				$source
-			),
-			ARRAY_A
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-
-		return [
-			'days'    => (int) ( $row['days'] ?? 0 ),
-			'from'    => (string) ( $row['dateFrom'] ?? '' ),
-			'to'      => (string) ( $row['dateTo'] ?? '' ),
-			'records' => (int) ( $row['records'] ?? 0 ),
-		];
-	}
-
-	/**
 	 * Every calendar date in a range, inclusive.
 	 *
 	 * Built in UTC deliberately. These are calendar labels rather than moments,

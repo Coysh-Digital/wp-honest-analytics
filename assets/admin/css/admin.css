@@ -534,14 +534,6 @@ tr:hover .ha-row-edit,
 	min-width: 0;
 }
 
-.ha-axis {
-	display: flex;
-	justify-content: space-between;
-	font-size: 11px;
-	color: var(--ha-muted);
-	font-variant-numeric: tabular-nums;
-	padding-top: 8px;
-}
 
 /* ----------------------------------------------------------------- heatmap */
 

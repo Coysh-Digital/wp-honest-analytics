@@ -11,7 +11,6 @@ namespace HonestAnalytics\Admin\Screens;
 
 use HonestAnalytics\Admin\Views\View;
 use HonestAnalytics\Capabilities\Capabilities;
-use HonestAnalytics\Import\Ga4\Client as Ga4Client;
 use HonestAnalytics\Import\Ga4\Connection as Ga4Connection;
 use HonestAnalytics\Import\Coverage;
 use HonestAnalytics\Import\ImportConfiguration;

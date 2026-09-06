@@ -12,7 +12,6 @@ namespace HonestAnalytics\Rollup;
 use DateTimeImmutable;
 use DateTimeZone;
 use HonestAnalytics\Schema\Tables;
-use HonestAnalytics\Schema\Upsert;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Support\Db;
 use HonestAnalytics\Support\Log;

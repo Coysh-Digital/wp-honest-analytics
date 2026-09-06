@@ -148,21 +148,6 @@ final class ImporterRegistry {
 	}
 
 	/**
-	 * Detection for every importer, keyed by id.
-	 *
-	 * @return array<string,DetectionResult>
-	 */
-	public static function detectAll(): array {
-		$out = [];
-
-		foreach ( array_keys( self::all() ) as $id ) {
-			$out[ $id ] = self::detect( $id );
-		}
-
-		return $out;
-	}
-
-	/**
 	 * Forget everything memoised. For tests.
 	 */
 	public static function flush(): void {

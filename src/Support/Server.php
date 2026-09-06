@@ -48,15 +48,6 @@ class Server {
 	}
 
 	/**
-	 * Whether a server key is present and non-empty.
-	 *
-	 * @param string $key Key.
-	 */
-	public function has( string $key ): bool {
-		return '' !== $this->get( $key );
-	}
-
-	/**
 	 * A request header by its lower-case name (e.g. `accept-language`).
 	 *
 	 * @param string $name Header name.

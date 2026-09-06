@@ -158,50 +158,6 @@ final class StatsService {
 	}
 
 	/**
-	 * Distinct visitors who started a session.
-	 *
-	 * @param int       $siteId Site ID.
-	 * @param DateRange $range  Period.
-	 */
-	public function sessionUniques( int $siteId, DateRange $range ): int {
-		global $wpdb;
-
-		$table = Tables::name( Tables::SESSIONS_ROLLUP );
-
-		$columns = $this->counter->storesOnRow() ? 'date, hour, uniques, importedUniques' : 'date, hour, importedUniques';
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Rollup tables have no core API and are deliberately uncached; identifiers come from Schema\Tables and internal whitelists, and every value is a placeholder.
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT $columns FROM `$table` WHERE siteId = %d AND date BETWEEN %s AND %s",
-				$siteId,
-				$range->from,
-				$range->to
-			),
-			ARRAY_A
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-
-		$scopes   = [];
-		$sketches = [];
-
-		$imported = 0;
-
-		foreach ( (array) $rows as $row ) {
-			$scope    = new UniqueScope( UniqueScope::KIND_SESSION, $siteId, (string) $row['date'], (int) $row['hour'] );
-			$scopes[] = $scope;
-
-			if ( array_key_exists( 'uniques', $row ) ) {
-				$sketches[ $scope->key() ] = $this->readBlob( $row['uniques'] );
-			}
-
-			$imported += (int) ( $row['importedUniques'] ?? 0 );
-		}
-
-		return $this->counter->estimate( $scopes, $sketches ) + $imported;
-	}
-
-	/**
 	 * The scope a uniques row belongs to.
 	 *
 	 * A row with no `pathDimId` came from `honest_daily_uniques` and covers the

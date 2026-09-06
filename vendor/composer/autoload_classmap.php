@@ -178,7 +178,6 @@ return array(
     'HonestAnalytics\\Store\\StoreFactory' => $baseDir . '/src/Store/StoreFactory.php',
     'HonestAnalytics\\Support\\Autoloader' => $baseDir . '/src/Support/Autoloader.php',
     'HonestAnalytics\\Support\\ClientIp' => $baseDir . '/src/Support/ClientIp.php',
-    'HonestAnalytics\\Support\\Clock' => $baseDir . '/src/Support/Clock.php',
     'HonestAnalytics\\Support\\Db' => $baseDir . '/src/Support/Db.php',
     'HonestAnalytics\\Support\\Format' => $baseDir . '/src/Support/Format.php',
     'HonestAnalytics\\Support\\Lock' => $baseDir . '/src/Support/Lock.php',
