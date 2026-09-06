@@ -40,9 +40,19 @@ final class PlainEndpoint {
 	/**
 	 * The routes it answers.
 	 *
-	 * @var string[]
+	 * A method rather than a constant, because a constant initialiser is
+	 * resolved when the class loads and this one has to ask whether the consent
+	 * controller is in this build. It is not, in the free edition - the whole
+	 * consented tier strips - and answering 204 to a beacon nothing could have
+	 * sent is worse than not answering the route at all.
+	 *
+	 * @return string[]
 	 */
-	private const ROUTES = [ 'collect', 'consent' ];
+	private static function routes(): array {
+		return class_exists( ConsentController::class )
+			? [ 'collect', 'consent' ]
+			: [ 'collect' ];
+	}
 
 	/**
 	 * Whether this endpoint is the configured one.
@@ -84,6 +94,8 @@ final class PlainEndpoint {
 		$headers = $server->headers();
 
 		try {
+			// Unreachable unless routes() offered it, which it does not in a
+			// build without the controller.
 			if ( 'consent' === $route ) {
 				ConsentController::make()->run( $params, $headers );
 			} else {
@@ -113,7 +125,7 @@ final class PlainEndpoint {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$route = sanitize_key( wp_unslash( $_GET[ self::QUERY_VAR ] ) );
 
-		return in_array( $route, self::ROUTES, true ) ? $route : null;
+		return in_array( $route, self::routes(), true ) ? $route : null;
 	}
 
 	/**

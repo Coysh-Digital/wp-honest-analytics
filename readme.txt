@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.9.2
+Stable tag: 0.9.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -59,6 +59,8 @@ Storage grows with dimensions × time, not pageviews × time. A site with a hund
 * Devices, browsers and operating systems
 * Privacy, which states exactly what this site stores and what it does not
 * CSV and JSON export from every report
+* Import your history from Google Analytics, WP Statistics and others
+* A signed, read-only reporting API, off until you connect a tool to it
 * Two dashboard widgets, a Views column on your post lists, and an analytics panel in the editor
 * WP-CLI commands, and multisite support
 
@@ -66,7 +68,9 @@ There are no artificial limits. No row caps, no retention caps, no date-range ca
 
 = What the paid edition adds =
 
-Campaigns, locations, events, goals, funnels, crawler reporting, and integrations with Contact Form 7, Gravity Forms, WooCommerce, WPForms and Ninja Forms. Details are at the plugin's homepage. It is a one-off payment with no subscription, and it reads the same tables this edition writes - upgrading moves no data and loses no history.
+Campaigns, locations, events, goals, funnels, crawler reporting, client-shareable report links, Search Console query data, scheduled email summaries, and integrations with Contact Form 7, Gravity Forms, WooCommerce, WPForms and Ninja Forms. Details are at the plugin's homepage. It is a one-off payment with no subscription, and it reads the same tables this edition writes - upgrading moves no data and loses no history.
+
+None of it is in this plugin. The paid edition is a separate download, and the code for those reports is removed when this one is packaged rather than switched off - so there is no key to enter here, nothing to unlock, and nothing that stops working.
 
 = On compliance =
 
@@ -88,7 +92,7 @@ Requires WordPress 6.4+, PHP 8.1+, MySQL 5.7+ or MariaDB 10.4+.
 
 This plugin makes no outbound request in the course of measuring your traffic. Nothing about your site or your visitors is sent to us or to anybody else, and there is no telemetry, licence check or update check in the free edition.
 
-Two features do contact somewhere else. Both are optional, both are started by an administrator, and neither runs unless you use it.
+Two features contact somewhere else, and one more answers a request from somewhere else. All three are optional, all three are started by an administrator, and none of them runs unless you use it.
 
 = Google Analytics, when you import your history =
 
@@ -110,6 +114,14 @@ This is Google's service, governed by Google's terms and privacy policy, not our
 Country and region reporting needs a MaxMind-format database, which is not bundled with the plugin. You can upload a file, or give the plugin an HTTPS address to fetch it from.
 
 No address is built into the plugin and nothing downloads on its own. The request goes only to the URL you type, sends nothing but the request for that file, and is refused unless it is HTTPS and the response is a valid database. Common sources are [MaxMind GeoLite2](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data) and [DB-IP Lite](https://db-ip.com/db/lite.php), each under its own terms; whichever you choose, the terms are between you and them.
+
+= A reporting tool you connect, if you connect one =
+
+The plugin can let an external reporting tool read this site's figures. It is off until an administrator pastes a connection code into *Analytics -> Reporting API*, and clearing that code switches it off again.
+
+This one runs the other way round from the two above: the plugin makes no request, it answers one. A tool holding the code can ask for the same aggregate figures the dashboard already shows - pageviews, sessions, bounce rate, top pages, sources, devices - for a date range it names. Requests are signed with the code rather than carrying it, are refused if the signature is older than a few minutes or is replayed, and are read-only. There is no visitor-level data in the reply because there is none in the tables.
+
+Which tool that is, and whose terms govern it, is your choice: the plugin has no service of its own at the other end and no address built into it. Nothing is sent anywhere until you save a code.
 
 = What is not a third party =
 
@@ -159,7 +171,7 @@ Yes. Each site gets its own tables, settings and reports.
 
 No. Nothing about your site, your traffic or your use of the plugin is ever sent anywhere, and there is nothing in it that reports back - no telemetry, no licence check, no update check, no remote configuration.
 
-The plugin does make outbound requests in two situations, both of which you start and neither of which sends us anything: importing your history from Google Analytics, and downloading a geo database from an address you supply. It also calls *your own site* once a day to check that the collection endpoint answers and that the write spool is not readable over the web. External services below says exactly what each one is.
+The plugin does make outbound requests in two situations, both of which you start and neither of which sends us anything: importing your history from Google Analytics, and downloading a geo database from an address you supply. It can also answer a reporting tool you connect to it, which is off unless you do. It also calls *your own site* once a day to check that the collection endpoint answers and that the write spool is not readable over the web. External services below says exactly what each one is.
 
 = What happens to my data if I upgrade to the paid edition? =
 
@@ -180,6 +192,14 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.9.3 =
+* Changed: The paid reports no longer appear anywhere in this edition. They were listed in the Analytics menu, each leading to a page describing what the report contains, with a matching note where the card would be on the Dashboard and the page detail view. The intent was that people could find out the reports existed; the effect was a menu of features this plugin does not have, which reads as functionality being held back. What the paid edition adds is described above, in the readme, and nowhere else.
+* Changed: Everything behind those reports has been removed from this edition too, rather than left in place behind a check - goals, funnels, the consented tracking layer, stored journeys, country lookup and the report queries that read them, along with the geolocation library none of it could use. The plugin is about fifty kilobytes smaller and contains nothing that a licence would switch on.
+* Added: The External services section now describes the reporting API, which lets a reporting tool you connect read this site's aggregate figures. It is off until you paste a connection code, and clearing the code switches it off.
+* Fixed: The Dashboard widget's settings form now checks its own nonce and capability before saving your choice of range and metrics, rather than relying on the check WordPress does around it.
+* Fixed: Two admin screens printed a style block into the page instead of enqueueing it. Both now go through the stylesheet the rest of the admin uses.
+* Fixed: Translations are no longer loaded twice. WordPress.org serves this edition its own language packs and has loaded them without being asked since 4.6.
 
 = 0.9.2 =
 * Changed: The setup wizard covers more, and its welcome now appears on the plugins screen as well - which is where WordPress lands after activation. The wizard adds four settings beside the original three: whether your own signed-in team is counted, whether known bots are kept out of the numbers, whether query parameters like utm_source are ignored so one page is not split into many, and whether your history is kept or removed if the plugin is ever deleted. All remain optional, and all still live on the Settings screen.
@@ -225,7 +245,6 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 * Fixed: Two rows of the privacy table could have silently become one.
 * Fixed: A different copy of the charting library broke the charts instead of standing down.
 * Fixed: A drain that threw on one site of a network wrote the rest into it.
-* Fixed: Pro only: Uninstalling a network where every site kept its data still deleted the licence.
 
 = 0.8.0 =
 * Added: A count of the views that were dropped, on the Settings screen.
@@ -272,10 +291,8 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 * Changed: The key-value table is swept a little on every drain, in chunks.
 * Changed: Fewer writes per request on sites without an object cache.
 * Changed: A gzipped geo database upload is bounded on its decompressed size as well as its downloaded one.
-* Fixed: Pro only: Every site but one on a network was told its licence had been removed.
 * Fixed: A wizard step posting a nested option took the import screen down.
 * Fixed: Another plugin adding an inline script could stop tracking altogether.
-* Fixed: Pro only: The optimiser exclusions did nothing at all on the paid edition.
 * Fixed: On a network, whichever edition loaded first silently won.
 * Fixed: Network activation and deactivation stopped at 200 sites.
 * Fixed: Every site in a --network command inherited the first site's edition.
@@ -298,9 +315,7 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 * Fixed: Compaction destroyed anything written while it was thinking.
 * Fixed: Two tidy-ups could run at once.
 * Fixed: A salt that could not be saved made every visitor a new visitor.
-* Fixed: Pro only: Imported Search Console history was deleted by retention.
 * Fixed: Only the last day's folded unique counters were ever discarded.
-* Fixed: Pro only: The same summary email could be sent twice.
 * Fixed: Declaring an Independent Analytics install to store UTC did nothing.
 * Fixed: A report table whose column had been renamed took the screen down with it.
 * Fixed: A date could disappear from a report with nothing to say why.
@@ -319,40 +334,28 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 * Security: A directory that lost its guard files never got them back.
 * Security: The Google client secret is encrypted at rest.
 * Security: The connection broker address is pinned to https.
-* Security: Pro only: The update check pins download_link as well as package.
 * Security: The GA4 property is validated rather than sanitised.
 * Security: The user agent and the referrer are reduced in the request that saw them, not at the drain.
 * Security: The Cloudflare address source is verified rather than trusted.
-* Security: Pro only: An update is only installed from the licence server.
 * Security: Google refresh tokens are encrypted at rest.
 * Security: The geo database download refuses private addresses and has a size ceiling.
 * Security: A second beacon rate limit, on the address alone.
 
 = 0.5.0 =
-* Added: Pro only: client-shareable reports are downloadable as a PDF, from the Shared reports screen or from the report itself.
-* Added: Pro only: a share link's content is now a choice - Trend, Top pages, Sources, Devices and Content can each be switched on or off per link, applied identically to the page and the PDF.
-* Added: Pro only: This month and Last month join the rolling windows a share link can show, for a report that names a real calendar month.
-* Added: Pro only: a client-shareable report can carry an agency's own name in place of the site's own, set once on Settings.
+* Nothing in this release affected the free edition.
 
 = 0.4.0 =
 * Changed: Search Console now has the same hosted-broker groundwork Google Analytics already had. Neither broker filter is set anywhere, so every site keeps connecting with its own Google Cloud client exactly as before.
 
 = 0.3.0 =
-* Added: Pro only: client-shareable reports - a link an administrator creates showing a rolling window of the overview, with no WordPress account needed, individually revocable, with an optional expiry.
-* Added: Pro only: traffic spike and drop alerts, off by default - once a day, yesterday is compared against a typical figure for that weekday, with the real numbers stated in the email.
-* Added: Pro only: click tracking on any element, marked with a data-honest-event attribute or a configured CSS selector, recording only the event name.
-* Added: Pro only: Search Console query data - what people searched to reach a page, imported through its own narrowly scoped Google connection and shown apart from this plugin's own figures.
-* Fixed: the "See what Pro adds" link on a locked report went to the wrong domain and landed on a parking page instead of the pricing page.
+* Nothing in this release affected the free edition.
 
 = 0.2.3 =
 * Added: comparison now shows on the Devices and Sources screens, and every ranked table (Pages, Devices, Sources) shows a per-row change alongside the headline figures.
 * Added: Locations shows full country names, a shaded world map, and a breakdown by region.
-* Added: Pro only: the Licence screen links to the account area at pro.honest-analytics.com.
 
 = 0.2.2 =
-* Pro only: activating, deactivating and checking a licence now calls a real licence server, instead of taking a well-formed key's word for it. A network problem still never takes Pro away from a site that already had it.
-* Pro only: updates for the Pro build now come from the same server, through the normal WordPress update screen.
-* Pro only: fixed the "View version details" link, which checked the free edition's slug regardless of which one was installed and so never opened for a Pro site.
+* Nothing in this release affected the free edition.
 
 = 0.2.1 =
 * Fixed: "No comparison" still showed a percentage change against the previous period on every headline figure. It is now silent about change when no comparison is active.
@@ -379,7 +382,6 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 * Fixed: connecting to Google Analytics went to the dashboard and stopped, because the redirect to Google's sign-in screen was treated as though it were a link back to your own site.
 * Fixed: every outcome of that connection was silent. A cancelled sign-in, a misconfigured Google project and a successful connection now each say what happened.
 * Fixed: on the free edition, the admin could log a PHP warning on every page in the Analytics menu.
-* Added: the paid reports now keep their place in the menu, marked, each explaining what it contains. No figures are shown, invented or otherwise.
 * Added: full setup instructions for Google Analytics, in the plugin and in the documentation.
 * Added: the geo database installs from the Locations screen, and maintenance runs from buttons on Settings, so neither needs a terminal.
 * Added: the offer to import from another analytics plugin now goes away once you have taken it up.

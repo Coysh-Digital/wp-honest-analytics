@@ -14,6 +14,7 @@ use HonestAnalytics\Admin\Menu;
 use HonestAnalytics\Admin\Notices;
 use HonestAnalytics\Admin\Posts\StatsMetaBox;
 use HonestAnalytics\Admin\Posts\ViewsColumn;
+use HonestAnalytics\Admin\ReportingApiScreen;
 use HonestAnalytics\Admin\Widgets\LiveWidget;
 use HonestAnalytics\Admin\Widgets\OverviewWidget;
 use HonestAnalytics\Capabilities\Capabilities;
@@ -89,12 +90,18 @@ final class Bootstrap {
 	 * Hooks that belong in every context.
 	 */
 	private static function always(): void {
-		// On `init`, not here. Called during `plugins_loaded` this resolved the
-		// locale before a multilingual plugin had had the chance to set it, and
-		// forced the current user to be resolved early in the admin. It is kept
-		// rather than dropped because the paid build is not hosted on
-		// wordpress.org and so gets no language pack of its own.
-		add_action( 'init', [ self::class, 'loadTextdomain' ], 1 );
+		// Not called at all in the free build: wordpress.org serves it language
+		// packs and core has loaded those unasked since 4.6, so the call is
+		// dead weight that only risks loading translations too early. The paid
+		// build is not hosted there, gets no pack of its own and keeps it.
+		//
+		// On `init` when it does run, not here. Called during `plugins_loaded`
+		// it resolved the locale before a multilingual plugin had had the
+		// chance to set it, and forced the current user to be resolved early in
+		// the admin.
+		if ( Edition::hasPro() ) {
+			add_action( 'init', [ self::class, 'loadTextdomain' ], 1 );
+		}
 
 		Capabilities::register();
 		Cron::register();
@@ -162,6 +169,7 @@ final class Bootstrap {
 
 		( new Menu() )->register();
 
+		ReportingApiScreen::register();
 		Notices::register();
 		ExportHandler::register();
 
@@ -172,7 +180,13 @@ final class Bootstrap {
 			SharePdfHandler::register();
 		}
 
-		GeoHandler::register();
+		// Stripped from Lite along with the rest of the geo family, and inert on
+		// a Pro build with no active licence, the same reason admin() guards
+		// SharePdfHandler four lines above.
+		if ( Edition::isPro() && class_exists( GeoHandler::class ) ) {
+			GeoHandler::register();
+		}
+
 		MaintenanceHandler::register();
 		OverviewWidget::register();
 		LiveWidget::register();

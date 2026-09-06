@@ -136,13 +136,26 @@ final class OverviewWidget {
 
 	/**
 	 * Render and handle the widget's settings form.
+	 *
+	 * Checked here as well as by core. `wp_dashboard()` verifies
+	 * `edit-dashboard-widget_{$id}` before it triggers a widget control, and the
+	 * only thing written below is the current user's own meta, so neither check
+	 * is what stands between this and a cross-site write. They are here because
+	 * a handler that writes on `$_POST` and verifies nothing of its own is
+	 * indistinguishable from one that forgot, both to a reviewer and to whoever
+	 * next moves this code somewhere core is not doing the work.
 	 */
 	public static function control(): void {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Core verifies the dashboard widget form.
 		if ( isset( $_POST['honest_analytics_overview'] ) && is_array( $_POST['honest_analytics_overview'] ) ) {
+			check_admin_referer( 'edit-dashboard-widget_' . self::ID, 'dashboard-widget-nonce' );
+
+			if ( ! current_user_can( Capabilities::VIEW ) ) {
+				return;
+			}
+
 			// Each member is passed through sanitize_key() immediately below;
 			// the array itself cannot be sanitized in one call.
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Verified above.
 			$posted  = wp_unslash( $_POST['honest_analytics_overview'] );
 			$range   = isset( $posted['range'] ) ? sanitize_key( (string) $posted['range'] ) : '7d';
 			$metrics = isset( $posted['metrics'] ) && is_array( $posted['metrics'] )

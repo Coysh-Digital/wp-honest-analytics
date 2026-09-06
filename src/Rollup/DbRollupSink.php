@@ -41,23 +41,23 @@ final class DbRollupSink implements RollupSinkInterface {
 	private DimensionCapper $capper;
 	private UniqueCounterInterface $counter;
 	private ChannelClassifier $channels;
-	private ProRollupWriter $pro;
+	private ProRollupWriterInterface $pro;
 	private DateTimeZone $timezone;
 
 	/**
-	 * @param Settings               $settings Settings.
-	 * @param DimensionCapper        $capper   Dimension capper.
-	 * @param UniqueCounterInterface $counter  Unique counter.
-	 * @param ChannelClassifier      $channels Channel classifier.
-	 * @param ProRollupWriter        $pro      Pro rollup writer.
-	 * @param DateTimeZone|null      $timezone Site timezone.
+	 * @param Settings                 $settings Settings.
+	 * @param DimensionCapper          $capper   Dimension capper.
+	 * @param UniqueCounterInterface   $counter  Unique counter.
+	 * @param ChannelClassifier        $channels Channel classifier.
+	 * @param ProRollupWriterInterface $pro      Pro rollup writer.
+	 * @param DateTimeZone|null        $timezone Site timezone.
 	 */
 	public function __construct(
 		Settings $settings,
 		DimensionCapper $capper,
 		UniqueCounterInterface $counter,
 		ChannelClassifier $channels,
-		ProRollupWriter $pro,
+		ProRollupWriterInterface $pro,
 		?DateTimeZone $timezone = null
 	) {
 		$this->settings = $settings;

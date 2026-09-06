@@ -1713,3 +1713,10 @@ tr:hover .ha-row-edit,
 .ha-setup-skip {
 	color: var(--ha-muted);
 }
+
+/* A read-only field holding an address somebody has to copy out of it. Wide
+   enough to show a share URL whole, capped so it does not stretch the card. */
+.ha-copyable {
+	width: 100%;
+	max-width: 640px;
+}

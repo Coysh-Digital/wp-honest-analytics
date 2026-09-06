@@ -330,17 +330,6 @@ View::render(
 					?>
 				</div>
 			</div>
-		<?php else : ?>
-			<?php
-			View::render(
-				'admin/partials/pro-placeholder',
-				[
-					'title'       => __( 'Goals', 'honest-analytics' ),
-					'slug'        => 'honest-analytics-goals',
-					'description' => __( 'Would tell you how many sessions completed a form submission, a download or a page visit you care about.', 'honest-analytics' ),
-				]
-			);
-			?>
 		<?php endif; ?>
 
 		<?php if ( $isPro ) : ?>
@@ -431,40 +420,9 @@ View::render(
 					?>
 				</div>
 			</div>
-		<?php else : ?>
-			<?php
-			View::render(
-				'admin/partials/pro-placeholder',
-				[
-					'title'       => __( 'Campaigns', 'honest-analytics' ),
-					'slug'        => 'honest-analytics-campaigns',
-					'description' => __( 'Would show which tagged links brought people here, and what those visits did next.', 'honest-analytics' ),
-				]
-			);
-
-			View::render(
-				'admin/partials/pro-placeholder',
-				[
-					'title'       => __( 'Locations', 'honest-analytics' ),
-					'slug'        => 'honest-analytics-locations',
-					'description' => __( 'Would show which countries visitors came from, resolved locally and never stored against anybody.', 'honest-analytics' ),
-				]
-			);
-			?>
 		<?php endif; ?>
 
-		<?php if ( ! $isPro ) : ?>
-			<?php
-			View::render(
-				'admin/partials/pro-placeholder',
-				[
-					'title'       => __( 'Crawlers', 'honest-analytics' ),
-					'slug'        => 'honest-analytics-crawlers',
-					'description' => __( 'Would name the bots that were kept out of every figure above, which is usually the answer to why your server log counts more than this does.', 'honest-analytics' ),
-				]
-			);
-			?>
-		<?php else : ?>
+		<?php if ( $isPro ) : ?>
 		<div class="ha-card">
 			<div class="ha-card-head">
 				<h2 class="ha-card-title"><?php esc_html_e( 'Crawlers', 'honest-analytics' ); ?></h2>

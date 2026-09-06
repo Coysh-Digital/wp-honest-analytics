@@ -50,7 +50,15 @@ final class CommandRegistrar {
 		\WP_CLI::add_command( 'honest-analytics gc', GcCommand::class );
 		\WP_CLI::add_command( 'honest-analytics info', InfoCommand::class );
 		\WP_CLI::add_command( 'honest-analytics salt', SaltCommand::class );
-		\WP_CLI::add_command( 'honest-analytics geo', GeoCommand::class );
+
+		// The geo family is Pro-only and is not in every build. `::class` is a
+		// compile-time string, so naming it costs nothing here; registering a
+		// command whose class is absent would only move the failure to whenever
+		// somebody typed it.
+		if ( class_exists( GeoCommand::class ) ) {
+			\WP_CLI::add_command( 'honest-analytics geo', GeoCommand::class );
+		}
+
 		\WP_CLI::add_command( 'honest-analytics privacy', PrivacyCommand::class );
 		\WP_CLI::add_command( 'honest-analytics report', ReportCommand::class );
 		\WP_CLI::add_command( 'honest-analytics seed', SeedCommand::class );

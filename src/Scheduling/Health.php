@@ -185,7 +185,11 @@ final class Health {
 			);
 		}
 
-		if ( $this->settings->enableGeo && ! Plugin::instance()->geo()->isAvailable() ) {
+		// The edition test is not redundant with isAvailable(), which is false
+		// in a build with no lookup at all. Without it, a site downgraded from
+		// Pro keeps enableGeo set and would be told to install a database for a
+		// report this build does not have and no screen to install it from.
+		if ( Edition::isPro() && $this->settings->enableGeo && ! Plugin::instance()->geo()->isAvailable() ) {
 			$problems[] = __( 'Country reporting is switched on but no geo database is installed, so nothing is being recorded against it.', 'honest-analytics' );
 		}
 

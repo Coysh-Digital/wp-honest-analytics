@@ -232,6 +232,19 @@
 		field.addEventListener( 'blur', sync );
 	} );
 
+	// A read-only field holding something somebody has to copy, selected in one
+	// click. Bound here rather than with an inline onclick: an inline handler is
+	// the first thing a strict Content-Security-Policy refuses to run, and this
+	// is the one screen where failing to copy the value means losing it.
+	Array.prototype.forEach.call(
+		document.querySelectorAll( '[data-ha-select-on-click]' ),
+		function ( field ) {
+			field.addEventListener( 'click', function () {
+				field.select();
+			} );
+		}
+	);
+
 	syncScrollables();
 
 	if ( window.ResizeObserver ) {

@@ -11,8 +11,8 @@ namespace HonestAnalytics\Write;
 
 use HonestAnalytics\Capture\Hit;
 use HonestAnalytics\Rollup\Aggregator;
-use HonestAnalytics\Rollup\GoalMatcher;
-use HonestAnalytics\Rollup\JourneyRecorder;
+use HonestAnalytics\Rollup\GoalMatcherInterface;
+use HonestAnalytics\Rollup\JourneyRecorderInterface;
 use HonestAnalytics\Rollup\RollupSinkInterface;
 use HonestAnalytics\Sessions\SessionDelta;
 use HonestAnalytics\Sessions\SessionStoreInterface;
@@ -41,8 +41,8 @@ final class HitApplier {
 		private Settings $settings,
 		private SessionStoreInterface $sessions,
 		private RollupSinkInterface $sink,
-		private GoalMatcher $matcher,
-		private JourneyRecorder $journeys
+		private GoalMatcherInterface $matcher,
+		private JourneyRecorderInterface $journeys
 	) {
 	}
 

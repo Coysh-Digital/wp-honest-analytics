@@ -15,11 +15,11 @@ use HonestAnalytics\Capture\NonceRegistry;
 use HonestAnalytics\Capture\PathNormalizer;
 use HonestAnalytics\Capture\ShutdownRunner;
 use HonestAnalytics\Channels\Campaign;
-use HonestAnalytics\Consent\ConsentService;
+use HonestAnalytics\Consent\ConsentResolverInterface;
 use HonestAnalytics\Devices\Device;
 use HonestAnalytics\Devices\DeviceParser;
 use HonestAnalytics\Edition\Edition;
-use HonestAnalytics\Geo\GeoService;
+use HonestAnalytics\Geo\GeoLookupInterface;
 use HonestAnalytics\Identity\IdentityService;
 use HonestAnalytics\Plugin;
 use HonestAnalytics\Settings\Settings;
@@ -68,8 +68,8 @@ final class CollectController {
 		private IdentityService $identity,
 		private NonceRegistry $nonces,
 		private BotFilter $bots,
-		private GeoService $geo,
-		private ConsentService $consent,
+		private GeoLookupInterface $geo,
+		private ConsentResolverInterface $consent,
 		private WriterInterface $writer,
 		private ClientIp $clientIp,
 		private RateLimit $limits,
@@ -216,10 +216,7 @@ final class CollectController {
 			return;
 		}
 
-		$cookies   = Server::cookies();
-		$visitorId = $this->consent->resolve( $siteId, $headers, $cookies )->isGranted()
-			? $this->consent->resolvedVisitorId( $siteId, $cookies )
-			: null;
+		$visitorId = $this->consent->visitorId( $siteId, $headers, Server::cookies() );
 
 		$hit = new Hit(
 			siteId: $siteId,

@@ -32,17 +32,24 @@ site count on the Licence screen.
 
 Lite is a **separate build** from the same source tree, with the Pro source and
 templates stripped rather than disabled - wordpress.org will not accept a
-package full of paid code sitting behind a key.
+package full of paid code sitting behind a key. As of 0.9.3 that is true of
+everything: goals, funnels, the consented tier, journeys, country lookup, the
+paid report queries and the MaxMind reader are all removed, and the manifest's
+`[blocked]` section is empty for the first time.
 
 ```bash
-bash bin/build-lite.sh    # slug honest-analytics,     580 KB, 321 files, 156 classes
-bash bin/build-pro.sh     # slug honest-analytics-pro, 636 KB, 354 files, 176 classes
+bash bin/build-lite.sh    # slug honest-analytics,     824 KB, 368 files
+bash bin/build-pro.sh     # slug honest-analytics-pro, 5.4 MB, 1162 files
 ```
 
+The two numbers are not comparable as a measure of the code: the Pro build
+vendors dompdf for the shareable PDF, which is most of the difference.
+
 `bin/pro-manifest.txt` is the difference between them: a readable list of what
-is Pro-only, what legitimately mentions a stripped class from behind an edition
-check, and what ought to be Pro-only but cannot be stripped yet, each with the
-reason. `bin/check-lite-build.php` refuses to package a Lite build that still
+is Pro-only, and what legitimately mentions a stripped class from behind an
+edition check. It has a third section for what ought to be Pro-only and cannot
+be stripped yet, each with the reason; it is currently empty, which is the
+target rather than the default. `bin/check-lite-build.php` refuses to package a Lite build that still
 reaches for something the strip removed, telling load-time references
 (`extends`, trait `use`, constant initialisers) apart from runtime ones - and
 `bin/check-classes-load.php` then autoloads every class in each staged build,
@@ -108,24 +115,23 @@ No nag screens. No countdowns. No expiry warnings. No "most popular" or "best
 value". No artificial limits - not on rows, not on retention, not on date
 ranges.
 
-The paid reports do keep their rows in the Analytics menu, marked `Pro`, each
-leading to a page describing what that report contains. That is discovery, not
-a sales pitch, and the difference is defended by three rules:
+And, since 0.9.3, **no mention of the paid reports anywhere in the admin.** No
+menu row, no page describing what a report would contain, no placeholder card on
+the Dashboard or the page detail view, no badge, no link. Lite names the paid
+edition in `readme.txt` and nowhere else.
 
-- **No figures on those pages, real or invented.** A mocked-up table with
-  plausible numbers would be read as the site's own data.
-- **One link, no button, no price.** The page says what the report answers,
-  lists what it holds, and links once.
-- **Nothing that returns.** There is nothing to dismiss, because nothing
-  interrupts. The pages sit where they sit and wait to be visited.
+That reverses an arrangement this file used to defend at length, and the
+reasoning for it was not wrong: a free edition that conceals the existence of
+the paid one is poor information, not restraint. The plugin directory read the
+result differently on review of 0.9.2 - Guideline 5, trialware, and Guideline
+11, upgrade prompts - and theirs is the reading that decides whether the plugin
+is listed. Eight menu rows and seven cards about features a build does not have
+is a lot of surface arguing for a purchase, however quietly each one is worded.
+See [ADR 59](architecture.md#adr-59---a-build-without-the-paid-code-says-nothing-about-it).
 
-The pages also say plainly that the free build does not contain the report at
-all - it is removed when the plugin is packaged, not hidden behind a check -
-which is both true and the reason the arrangement is permitted at all. See
-[ADR 57](architecture.md#adr-57--the-paid-reports-are-named-in-the-free-menu-and-described).
-
-The Pro placeholder cards on the Dashboard say what the section would contain,
-once, quietly, and link to the same pages.
+`LockedScreen` still exists, for the one case it was always best at: a **Pro**
+build whose licence has lapsed gets a page saying what the report contains
+rather than a 403. It strips from Lite along with the reports it describes.
 
 The same standard binds the rest of the admin UI. See
 [Copy constraints](#copy-constraints).

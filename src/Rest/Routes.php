@@ -51,17 +51,10 @@ final class Routes {
 			]
 		);
 
-		register_rest_route(
-			self::REST_NAMESPACE,
-			'/consent',
-			[
-				'methods'             => 'POST',
-				'callback'            => static fn ( \WP_REST_Request $request ) => ConsentController::make()->rest( $request ),
-				'permission_callback' => '__return_true',
-			]
-		);
+		self::consentRoute();
 
 		self::importRoutes();
+		self::reportingApiRoutes();
 
 		register_rest_route(
 			self::REST_NAMESPACE,
@@ -75,6 +68,73 @@ final class Routes {
 						'type'              => 'integer',
 						'required'          => false,
 						'sanitize_callback' => 'absint',
+					],
+				],
+			]
+		);
+	}
+
+	/**
+	 * The route a visitor's consent decision posts to.
+	 *
+	 * Registered only when the controller is in this build. The consented tier
+	 * is Pro-only and strips whole, and a route whose callback names a missing
+	 * class is not a 404 - it is an uncaught Error inside the REST dispatcher,
+	 * which is a 500 with a stack trace in the log.
+	 */
+	private static function consentRoute(): void {
+		if ( ! class_exists( ConsentController::class ) ) {
+			return;
+		}
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/consent',
+			[
+				'methods'             => 'POST',
+				'callback'            => static fn ( \WP_REST_Request $request ) => ConsentController::make()->rest( $request ),
+				// Public for the same reason as /collect: the visitor recording
+				// a consent decision is not logged in, so there is nobody to
+				// authenticate. The body is validated inside the controller and
+				// the response is a bare 204.
+				'permission_callback' => '__return_true',
+			]
+		);
+	}
+
+	/**
+	 * The read-only reporting API: a verify handshake and a period report, both
+	 * behind an HMAC signature check (see ReportingApiAuth). Lets an external
+	 * reporting tool pull this site's aggregated stats.
+	 */
+	private static function reportingApiRoutes(): void {
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/verify',
+			[
+				'methods'             => 'GET',
+				'callback'            => static fn ( \WP_REST_Request $request ) => ReportingApiController::make()->verify(),
+				'permission_callback' => [ ReportingApiAuth::class, 'authenticate' ],
+			]
+		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/report',
+			[
+				'methods'             => 'GET',
+				'callback'            => static fn ( \WP_REST_Request $request ) => ReportingApiController::make()->report( $request ),
+				'permission_callback' => [ ReportingApiAuth::class, 'authenticate' ],
+				'args'                => [
+					'from' => [
+						'type'              => 'string',
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+					'to'   => [
+						'type'              => 'string',
+						'required'          => false,
+						'sanitize_callback' => 'sanitize_text_field',
 					],
 				],
 			]

@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Capture;
 
-use HonestAnalytics\Consent\ConsentService;
 use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Support\Url;

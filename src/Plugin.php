@@ -31,28 +31,33 @@ use HonestAnalytics\Capture\ScriptInjector;
 use HonestAnalytics\Capture\Trackability;
 use HonestAnalytics\Edition\Edition;
 use HonestAnalytics\Channels\ChannelClassifier;
-use HonestAnalytics\Consent\ConsentService;
+use HonestAnalytics\Consent\ConsentResolverInterface;
+use HonestAnalytics\Consent\NoConsent;
 use HonestAnalytics\Devices\DeviceParser;
 use HonestAnalytics\Dimensions\DimensionCapper;
 use HonestAnalytics\Dimensions\DimensionsService;
-use HonestAnalytics\Geo\GeoService;
-use HonestAnalytics\Goals\FunnelsService;
-use HonestAnalytics\Goals\GoalsService;
+use HonestAnalytics\Geo\GeoLookupInterface;
+use HonestAnalytics\Geo\NoGeoLookup;
 use HonestAnalytics\Identity\IdentityService;
 use HonestAnalytics\Identity\SaltService;
 use HonestAnalytics\Rollup\Compactor;
 use HonestAnalytics\Rollup\DbRollupSink;
-use HonestAnalytics\Rollup\GoalMatcher;
-use HonestAnalytics\Rollup\JourneyRecorder;
-use HonestAnalytics\Rollup\ProRollupWriter;
+use HonestAnalytics\Rollup\GoalMatcherInterface;
+use HonestAnalytics\Rollup\NoGoalMatching;
+use HonestAnalytics\Rollup\NoProRollups;
+use HonestAnalytics\Rollup\JourneyRecorderInterface;
+use HonestAnalytics\Rollup\NoJourneys;
+use HonestAnalytics\Rollup\ProRollupWriterInterface;
 use HonestAnalytics\Rollup\RollupSinkInterface;
 use HonestAnalytics\Sessions\SessionStoreFactory;
 use HonestAnalytics\Sessions\SessionStoreInterface;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Settings\SettingsRepository;
 use HonestAnalytics\Stats\ContentStatsService;
-use HonestAnalytics\Stats\ConversionStatsService;
-use HonestAnalytics\Stats\ProStatsService;
+use HonestAnalytics\Stats\ConversionStatsInterface;
+use HonestAnalytics\Stats\NoConversionStats;
+use HonestAnalytics\Stats\NoProStats;
+use HonestAnalytics\Stats\ProStatsInterface;
 use HonestAnalytics\Stats\RealtimeService;
 use HonestAnalytics\Stats\StatsService;
 use HonestAnalytics\Support\ClientIp;
@@ -118,6 +123,18 @@ final class Plugin {
 		// everywhere, or the reverse. `Edition::flush()` has existed all along
 		// and was called from the Licence screen and from tests, never here.
 		Edition::flush();
+
+		// GoalsService memoises its definitions, and it used to be one of these
+		// services - so dropping the container was what cleared it between
+		// tests. It is a static now, in a namespace this build may not have, so
+		// it is named as a string and flushed through a variable. Forget this
+		// and a test that defines a goal changes the result of whichever test
+		// happens to run after it.
+		$goalServices = 'HonestAnalytics\\Goals\\GoalServices';
+
+		if ( class_exists( $goalServices ) ) {
+			$goalServices::flush();
+		}
 	}
 
 	/**
@@ -235,56 +252,95 @@ final class Plugin {
 
 	/**
 	 * Geo lookup.
+	 *
+	 * Named as a string and checked, the same way ImporterRegistry names
+	 * GscImporter: the free build does not contain GeoService, and this file is
+	 * loaded on every request, so it must not name a class that might be
+	 * missing. A build without one gets NoGeoLookup and every caller carries on
+	 * unchanged - which matters, because SettingsScreen and Health both ask for
+	 * this with no edition check in front of them.
+	 *
+	 * The check is class_exists() and never Edition::isPro(). Services are
+	 * memoised for the request and Edition::flush() does not clear them, so an
+	 * edition-dependent factory would hand out whichever answer happened to be
+	 * true the first time something asked. The edition question is asked inside
+	 * GeoService::isAvailable(), where it already was.
 	 */
-	public function geo(): GeoService {
-		return $this->service( 'geo', fn (): GeoService => new GeoService( $this->settings() ) );
+	public function geo(): GeoLookupInterface {
+		return $this->service(
+			'geo',
+			function (): GeoLookupInterface {
+				$class = 'HonestAnalytics\\Geo\\GeoService';
+
+				return class_exists( $class ) ? new $class( $this->settings() ) : new NoGeoLookup();
+			}
+		);
 	}
 
 	/**
 	 * Consent.
 	 */
-	public function consent(): ConsentService {
-		return $this->service( 'consent', fn (): ConsentService => new ConsentService( $this->settings() ) );
+	public function consent(): ConsentResolverInterface {
+		return $this->service(
+			'consent',
+			function (): ConsentResolverInterface {
+				$class = 'HonestAnalytics\\Consent\\ConsentService';
+
+				return class_exists( $class ) ? new $class( $this->settings() ) : new NoConsent();
+			}
+		);
 	}
 
-	/**
-	 * Goal definitions.
+	/*
+	 * goals() and funnels() used to be here. They are not any more, and should
+	 * not come back: everything they return is a Goal or a Funnel, neither of
+	 * which survives the strip, so this file cannot hold a factory for either
+	 * without naming a class the free build does not contain - on every
+	 * request, in every edition. Goals\GoalServices is the locator now, and it
+	 * strips with the rest of that namespace.
 	 */
-	public function goals(): GoalsService {
-		return $this->service( 'goals', static fn (): GoalsService => new GoalsService() );
-	}
 
 	/**
-	 * Funnel definitions.
+	 * Goal matching, for the write path.
 	 */
-	public function funnels(): FunnelsService {
-		return $this->service( 'funnels', fn (): FunnelsService => new FunnelsService( $this->goals() ) );
-	}
+	public function goalMatcher(): GoalMatcherInterface {
+		return $this->service(
+			'goalMatcher',
+			static function (): GoalMatcherInterface {
+				$class = 'HonestAnalytics\\Rollup\\GoalMatcher';
 
-	/**
-	 * Goal matching.
-	 */
-	public function goalMatcher(): GoalMatcher {
-		return $this->service( 'goalMatcher', fn (): GoalMatcher => new GoalMatcher( $this->goals() ) );
+				return class_exists( $class ) ? new $class() : new NoGoalMatching();
+			}
+		);
 	}
 
 	/**
 	 * The consented journeys layer.
 	 */
-	public function journeys(): JourneyRecorder {
+	public function journeys(): JourneyRecorderInterface {
 		return $this->service(
 			'journeys',
-			fn (): JourneyRecorder => new JourneyRecorder( $this->settings(), $this->consent(), $this->dimensions() )
+			function (): JourneyRecorderInterface {
+				$class = 'HonestAnalytics\\Rollup\\JourneyRecorder';
+
+				return class_exists( $class )
+					? new $class( $this->settings(), $this->dimensions() )
+					: new NoJourneys();
+			}
 		);
 	}
 
 	/**
 	 * Pro rollup writes.
 	 */
-	public function proRollups(): ProRollupWriter {
+	public function proRollups(): ProRollupWriterInterface {
 		return $this->service(
 			'proRollups',
-			fn (): ProRollupWriter => new ProRollupWriter( $this->settings(), $this->goals(), $this->funnels(), $this->goalMatcher() )
+			function (): ProRollupWriterInterface {
+				$class = 'HonestAnalytics\\Rollup\\ProRollupWriter';
+
+				return class_exists( $class ) ? new $class( $this->settings() ) : new NoProRollups();
+			}
 		);
 	}
 
@@ -443,8 +499,15 @@ final class Plugin {
 	/**
 	 * Pro report queries.
 	 */
-	public function proStats(): ProStatsService {
-		return $this->service( 'proStats', static fn (): ProStatsService => new ProStatsService() );
+	public function proStats(): ProStatsInterface {
+		return $this->service(
+			'proStats',
+			static function (): ProStatsInterface {
+				$class = 'HonestAnalytics\\Stats\\ProStatsService';
+
+				return class_exists( $class ) ? new $class() : new NoProStats();
+			}
+		);
 	}
 
 	/**
@@ -457,10 +520,14 @@ final class Plugin {
 	/**
 	 * Goal and funnel reports.
 	 */
-	public function conversionStats(): ConversionStatsService {
+	public function conversionStats(): ConversionStatsInterface {
 		return $this->service(
 			'conversionStats',
-			fn (): ConversionStatsService => new ConversionStatsService( $this->goals(), $this->funnels() )
+			static function (): ConversionStatsInterface {
+				$class = 'HonestAnalytics\\Stats\\ConversionStatsService';
+
+				return class_exists( $class ) ? new $class() : new NoConversionStats();
+			}
 		);
 	}
 

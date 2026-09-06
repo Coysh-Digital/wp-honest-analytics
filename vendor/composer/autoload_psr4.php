@@ -7,7 +7,6 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'donatj\\UserAgent\\' => array($vendorDir . '/donatj/phpuseragentparser/src/UserAgent'),
-    'MaxMind\\Db\\' => array($vendorDir . '/maxmind-db/reader/src/MaxMind/Db'),
     'Jaybizzle\\CrawlerDetect\\' => array($vendorDir . '/jaybizzle/crawler-detect/src'),
     'HonestAnalytics\\' => array($baseDir . '/src'),
 );

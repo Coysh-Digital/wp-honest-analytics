@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace HonestAnalytics\Privacy;
 
-use HonestAnalytics\Consent\ConsentState;
 use HonestAnalytics\Schema\Tables;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Settings\SettingsRepository;
@@ -28,6 +27,21 @@ if ( ! defined( 'ABSPATH' ) ) {
  * rotated. There is no row to find and none to remove.
  */
 final class PrivacyService {
+
+	/**
+	 * The two states the consent log stores, as stored.
+	 *
+	 * Literals rather than Consent\ConsentState cases, for the same reason
+	 * Edition holds its tier names as literals: the consented tier is Pro-only
+	 * and the free build carries none of it, but the Privacy screen counts these
+	 * rows in every edition - the table is shared, and a site downgraded from Pro
+	 * still holds whatever it recorded. A class constant initialised from a
+	 * stripped enum fatals the first time the constant is read.
+	 *
+	 * ConsentStateTest asserts these two stay identical to the enum.
+	 */
+	private const CONSENT_GRANTED = 'granted';
+	private const CONSENT_DENIED  = 'denied';
 
 	private Settings $settings;
 
@@ -207,8 +221,8 @@ final class PrivacyService {
 		$rows = (int) $wpdb->get_var( "SELECT COUNT(*) FROM `$journeys` $where" );
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
-		$grantedState = ConsentState::Granted->value;
-		$deniedState  = ConsentState::Denied->value;
+		$grantedState = self::CONSENT_GRANTED;
+		$deniedState  = self::CONSENT_DENIED;
 
 		$consentWhere = null !== $siteId ? $wpdb->prepare( 'AND siteId = %d', $siteId ) : '';
 

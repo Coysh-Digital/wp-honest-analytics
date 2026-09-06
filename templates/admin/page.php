@@ -324,31 +324,5 @@ $ha_kpis = [
 				?>
 			</div>
 		</div>
-	<?php else : ?>
-		<?php
-		View::render(
-			'admin/partials/pro-placeholder',
-			[
-				'title'       => __( 'Scroll depth', 'honest-analytics' ),
-				'description' => __( 'Would tell you how far down this page people actually read before leaving.', 'honest-analytics' ),
-			]
-		);
-
-		View::render(
-			'admin/partials/pro-placeholder',
-			[
-				'title'       => __( 'Events and outbound clicks', 'honest-analytics' ),
-				'description' => __( 'Would tell you which buttons were pressed on this page and which links took people away from it.', 'honest-analytics' ),
-			]
-		);
-
-		View::render(
-			'admin/partials/pro-placeholder',
-			[
-				'title'       => __( 'Search Console queries', 'honest-analytics' ),
-				'description' => __( 'Would tell you what people searched on Google to find this page.', 'honest-analytics' ),
-			]
-		);
-		?>
 	<?php endif; ?>
 </div>

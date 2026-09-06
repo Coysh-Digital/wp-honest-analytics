@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Honest Analytics 0.8.5\n"
+"Project-Id-Version: Honest Analytics 0.9.3\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/honest-analytics\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-01T17:06:41+01:00\n"
+"POT-Creation-Date: 2026-09-06T13:01:09+01:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: honest-analytics\n"
@@ -63,7 +63,7 @@ msgid "Scrollable region"
 msgstr ""
 
 #: src/Admin/Assets.php:111
-#: src/Scheduling/Health.php:456
+#: src/Scheduling/Health.php:460
 #: templates/admin/realtime.php:76
 msgid "just now"
 msgstr ""
@@ -108,7 +108,7 @@ msgid "You do not have permission to run maintenance for this site."
 msgstr ""
 
 #: src/Admin/MaintenanceHandler.php:96
-#: src/Admin/Screens/GoalsScreen.php:84
+#: src/Admin/Screens/GoalsScreen.php:85
 #: src/Admin/Screens/PrivacyScreen.php:86
 #: src/Admin/Screens/Screen.php:161
 #: src/Export/ExportHandler.php:79
@@ -184,8 +184,8 @@ msgstr ""
 msgid "Tidy-up finished. %1$s days compacted to daily totals, %2$s rows past their retention deleted."
 msgstr ""
 
-#: src/Admin/Menu.php:156
-#: src/Admin/Menu.php:157
+#: src/Admin/Menu.php:164
+#: src/Admin/Menu.php:165
 #: src/Admin/Screens/DashboardScreen.php:46
 #: src/Admin/Screens/Screen.php:126
 #: src/Admin/Widgets/OverviewWidget.php:55
@@ -194,38 +194,59 @@ msgstr ""
 msgid "Analytics"
 msgstr ""
 
-#: src/Admin/Notices.php:197
-#: src/Admin/Notices.php:253
+#: src/Admin/Notices.php:128
+msgid "You’re all set. Honest Analytics is recording visits for this site, and you can change anything under Settings."
+msgstr ""
+
+#: src/Admin/Notices.php:150
+msgid "Welcome to Honest Analytics."
+msgstr ""
+
+#: src/Admin/Notices.php:151
+msgid "It is already recording visits on privacy-preserving defaults. Take a minute to choose how visits are counted, how long data is kept, and which privacy signals to respect - or skip it and change these any time in Settings."
+msgstr ""
+
+#: src/Admin/Notices.php:153
+msgid "Start setup"
+msgstr ""
+
+#: src/Admin/Notices.php:155
+#: templates/admin/setup.php:230
+msgid "Skip for now"
+msgstr ""
+
+#: src/Admin/Notices.php:301
+#: src/Admin/Notices.php:357
 msgid "Honest Analytics:"
 msgstr ""
 
-#: src/Admin/Notices.php:254
+#: src/Admin/Notices.php:358
 msgid "The write spool can be read over the web. It holds no addresses, but it is not public data. On nginx this needs a rule in the server config - the exact block is in the caching guide at https://github.com/Coysh-Digital/wp-honest-analytics/blob/main/docs/caching.md. On Apache or IIS, check that the .htaccess or web.config in the spool directory has not been removed."
 msgstr ""
 
-#: src/Admin/Notices.php:256
+#: src/Admin/Notices.php:360
 msgid "Remind me again in 30 days"
 msgstr ""
 
-#: src/Admin/Notices.php:258
+#: src/Admin/Notices.php:362
 msgid "Don’t show this again"
 msgstr ""
 
-#: src/Admin/Notices.php:305
+#: src/Admin/Notices.php:409
 msgid "Keep your analytics history."
 msgstr ""
 
 #. translators: %s: a list of analytics tool names.
-#: src/Admin/Notices.php:309
+#: src/Admin/Notices.php:413
 #, php-format
 msgid "We found analytics from %s on this site. Would you like to bring that history across, so your charts do not start from zero?"
 msgstr ""
 
-#: src/Admin/Notices.php:314
+#: src/Admin/Notices.php:418
 msgid "Import analytics"
 msgstr ""
 
-#: src/Admin/Notices.php:316
+#: src/Admin/Notices.php:420
 msgid "I’ll do this later"
 msgstr ""
 
@@ -245,10 +266,27 @@ msgstr ""
 msgid "No views recorded"
 msgstr ""
 
+#: src/Admin/ReportingApiScreen.php:40
+#: src/Admin/ReportingApiScreen.php:41
+#: src/Admin/ReportingApiScreen.php:90
+msgid "Reporting API"
+msgstr ""
+
+#: src/Admin/ReportingApiScreen.php:92
+msgid "Let an external reporting tool pull this site’s aggregated stats over a signed, read-only request. Paste the connection code from that tool below and save. Leave it blank to keep the API off."
+msgstr ""
+
+#: src/Admin/ReportingApiScreen.php:98
+msgid "Connection code"
+msgstr ""
+
+#: src/Admin/ReportingApiScreen.php:104
+msgid "Keep this secret. Anyone with it can read this site’s aggregated stats."
+msgstr ""
+
 #: src/Admin/Screens/CampaignsScreen.php:37
 #: src/Admin/Screens/LockedScreen.php:171
-#: templates/admin/dashboard.php:349
-#: templates/admin/dashboard.php:439
+#: templates/admin/dashboard.php:338
 msgid "Campaigns"
 msgstr ""
 
@@ -306,8 +344,7 @@ msgstr ""
 
 #: src/Admin/Screens/CrawlersScreen.php:39
 #: src/Admin/Screens/LockedScreen.php:222
-#: templates/admin/dashboard.php:461
-#: templates/admin/dashboard.php:470
+#: templates/admin/dashboard.php:428
 #: templates/admin/settings.php:590
 msgid "Crawlers"
 msgstr ""
@@ -316,8 +353,8 @@ msgstr ""
 msgid "Dashboard"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:246
-#: src/Admin/Screens/DashboardScreen.php:357
+#: src/Admin/Screens/DashboardScreen.php:248
+#: src/Admin/Screens/DashboardScreen.php:359
 #: src/Admin/Widgets/OverviewWidget.php:70
 #: src/Charts/ChartData.php:119
 #: templates/admin/dashboard.php:62
@@ -326,7 +363,7 @@ msgstr ""
 msgid "Pageviews"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:252
+#: src/Admin/Screens/DashboardScreen.php:254
 #: src/Charts/ChartData.php:130
 #: src/Import/Sources/Ga4Importer.php:238
 #: src/Import/Sources/IndependentAnalyticsImporter.php:200
@@ -341,13 +378,13 @@ msgstr ""
 
 #. translators: %s: accuracy, e.g. "±1.6%".
 #. translators: %s: accuracy.
-#: src/Admin/Screens/DashboardScreen.php:257
+#: src/Admin/Screens/DashboardScreen.php:259
 #: templates/admin/page.php:42
 #, php-format
 msgid "daily uniques, %s"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:262
+#: src/Admin/Screens/DashboardScreen.php:264
 #: src/Admin/Screens/DevicesScreen.php:93
 #: src/Admin/Widgets/OverviewWidget.php:72
 #: src/Charts/ChartData.php:84
@@ -357,14 +394,14 @@ msgstr ""
 #: src/Import/Sources/WPStatisticsImporter.php:204
 #: templates/admin/campaigns.php:91
 #: templates/admin/dashboard.php:201
-#: templates/admin/dashboard.php:378
-#: templates/admin/dashboard.php:421
+#: templates/admin/dashboard.php:367
+#: templates/admin/dashboard.php:410
 #: templates/admin/devices.php:53
 #: templates/admin/devices.php:119
 #: templates/admin/events.php:65
 #: templates/admin/funnels.php:120
-#: templates/admin/locations.php:136
-#: templates/admin/locations.php:186
+#: templates/admin/locations.php:127
+#: templates/admin/locations.php:177
 #: templates/admin/sources.php:79
 #: templates/admin/sources.php:124
 #: templates/email/summary-html.php:77
@@ -379,7 +416,7 @@ msgstr ""
 msgid "Sessions"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:268
+#: src/Admin/Screens/DashboardScreen.php:270
 #: src/Admin/Widgets/OverviewWidget.php:73
 #: templates/admin/page.php:51
 #: templates/admin/pages.php:128
@@ -390,60 +427,60 @@ msgstr ""
 msgid "Bounce rate"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:272
+#: src/Admin/Screens/DashboardScreen.php:274
 msgid "lower is better"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:275
+#: src/Admin/Screens/DashboardScreen.php:277
 #: src/Admin/Widgets/OverviewWidget.php:74
 msgid "Pages / session"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:281
+#: src/Admin/Screens/DashboardScreen.php:283
 #: src/Admin/Widgets/OverviewWidget.php:75
 msgid "Avg session"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:284
+#: src/Admin/Screens/DashboardScreen.php:286
 msgid "closed sessions only"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:287
+#: src/Admin/Screens/DashboardScreen.php:289
 #: src/Admin/Widgets/OverviewWidget.php:76
 #: templates/admin/page.php:60
 msgid "Avg time on page"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:291
+#: src/Admin/Screens/DashboardScreen.php:293
 msgid "measured by the tracker"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:292
+#: src/Admin/Screens/DashboardScreen.php:294
 #: templates/admin/page.php:63
 msgid "needs hybrid or client mode"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:312
+#: src/Admin/Screens/DashboardScreen.php:314
 msgid "Pageviews are waiting to be counted"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:313
+#: src/Admin/Screens/DashboardScreen.php:315
 msgid "Traffic is being recorded, but the drain has not folded it into the reports yet. It runs every five minutes, and ordinary traffic drives it when cron is unavailable. If this persists, press “Drain now” in Settings."
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:318
+#: src/Admin/Screens/DashboardScreen.php:320
 msgid "Nothing recorded for this period"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:319
+#: src/Admin/Screens/DashboardScreen.php:321
 msgid "Once somebody visits the site, their pageview is counted within a few minutes. Signed-in editors are left out by default, so opening the site in another tab while logged in will not register."
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:342
+#: src/Admin/Screens/DashboardScreen.php:344
 msgid "vs same period last year"
 msgstr ""
 
-#: src/Admin/Screens/DashboardScreen.php:343
+#: src/Admin/Screens/DashboardScreen.php:345
 msgid "vs previous period"
 msgstr ""
 
@@ -465,20 +502,19 @@ msgstr ""
 msgid "Events"
 msgstr ""
 
-#: src/Admin/Screens/FunnelsScreen.php:36
+#: src/Admin/Screens/FunnelsScreen.php:37
 #: src/Admin/Screens/LockedScreen.php:212
 msgid "Funnels"
 msgstr ""
 
-#: src/Admin/Screens/GoalsScreen.php:51
+#: src/Admin/Screens/GoalsScreen.php:52
 #: src/Admin/Screens/LockedScreen.php:202
 #: templates/admin/dashboard.php:290
-#: templates/admin/dashboard.php:338
 #: templates/admin/goal-edit.php:20
 msgid "Goals"
 msgstr ""
 
-#: src/Admin/Screens/GoalsScreen.php:83
+#: src/Admin/Screens/GoalsScreen.php:84
 msgid "You do not have permission to change what this site measures."
 msgstr ""
 
@@ -563,18 +599,16 @@ msgstr ""
 msgid "Activated."
 msgstr ""
 
-#: src/Admin/Screens/LocationsScreen.php:43
+#: src/Admin/Screens/LocationsScreen.php:50
 #: src/Admin/Screens/LockedScreen.php:181
 #: src/Import/Sources/IndependentAnalyticsImporter.php:218
 #: src/Import/Sources/WPStatisticsImporter.php:216
-#: templates/admin/dashboard.php:390
-#: templates/admin/dashboard.php:448
+#: templates/admin/dashboard.php:379
 msgid "Locations"
 msgstr ""
 
 #: src/Admin/Screens/LockedScreen.php:96
 #: templates/admin/locked.php:27
-#: templates/admin/partials/pro-placeholder.php:40
 msgid "Pro"
 msgstr ""
 
@@ -783,6 +817,10 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
+#: src/Admin/Screens/SetupScreen.php:55
+msgid "Set up Honest Analytics"
+msgstr ""
+
 #: src/Admin/Screens/SourcesScreen.php:39
 #: src/Export/Exporter.php:105
 msgid "Sources"
@@ -843,7 +881,7 @@ msgid "Zero sessions for a whole day usually means tracking has broken rather th
 msgstr ""
 
 #: src/Alerts/AlertMailer.php:121
-#: src/Email/ReportMailer.php:279
+#: src/Email/ReportMailer.php:296
 msgid "This email contains no images and no tracking of any kind."
 msgstr ""
 
@@ -897,7 +935,7 @@ msgstr ""
 #: src/Channels/Channel.php:40
 #: src/Dimensions/DimensionType.php:61
 #: templates/admin/campaigns.php:82
-#: templates/admin/dashboard.php:374
+#: templates/admin/dashboard.php:363
 msgid "Campaign"
 msgstr ""
 
@@ -1073,7 +1111,7 @@ msgid "Nothing wrong."
 msgstr ""
 
 #: src/Cli/InfoCommand.php:131
-#: src/Scheduling/Health.php:475
+#: src/Scheduling/Health.php:479
 msgid "not scheduled"
 msgstr ""
 
@@ -1084,13 +1122,13 @@ msgstr ""
 #. translators: %s: human readable duration.
 #. translators: %s: a human readable duration, such as "3 mins".
 #: src/Cli/InfoCommand.php:140
-#: src/Scheduling/Health.php:484
+#: src/Scheduling/Health.php:488
 #, php-format
 msgid "in %s"
 msgstr ""
 
 #: src/Cli/InfoCommand.php:152
-#: src/Scheduling/Health.php:452
+#: src/Scheduling/Health.php:456
 msgid "never"
 msgstr ""
 
@@ -1099,7 +1137,7 @@ msgstr ""
 #. translators: %s: a human readable duration, such as "3 days".
 #. translators: %s: a length of time, e.g. "2 mins".
 #: src/Cli/InfoCommand.php:157
-#: src/Scheduling/Health.php:461
+#: src/Scheduling/Health.php:465
 #: templates/admin/licence.php:194
 #: templates/admin/realtime.php:79
 #, php-format
@@ -1309,13 +1347,13 @@ msgid "Outbound link"
 msgstr ""
 
 #: src/Dimensions/DimensionType.php:67
-#: templates/admin/locations.php:182
+#: templates/admin/locations.php:173
 msgid "Region"
 msgstr ""
 
 #: src/Dimensions/DimensionType.php:68
 #: templates/admin/crawlers.php:83
-#: templates/admin/dashboard.php:507
+#: templates/admin/dashboard.php:465
 msgid "Crawler"
 msgstr ""
 
@@ -1352,14 +1390,14 @@ msgid "Not activated on this site yet."
 msgstr ""
 
 #. translators: 1: site name, 2: period label.
-#: src/Email/ReportMailer.php:123
+#: src/Email/ReportMailer.php:140
 #, php-format
 msgid "%1$s analytics - %2$s"
 msgstr ""
 
 #. translators: 1: site name, 2: period label.
 #. translators: 1: start date, 2: end date.
-#: src/Email/ReportMailer.php:215
+#: src/Email/ReportMailer.php:232
 #: templates/admin/layout/header.php:127
 #: templates/admin/partials/heatmap.php:32
 #: templates/email/summary-html.php:119
@@ -1369,40 +1407,40 @@ msgid "%1$s - %2$s"
 msgstr ""
 
 #. translators: 1: number of views, 2: change against the previous period.
-#: src/Email/ReportMailer.php:223
+#: src/Email/ReportMailer.php:240
 #, php-format
 msgid "Page views:       %1$s (%2$s)"
 msgstr ""
 
 #. translators: 1: number of visitors, 2: change against the previous period.
-#: src/Email/ReportMailer.php:230
+#: src/Email/ReportMailer.php:247
 #, php-format
 msgid "Visitors:         %1$s (%2$s)"
 msgstr ""
 
 #. translators: 1: number of visits, 2: change against the previous period.
-#: src/Email/ReportMailer.php:237
+#: src/Email/ReportMailer.php:254
 #, php-format
 msgid "Visits:           %1$s (%2$s)"
 msgstr ""
 
 #. translators: %s: bounce rate.
-#: src/Email/ReportMailer.php:244
+#: src/Email/ReportMailer.php:261
 #, php-format
 msgid "Bounce rate:      %s"
 msgstr ""
 
 #. translators: %s: average visit duration.
-#: src/Email/ReportMailer.php:250
+#: src/Email/ReportMailer.php:267
 #, php-format
 msgid "Average visit:    %s"
 msgstr ""
 
-#: src/Email/ReportMailer.php:255
+#: src/Email/ReportMailer.php:272
 msgid "Most read pages"
 msgstr ""
 
-#: src/Email/ReportMailer.php:262
+#: src/Email/ReportMailer.php:279
 #: templates/admin/share.php:28
 #: templates/report/share-pdf.php:147
 #: templates/report/share.php:176
@@ -1410,7 +1448,7 @@ msgid "Where visitors came from"
 msgstr ""
 
 #. translators: %s: accuracy, for instance "±1.6%".
-#: src/Email/ReportMailer.php:275
+#: src/Email/ReportMailer.php:292
 #, php-format
 msgid "Visitors are an estimate of distinct visitors per day, accurate to about %s. Daily figures cannot be added together: the identifier behind them is destroyed every time the salt rotates."
 msgstr ""
@@ -1648,7 +1686,6 @@ msgstr ""
 
 #: src/Goals/GoalType.php:79
 #: templates/admin/page.php:176
-#: templates/admin/page.php:332
 #: templates/admin/settings.php:681
 msgid "Scroll depth"
 msgstr ""
@@ -1821,7 +1858,7 @@ msgstr ""
 #: src/Import/Sources/IndependentAnalyticsImporter.php:217
 #: src/Import/Sources/WPStatisticsImporter.php:139
 #: src/Import/Sources/WPStatisticsImporter.php:215
-#: templates/admin/locations.php:93
+#: templates/admin/locations.php:84
 msgid "Countries"
 msgstr ""
 
@@ -2643,15 +2680,15 @@ msgid_plural "Yes, for consenting visitors, kept %d days"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Privacy/PrivacyService.php:248
+#: src/Privacy/PrivacyService.php:262
 msgid "This export covers every record held about this subject: their consented page journeys and their consent history."
 msgstr ""
 
-#: src/Privacy/PrivacyService.php:249
+#: src/Privacy/PrivacyService.php:263
 msgid "Aggregate statistics - pageviews, unique-visitor estimates, sessions, sources, devices - are not included because they contain no personal data. They are counters and probabilistic sketches from which no individual can be identified or removed."
 msgstr ""
 
-#: src/Privacy/PrivacyService.php:250
+#: src/Privacy/PrivacyService.php:264
 msgid "No IP address is held, in any form. Addresses are hashed in memory during a request and discarded; the salt used to hash them is destroyed on rotation."
 msgstr ""
 
@@ -2709,77 +2746,77 @@ msgstr ""
 msgid "The backlog is building up: %s. The drain is not keeping pace."
 msgstr ""
 
-#: src/Scheduling/Health.php:189
+#: src/Scheduling/Health.php:193
 msgid "Country reporting is switched on but no geo database is installed, so nothing is being recorded against it."
 msgstr ""
 
-#: src/Scheduling/Health.php:195
+#: src/Scheduling/Health.php:199
 msgid "The write spool can be read over the web. It holds no addresses, but it is not public data. On nginx this needs a rule in the server config - the exact block is in docs/caching.md. On Apache or IIS, check that the .htaccess or web.config in the spool directory has not been removed."
 msgstr ""
 
-#: src/Scheduling/Health.php:199
+#: src/Scheduling/Health.php:203
 msgid "The collection endpoint did not answer when the site asked itself for it, so nothing sent from a browser is being counted. If a security plugin has disabled the REST API, switch the collect endpoint to the plain URL on this screen."
 msgstr ""
 
-#: src/Scheduling/Health.php:203
+#: src/Scheduling/Health.php:207
 msgid "Consented tracking is switched on but this site is running the free edition, so the consented layer is inactive."
 msgstr ""
 
-#: src/Scheduling/Health.php:223
+#: src/Scheduling/Health.php:227
 msgid "WordPress is not running scheduled jobs for this site, so counting is being done by ordinary page views instead and the tidy-up runs when somebody opens the admin. That is a supported arrangement and nothing is lost by it. A real cron entry would keep the figures a few minutes fresher on a busy site - the command is below."
 msgstr ""
 
-#: src/Scheduling/Health.php:227
+#: src/Scheduling/Health.php:231
 msgid "There is no persistent object cache on this site, so sessions, nonces and rate limits are kept in a database table. That is a supported arrangement and nothing is lost by it; a Redis or Memcached cache would make the capture path a little cheaper."
 msgstr ""
 
-#: src/Scheduling/Health.php:229
+#: src/Scheduling/Health.php:233
 msgid "Sessions and nonces are kept in the object cache. If that cache is per-server - APCu, for instance - and this site runs on more than one web server, set HONEST_ANALYTICS_STORE to \"db\" so every server agrees."
 msgstr ""
 
 #. translators: %s: a crontab line.
-#: src/Scheduling/Health.php:235
+#: src/Scheduling/Health.php:239
 #, php-format
 msgid "WP-Cron is switched off, which is the right thing to do on a busy site. Make sure a real cron job runs the drain: %s"
 msgstr ""
 
-#: src/Scheduling/Health.php:241
+#: src/Scheduling/Health.php:245
 msgid "The automatic drain is off, so counting depends entirely on cron running. Leave it on unless cron is known to be reliable here."
 msgstr ""
 
-#: src/Scheduling/Health.php:245
+#: src/Scheduling/Health.php:249
 msgid "Tracking is server-side only. Pages served from a full-page cache never reach PHP, so they will not be counted. Hybrid is the safe setting behind a cache."
 msgstr ""
 
-#: src/Scheduling/Health.php:249
+#: src/Scheduling/Health.php:253
 msgid "The tracking mode expects a beacon but script injection is switched off, so nothing is reporting from the browser."
 msgstr ""
 
 #. translators: %s: a percentage, already formatted.
-#: src/Scheduling/Health.php:257
+#: src/Scheduling/Health.php:261
 #, php-format
 msgid "About %s of today's page views are filed under \"other\" rather than against a page. That means the daily cap on how many distinct values are tracked has been reached, which usually follows a burst of requests for pages that do not exist. No views have been lost and tomorrow starts clean; raising the dimension cap on this screen is the answer if it keeps happening."
 msgstr ""
 
-#: src/Scheduling/Health.php:423
+#: src/Scheduling/Health.php:427
 msgid "Not created yet - it is minted on the first pageview."
 msgstr ""
 
-#: src/Scheduling/Health.php:429
+#: src/Scheduling/Health.php:433
 msgid "Unknown - the stored rotation time could not be read."
 msgstr ""
 
-#: src/Scheduling/Health.php:433
+#: src/Scheduling/Health.php:437
 msgid "Due now - it is destroyed on the next pageview or scheduled run."
 msgstr ""
 
 #. translators: 1: formatted date and time, 2: human readable duration.
-#: src/Scheduling/Health.php:438
+#: src/Scheduling/Health.php:442
 #, php-format
 msgid "%1$s (in %2$s)"
 msgstr ""
 
-#: src/Scheduling/Health.php:479
+#: src/Scheduling/Health.php:483
 msgid "due now"
 msgstr ""
 
@@ -3101,16 +3138,16 @@ msgid "No crawler traffic recorded for this period."
 msgstr ""
 
 #: templates/admin/crawlers.php:87
-#: templates/admin/dashboard.php:511
+#: templates/admin/dashboard.php:469
 msgid "Requests"
 msgstr ""
 
 #: templates/admin/crawlers.php:92
 #: templates/admin/dashboard.php:206
-#: templates/admin/dashboard.php:426
+#: templates/admin/dashboard.php:415
 #: templates/admin/devices.php:54
 #: templates/admin/devices.php:125
-#: templates/admin/locations.php:141
+#: templates/admin/locations.php:132
 msgid "Share"
 msgstr ""
 
@@ -3156,9 +3193,9 @@ msgstr ""
 #: templates/admin/dashboard.php:218
 #: templates/admin/dashboard.php:245
 #: templates/admin/dashboard.php:291
-#: templates/admin/dashboard.php:350
-#: templates/admin/dashboard.php:391
-#: templates/admin/dashboard.php:471
+#: templates/admin/dashboard.php:339
+#: templates/admin/dashboard.php:380
+#: templates/admin/dashboard.php:429
 msgid "View all"
 msgstr ""
 
@@ -3198,42 +3235,26 @@ msgstr ""
 msgid "Rate"
 msgstr ""
 
-#: templates/admin/dashboard.php:340
-msgid "Would tell you how many sessions completed a form submission, a download or a page visit you care about."
-msgstr ""
-
-#: templates/admin/dashboard.php:370
+#: templates/admin/dashboard.php:359
 msgid "No tagged links have brought anybody here in this period."
 msgstr ""
 
-#: templates/admin/dashboard.php:413
+#: templates/admin/dashboard.php:402
 msgid "Nothing yet. Country reporting needs a local database, which you can install on the Locations screen."
 msgstr ""
 
-#: templates/admin/dashboard.php:417
-#: templates/admin/locations.php:132
+#: templates/admin/dashboard.php:406
+#: templates/admin/locations.php:123
 msgid "Country"
 msgstr ""
 
-#: templates/admin/dashboard.php:441
-msgid "Would show which tagged links brought people here, and what those visits did next."
-msgstr ""
-
-#: templates/admin/dashboard.php:450
-msgid "Would show which countries visitors came from, resolved locally and never stored against anybody."
-msgstr ""
-
-#: templates/admin/dashboard.php:463
-msgid "Would name the bots that were kept out of every figure above, which is usually the answer to why your server log counts more than this does."
-msgstr ""
-
 #. translators: %s: number of requests.
-#: templates/admin/dashboard.php:480
+#: templates/admin/dashboard.php:438
 #, php-format
 msgid "%s crawler requests, excluded from every figure above."
 msgstr ""
 
-#: templates/admin/dashboard.php:503
+#: templates/admin/dashboard.php:461
 msgid "No crawler traffic recorded."
 msgstr ""
 
@@ -3504,7 +3525,7 @@ msgstr ""
 #. translators: 1: a number of years, for example "1 year". 2: a number of months, for example "1 month".
 #. translators: 1: region or state name, 2: country name.
 #: templates/admin/import/complete.php:55
-#: templates/admin/locations.php:164
+#: templates/admin/locations.php:155
 #, php-format
 msgid "%1$s, %2$s"
 msgstr ""
@@ -4400,55 +4421,55 @@ msgstr ""
 msgid "Map"
 msgstr ""
 
-#: templates/admin/locations.php:85
+#: templates/admin/locations.php:76
 msgid "Shaded by share of the busiest country in this period. The ranked table below has the exact figures - the map is a picture of the same numbers, not a different source."
 msgstr ""
 
 #. translators: 1: database type, 2: how long ago it was built.
-#: templates/admin/locations.php:99
+#: templates/admin/locations.php:90
 #, php-format
 msgid "%1$s, local database, built %2$s ago"
 msgstr ""
 
-#: templates/admin/locations.php:100
+#: templates/admin/locations.php:91
 msgid "Local database"
 msgstr ""
 
-#: templates/admin/locations.php:101
+#: templates/admin/locations.php:92
 msgid "an unknown time"
 msgstr ""
 
-#: templates/admin/locations.php:128
+#: templates/admin/locations.php:119
 msgid "No locations recorded for this period."
 msgstr ""
 
-#: templates/admin/locations.php:153
+#: templates/admin/locations.php:144
 msgid "Regions"
 msgstr ""
 
-#: templates/admin/locations.php:178
+#: templates/admin/locations.php:169
 msgid "No regions recorded for this period."
 msgstr ""
 
-#: templates/admin/locations.php:199
+#: templates/admin/locations.php:190
 msgid "Country and region are resolved from the IP address in memory during the same request that discards it. The address is never written to a table, a log or a cache key. No city is derived - a city is a small enough area to start identifying people in, which region generally is not - so region is the most granular thing this can honestly report."
 msgstr ""
 
-#: templates/admin/locations.php:208
+#: templates/admin/locations.php:199
 msgid "Replace or remove the database"
 msgstr ""
 
 #. translators: 1: database type, 2: file size, 3: build date.
-#: templates/admin/locations.php:217
+#: templates/admin/locations.php:208
 #, php-format
 msgid "Installed now: %1$s, %2$s, built %3$s. A geo database goes out of date as addresses are reassigned, so replacing it once or twice a year keeps the countries honest."
 msgstr ""
 
-#: templates/admin/locations.php:218
+#: templates/admin/locations.php:209
 msgid "a local database"
 msgstr ""
 
-#: templates/admin/locations.php:220
+#: templates/admin/locations.php:211
 msgid "on an unknown date"
 msgstr ""
 
@@ -4561,7 +4582,6 @@ msgid "Events arrive on the beacon, which server-only mode does not use."
 msgstr ""
 
 #: templates/admin/page.php:246
-#: templates/admin/page.php:348
 msgid "Search Console queries"
 msgstr ""
 
@@ -4580,22 +4600,6 @@ msgstr ""
 
 #: templates/admin/page.php:309
 msgid "No clicks away from this page recorded."
-msgstr ""
-
-#: templates/admin/page.php:333
-msgid "Would tell you how far down this page people actually read before leaving."
-msgstr ""
-
-#: templates/admin/page.php:340
-msgid "Events and outbound clicks"
-msgstr ""
-
-#: templates/admin/page.php:341
-msgid "Would tell you which buttons were pressed on this page and which links took people away from it."
-msgstr ""
-
-#: templates/admin/page.php:349
-msgid "Would tell you what people searched on Google to find this page."
 msgstr ""
 
 #: templates/admin/pages.php:25
@@ -4761,58 +4765,56 @@ msgid_plural "Hourly detail is kept for %d days before it is folded into daily t
 msgstr[0] ""
 msgstr[1] ""
 
-#: templates/admin/partials/heatmap.php:54
+#: templates/admin/partials/heatmap.php:57
 msgid "Nothing to show here yet"
 msgstr ""
 
-#. translators: %d: number of days of hourly detail kept.
-#: templates/admin/partials/heatmap.php:57
+#. translators: %s: a date range, for example "9 Nov 2026 - 15 Nov 2026".
+#: templates/admin/partials/heatmap.php:60
 #, php-format
-msgid "This grid covers the last %d day, which is how long hourly detail is kept before it is folded into daily totals. Nothing has been recorded in that window yet."
-msgid_plural "This grid covers the last %d days, which is how long hourly detail is kept before it is folded into daily totals. Nothing has been recorded in that window yet."
-msgstr[0] ""
-msgstr[1] ""
+msgid "This grid covers %s, which is as far back as hourly detail is kept before it is folded into daily totals. Nothing has been recorded in it yet."
+msgstr ""
 
-#: templates/admin/partials/heatmap.php:69
+#: templates/admin/partials/heatmap.php:67
 msgid "When people visit"
 msgstr ""
 
-#: templates/admin/partials/heatmap.php:72
+#: templates/admin/partials/heatmap.php:70
 msgid "Outside the hourly window"
 msgstr ""
 
 #. translators: %d: number of days of hourly detail kept.
-#: templates/admin/partials/heatmap.php:79
+#: templates/admin/partials/heatmap.php:77
 #, php-format
 msgid "hourly detail is only kept for %d day, so this covers the recent part of your range."
 msgid_plural "hourly detail is only kept for %d days, so this covers the recent part of your range."
 msgstr[0] ""
 msgstr[1] ""
 
-#: templates/admin/partials/heatmap.php:89
+#: templates/admin/partials/heatmap.php:87
 msgid "Keep hourly detail for longer"
 msgstr ""
 
-#: templates/admin/partials/heatmap.php:105
+#: templates/admin/partials/heatmap.php:103
 msgid "Pageviews by day of week and hour of day"
 msgstr ""
 
 #. translators: 1: weekday, 2: hour, 3: view count.
-#: templates/admin/partials/heatmap.php:135
+#: templates/admin/partials/heatmap.php:133
 #, php-format
 msgid "%1$s %2$02d:00 - %3$s views"
 msgstr ""
 
-#: templates/admin/partials/heatmap.php:152
+#: templates/admin/partials/heatmap.php:150
 msgid "Quieter"
 msgstr ""
 
-#: templates/admin/partials/heatmap.php:156
+#: templates/admin/partials/heatmap.php:154
 msgid "Busier"
 msgstr ""
 
 #. translators: 1: weekday, 2: hour, 3: view count.
-#: templates/admin/partials/heatmap.php:165
+#: templates/admin/partials/heatmap.php:163
 #, php-format
 msgid "Peak: %1$s %2$02d:00, %3$s views"
 msgstr ""
@@ -5191,10 +5193,12 @@ msgid "Tracking mode"
 msgstr ""
 
 #: templates/admin/settings.php:330
+#: templates/admin/setup.php:61
 msgid "Hybrid (recommended)"
 msgstr ""
 
 #: templates/admin/settings.php:331
+#: templates/admin/setup.php:62
 msgid "Server-side only"
 msgstr ""
 
@@ -5394,6 +5398,7 @@ msgid "GPC is treated as a valid opt-out under several privacy laws. Ignoring it
 msgstr ""
 
 #: templates/admin/settings.php:489
+#: templates/admin/setup.php:206
 msgid "Honour Do Not Track"
 msgstr ""
 
@@ -5908,6 +5913,122 @@ msgstr ""
 
 #: templates/admin/settings.php:921
 msgid "A licence key is not a setting, so it lives on its own screen:"
+msgstr ""
+
+#: templates/admin/setup.php:40
+msgid "Honest Analytics is already recording visits for this site, with privacy-preserving defaults. Set a few things people ask about most, or skip this - you can change any of it later under Settings."
+msgstr ""
+
+#: templates/admin/setup.php:48
+msgid "How visits are counted"
+msgstr ""
+
+#: templates/admin/setup.php:53
+msgid "Counting method"
+msgstr ""
+
+#: templates/admin/setup.php:63
+msgid "Browser beacon only"
+msgstr ""
+
+#: templates/admin/setup.php:75
+msgid "Hybrid counts each view in WordPress and confirms it from the browser, so it stays accurate whether or not a page cache is in front of your site. Most sites should leave this on hybrid."
+msgstr ""
+
+#: templates/admin/setup.php:81
+msgid "Who counts as a visitor"
+msgstr ""
+
+#: templates/admin/setup.php:87
+msgid "Do not count signed-in editors, authors and administrators"
+msgstr ""
+
+#: templates/admin/setup.php:94
+msgid "Keep known bots and crawlers out of the counts"
+msgstr ""
+
+#: templates/admin/setup.php:99
+msgid "Your own visits while logged in can skew a small site, and search-engine and monitoring bots announce themselves. Leaving both on keeps your numbers reflecting real people. Subscribers and customers are still counted, because they are visitors."
+msgstr ""
+
+#: templates/admin/setup.php:105
+msgid "Tidier page addresses"
+msgstr ""
+
+#: templates/admin/setup.php:111
+msgid "Ignore query parameters like utm_source in page addresses"
+msgstr ""
+
+#: templates/admin/setup.php:116
+msgid "Records /page?utm_source=news as /page, so campaign tags do not split one page into many in your reports. Leave it off if query parameters mark genuinely different pages on your site."
+msgstr ""
+
+#: templates/admin/setup.php:121
+msgid "Learn more about how visits are counted"
+msgstr ""
+
+#: templates/admin/setup.php:131
+msgid "Your data"
+msgstr ""
+
+#: templates/admin/setup.php:136
+msgid "Keep reports for"
+msgstr ""
+
+#. translators: %d: number of months.
+#: templates/admin/setup.php:146
+#, php-format
+msgid "%d months (the longest we keep)"
+msgstr ""
+
+#. translators: %d: number of months.
+#: templates/admin/setup.php:147
+#, php-format
+msgid "%d months"
+msgstr ""
+
+#: templates/admin/setup.php:156
+msgid "Honest Analytics stores daily totals, never a log of individual visits. Older totals are tidied away automatically once they pass the window you choose here."
+msgstr ""
+
+#: templates/admin/setup.php:162
+msgid "If the plugin is removed"
+msgstr ""
+
+#: templates/admin/setup.php:168
+msgid "Keep my analytics history if the plugin is ever deleted"
+msgstr ""
+
+#: templates/admin/setup.php:173
+msgid "Your reports live in your own database. Leave this on to keep them through an uninstall and reinstall; turn it off to have everything removed when the plugin is deleted. Deactivating never deletes anything either way."
+msgstr ""
+
+#: templates/admin/setup.php:178
+msgid "Learn more about data retention"
+msgstr ""
+
+#: templates/admin/setup.php:188
+msgid "Respect visitors’ privacy signals"
+msgstr ""
+
+#: templates/admin/setup.php:193
+msgid "Browser signals"
+msgstr ""
+
+#: templates/admin/setup.php:199
+msgid "Honour Global Privacy Control (recommended)"
+msgstr ""
+
+#: templates/admin/setup.php:211
+msgid "When a visitor’s browser asks not to be tracked, Honest Analytics can leave them out of the counts entirely. Global Privacy Control is the newer, legally recognised signal; Do Not Track is older and widely ignored, which is why it is off by default."
+msgstr ""
+
+#: templates/admin/setup.php:216
+msgid "Learn more about privacy signals"
+msgstr ""
+
+#: templates/admin/setup.php:226
+msgid "Save and finish"
 msgstr ""
 
 #: templates/admin/share.php:26

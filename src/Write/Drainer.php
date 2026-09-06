@@ -13,8 +13,8 @@ use HonestAnalytics\Capture\Hit;
 use HonestAnalytics\Capture\CaptureService;
 use HonestAnalytics\Identity\IdentityService;
 use HonestAnalytics\Rollup\Aggregator;
-use HonestAnalytics\Rollup\GoalMatcher;
-use HonestAnalytics\Rollup\JourneyRecorder;
+use HonestAnalytics\Rollup\GoalMatcherInterface;
+use HonestAnalytics\Rollup\JourneyRecorderInterface;
 use HonestAnalytics\Rollup\RollupSinkInterface;
 use HonestAnalytics\Schema\Tables;
 use HonestAnalytics\Schema\Upgrader;
@@ -104,8 +104,8 @@ final class Drainer {
 		private Settings $settings,
 		private SessionStoreInterface $sessions,
 		private RollupSinkInterface $sink,
-		private GoalMatcher $matcher,
-		private JourneyRecorder $journeys
+		private GoalMatcherInterface $matcher,
+		private JourneyRecorderInterface $journeys
 	) {
 		$this->files = new SpoolBatchReader( $this->chunkHits );
 	}

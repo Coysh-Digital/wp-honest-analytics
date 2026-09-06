@@ -7,6 +7,66 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.9.3] - 2026-09-06
+
+### Added
+
+- **A read-only reporting API.** A new *Analytics -> Reporting API* screen takes
+  a connection code from an external reporting tool so it can pull this site's
+  aggregated stats. The API is signed (HMAC, short timestamp window, one-shot
+  nonce) and aggregate-only - the same figures the dashboard already shows, with
+  no visitor identifiers - and works in every edition. Clear the code to switch
+  the API off. `readme.txt` describes it under External services.
+- `LiteFallbacksTest` and `ConsentStateTest`, which are the only tests that
+  exercise a free build's stand-in objects rather than the real ones.
+
+### Changed
+
+- **The free edition shows no trace of the paid reports.** They kept their rows
+  in the Analytics menu, badged, each leading to a page describing what the
+  report contains, with a muted card where the section would be on the Dashboard
+  and the page detail view. ADR 57 argued for that and the pages were careful -
+  no figures real or invented, one link, nothing to dismiss - but the plugin
+  directory's review of 0.9.2 raised it under Guidelines 5 and 11, and a menu of
+  features a build does not have reads as locked functionality whatever the page
+  behind it says. The stand-ins remain for the case they are actually good at: a
+  Pro build whose licence has lapsed still gets a description rather than a 403.
+- **Nothing paid is left in the free build behind an edition check.** Goals,
+  funnels, the consented tier, stored journeys, the journey recorder, the Pro
+  rollup writer, both Pro query services, the whole geo family and the MaxMind
+  reader are all stripped at package time. `bin/pro-manifest.txt`'s `[blocked]`
+  section, which existed to record what ought to be Pro-only and could not be,
+  is now empty.
+- The seam that made that possible: an interface and a no-op per boundary,
+  resolved through `Plugin` by class name held as a string. The rule is that a
+  seam goes where the vocabulary stops - an interface may only speak in types
+  that survive the strip - which is why `GoalsService` has no interface and
+  `ConversionStatsInterface` does.
+- `Plugin::goals()` and `Plugin::funnels()` are gone. The container is loaded on
+  every request in every edition and cannot name a class the free build lacks;
+  `Goals\GoalServices` is the locator and strips with its namespace.
+- `PrivacyService` compares the stored consent strings as literals rather than
+  reading `ConsentState`, so the Privacy screen still counts consent-log rows in
+  a build that has no consented tier. `ConsentStateTest` stops the two drifting.
+
+### Fixed
+
+- `OverviewWidget::control()` checks its own nonce and capability before writing
+  user meta. Core already verified the dashboard-widget nonce and the write was
+  to the current user's own meta, so this was not a hole - but a handler that
+  writes on `$_POST` and verifies nothing itself is indistinguishable from one
+  that forgot.
+- The Analytics menu no longer prints a `<style>` block on `admin_head` of every
+  admin screen. It existed to letter the Pro badge; the lapsed-licence case that
+  still shows one registers a handle and uses `wp_add_inline_style()`.
+- The Locations map's per-country shading and the share screen's inline
+  `onclick` moved out of the markup and into the enqueued stylesheet and script.
+- `load_plugin_textdomain()` is no longer called in the free build. WordPress.org
+  serves it language packs and core has loaded them unasked since 4.6.
+- `CapabilitiesTest` asserts the whole REST route list, and had been failing on
+  `main` since the reporting API added `/report` and `/verify` without updating
+  it.
+
 ## [0.9.2] - 2026-09-02
 
 ### Changed

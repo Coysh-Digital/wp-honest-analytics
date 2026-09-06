@@ -11,11 +11,11 @@ namespace HonestAnalytics\Capture;
 
 use HonestAnalytics\Bots\BotFilter;
 use HonestAnalytics\Channels\Campaign;
-use HonestAnalytics\Consent\ConsentService;
+use HonestAnalytics\Consent\ConsentResolverInterface;
 use HonestAnalytics\Devices\Device;
 use HonestAnalytics\Devices\DeviceParser;
 use HonestAnalytics\Edition\Edition;
-use HonestAnalytics\Geo\GeoService;
+use HonestAnalytics\Geo\GeoLookupInterface;
 use HonestAnalytics\Identity\IdentityService;
 use HonestAnalytics\Settings\Settings;
 use HonestAnalytics\Support\ClientIp;
@@ -51,8 +51,8 @@ final class CaptureService {
 		private NonceRegistry $nonces,
 		private ScriptInjector $injector,
 		private BotFilter $bots,
-		private GeoService $geo,
-		private ConsentService $consent,
+		private GeoLookupInterface $geo,
+		private ConsentResolverInterface $consent,
 		private WriterInterface $writer,
 		private ClientIp $clientIp,
 		private DeviceParser $deviceParser
@@ -254,10 +254,7 @@ final class CaptureService {
 		$geo         = $this->geo->resolve( $ip );
 		unset( $ip );
 
-		$cookies   = Server::cookies();
-		$visitorId = $this->consent->resolve( $siteId, $context->headers, $cookies )->isGranted()
-			? $this->consent->resolvedVisitorId( $siteId, $cookies )
-			: null;
+		$visitorId = $this->consent->visitorId( $siteId, $context->headers, Server::cookies() );
 
 		$searchTerm = null;
 

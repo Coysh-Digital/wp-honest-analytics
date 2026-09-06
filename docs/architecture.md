@@ -25,7 +25,7 @@ reversed, the entry stays and gains a note.
 - [Editions and licensing](#editions-and-licensing) - ADR 44-48
 - [What was dropped](#what-was-dropped) - ADR 49-52
 - [Importing](#importing) - ADR 53-56
-- [Editions, continued](#adr-57---the-paid-reports-are-named-in-the-free-menu-and-described) - ADR 57
+- [Editions, continued](#adr-57---the-paid-reports-are-named-in-the-free-menu-and-described) - ADR 57, 59, 60
 - [Schema and migrations](#adr-58---migrations-run-from-cron-and-the-cli-never-from-a-page-load) - ADR 58
 
 ---
@@ -786,8 +786,8 @@ tested, and can be flipped in development with a single constant.
 
 **Consequence.** The check sits in front of the query, not in front of the
 markup, so a downgraded site does not quietly keep computing figures it will
-not show. Lite keeps the Pro rows in the menu, marked, leading to a page that
-describes the report rather than a 403 (ADR 57).
+not show. Lite has no Pro rows at all; a Pro build with no active licence keeps
+them, leading to a page that describes the report rather than a 403 (ADR 59).
 
 ### ADR 45 - Three editions, two behaviours
 
@@ -822,9 +822,9 @@ Pro**, because Lite still excludes crawler traffic from every figure and only
 the breakdown is withheld.
 
 **Consequence.** No nag screens, no countdowns, no expiry warnings, and no
-artificial limits on rows, retention or date ranges. The Pro placeholders on
-the Dashboard are one muted card each, stating what the section would contain.
-They are not banners, they do not animate, and they do not follow the scroll.
+artificial limits on rows, retention or date ranges - and, since ADR 59, no
+placeholder cards and no menu rows for the paid reports either. The free build
+mentions the paid edition in its readme and nowhere else.
 
 ### ADR 47 - A licence that cannot expire, and cannot fail closed
 
@@ -864,6 +864,12 @@ fails if the Lite staging tree still references anything it removed. Table
 names come from `Schema\Tables` and never from the slug or the edition, so Pro
 reads exactly what Lite wrote - upgrading migrates nothing, and downgrading
 deletes nothing.
+
+"Stripped, not disabled" was aspirational for longer than it should have been.
+The manifest carried a `[blocked]` section naming five paths that ought to have
+been Pro-only and shipped anyway, and the free build contained a geolocation
+library it could not use. ADR 60 is what closed that, and the section is empty
+now - which is the state this decision always claimed.
 
 ---
 
@@ -981,36 +987,114 @@ identifier - are enforced in one place and documented in
 
 ### ADR 57 - The paid reports are named in the free menu, and described
 
-**Decision.** Lite keeps Campaigns, Locations, Events, Goals, Funnels and
-Crawlers in the Analytics menu, each marked with a small `Pro` badge, each
-leading to a page that says what the report contains. `LockedScreen` is an
-ordinary Lite screen, not a Pro one: `isPro()` returns false, so it renders
-rather than answering 403. The slugs are the ones the real screens use, so a
-bookmark survives the upgrade.
+**Superseded by ADR 59.** Kept because the reasoning is still right about the
+cost, and because somebody will propose it again.
 
-**Why.** This reverses the first arrangement, where the rows were absent
+**Decision.** Lite kept Campaigns, Locations, Events, Goals, Funnels and
+Crawlers in the Analytics menu, each marked with a small `Pro` badge, each
+leading to a page that said what the report contains. `LockedScreen` was an
+ordinary Lite screen, not a Pro one, so it rendered rather than answering 403,
+and the slugs were the ones the real screens use so a bookmark survived the
+upgrade.
+
+**Why.** This reversed the first arrangement, where the rows were absent
 altogether. That was defensible - a menu item leading to an advertisement is
 worse than no menu item - but it had a cost nobody had measured: people could
 not find out the reports existed. A free edition that conceals the existence of
 the paid one is not restraint, it is poor information.
 
-The plugin directory's rule is about **locked code**, not about mentioning that
-a paid edition exists. Lite genuinely does not contain these reports; they are
-removed by the build (ADR 48). The page is therefore a description of software
-somebody does not have, rather than a gate in front of software they do, and it
-says exactly that in as many words.
+The pages carried **no figures, real or invented**, one sentence on what the
+report answers, a list of what it contains, and a single link. No price, no
+button, no countdown, and nothing that returned after being dismissed.
 
-**Consequence.** The pages carry **no figures, real or invented**. A skeleton
-with plausible numbers in it would be read as the site's own data, which would
-be a lie about the one thing this plugin sells. What they carry is one sentence
-on what the report answers, a list of what it actually contains, and a single
-link. No price, no button, no countdown, and nothing that returns after being
-dismissed, because there is nothing to dismiss. The Dashboard placeholder cards
-link to the same pages rather than repeating them.
+### ADR 59 - A build without the paid code says nothing about it
 
-A build that has the Pro code but no active licence gets the same pages instead
-of 403s, which is a better answer for somebody whose licence has lapsed than a
-locked door.
+**Decision.** The free build has no row, no page, no placeholder card and no
+link for any Pro report. `LockedScreen` and its template strip with the reports
+they describe. `Menu::standIn()` asks `Edition::hasPro()` before it names
+`LockedScreen`, so a build without the code shows nothing where those rows were.
+The paid edition is named in `readme.txt` and nowhere else in the free build.
+
+**Why.** ADR 57 argued that the directory's rule is about locked *code*, and
+that a description of software somebody does not have is not a gate in front of
+software they do. That reading is defensible and the plugin directory did not
+take it: the review of 0.9.2 raised the arrangement under Guideline 5
+(trialware) and Guideline 11 (upgrade prompts), and their position is the one
+that decides whether the plugin is listed.
+
+Sitting with it, they are also right about the appearance. Eight menu rows
+leading to pages about features the build does not have, plus seven cards
+saying what a report *would* tell you, is a lot of surface arguing for a
+purchase however quietly each one is worded. The directory's own guidance says a
+plugin may point out what a separate paid plugin offers - in the readme - and
+that is enough.
+
+**Consequence.** Discovery is lost, and that cost is real; ADR 57 measured it
+correctly. It is now paid in the readme instead, which is where somebody
+deciding whether to install is actually reading.
+
+The stand-ins are not deleted, because they answer a second question that has
+nothing to do with the free edition: a Pro build whose licence has lapsed gets a
+page saying what the report contains rather than a 403, which is a better answer
+for somebody who has already had those reports. That is the only case they now
+serve, and `hasPro()` rather than `isPro()` is the gate, because the question is
+whether the code is in this build at all.
+
+Removing the badge from the free build also removed the last thing printing CSS
+into `admin_head`, which the same review flagged separately.
+
+### ADR 60 - A seam goes where the vocabulary stops
+
+**Decision.** Where the free build must call into something it does not
+contain, the boundary is an interface with a no-op implementation beside it,
+both surviving the strip, resolved through `Plugin` from a class name held as a
+**string**. A seam interface may name only types that survive the strip. If it
+would have to name one that does not, the seam is in the wrong place and moves
+further out.
+
+**Why.** `bin/pro-manifest.txt` carried a `[blocked]` section for two years'
+worth of releases: goals, consent, journeys and the Pro query services, all
+shipping in the free build behind a runtime `Edition::isPro()`, with the reason
+recorded as "depends on auditing every call site rather than on one gate". The
+audit, when it happened, had a shape. Every one of those paths failed for the
+same reason - something the free build genuinely runs held a Pro class as a
+typed dependency - and every one of them was fixed by asking where the types
+stopped being shared.
+
+Applied, the rule decides the hard cases without further argument.
+`GoalsService` gets no interface, because everything it returns is a `Goal`;
+`ConversionStatsInterface` does, because it returns rows and a count.
+`ConsentState` does not cross the capture-path seam, so `ConsentService` grew a
+single `visitorId()` where the callers used to do a two-step - which also
+removed a protocol two call sites had to keep getting identically right.
+
+The string class name matters as much as the interface. `check-lite-build.php`
+skips `X::class` and string literals, so a factory named this way needs no
+`[gated]` entry - which is the point: `Plugin` is loaded on every request in
+every edition, and a blanket exception on the container would be the least
+reviewable entry in the file.
+
+**Consequence.** `[blocked]` is empty, and the manifest says an empty section is
+the target rather than the default. Two rules fell out that are easy to get
+wrong later:
+
+- The factories check `class_exists()` and **never** `Edition::isPro()`.
+  Services are memoised for the request and `Edition::flush()` does not clear
+  them, so an edition-dependent factory hands out whichever answer was true the
+  first time something asked. The edition question stays inside the real object,
+  in front of the query, where ADR 44 puts it.
+- No-op classes are named `No...`, never `Null<StrippedName>`. `bin/build.sh`
+  asserts stripped names are absent from the regenerated classmap, and a
+  `NullGeoService` would answer to a search for `GeoService`. That assertion is
+  now anchored on the map-key syntax for the same family of reason: an interface
+  routinely contains the stripped class's own name.
+
+**What this does not do.** It does not make the free build testable as a free
+build. The suite runs against the whole tree, which is Pro, so nothing else ever
+constructs a no-op. `LiteFallbacksTest` injects them deliberately and drives
+capture, drain, session close and a Dashboard render through the set - which
+matters because `HitApplier` and `Drainer` both catch `Throwable`, so a missing
+dependency there does not white-screen anybody. It stops counting.
 
 ### ADR 58 - Migrations run from cron and the CLI, never from a page load
 
