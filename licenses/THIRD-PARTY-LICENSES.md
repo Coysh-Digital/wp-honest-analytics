@@ -10,9 +10,9 @@ server; nothing is fetched from a CDN or any other third party at runtime.
 - **Version** 4.5.1
 - **Licence** MIT
 - **Home** <https://www.chartjs.org/>
-- **Bundled at** `assets/admin/js/vendor/chart.umd.js`
-- **Licence text** `assets/admin/js/vendor/LICENSE.chartjs.txt`
-- **Provenance** `assets/admin/js/vendor/PROVENANCE.md` records the source and
+- **Bundled at** `assets/admin/js/bundled/chart.umd.js`
+- **Licence text** `assets/admin/js/bundled/LICENSE.chartjs.txt`
+- **Provenance** `assets/admin/js/bundled/PROVENANCE.md` records the source and
   the SHA-256 of the committed file. `composer budgets` verifies the checksum,
   so an unexplained change to the file fails the build.
 

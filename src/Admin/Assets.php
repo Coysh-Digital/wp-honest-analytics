@@ -65,7 +65,7 @@ final class Assets {
 
 		wp_enqueue_script(
 			'honest-analytics-chartjs',
-			HONEST_ANALYTICS_URL . 'assets/admin/js/vendor/chart.umd.js',
+			HONEST_ANALYTICS_URL . 'assets/admin/js/bundled/chart.umd.js',
 			[],
 			'4.5.1',
 			[ 'in_footer' => true ]

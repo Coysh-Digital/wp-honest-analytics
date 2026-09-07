@@ -7,7 +7,19 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
-## [0.9.5] - 2026-09-07
+## [0.9.6] - 2026-09-07
+
+### Fixed
+
+- **Bundled admin assets are no longer named `vendor`, so a git deploy stops
+  stripping them.** A site that ignores Composer's directory with a bare
+  `vendor/` rule - the unanchored form matches at every depth, not just the root
+  - dropped `assets/admin/js/vendor/` on its way to the server: `chart.umd.js`
+  returned 404 and the reports drew no charts, while `charts.js` beside it loaded
+  fine. The Chart.js drop and the Locations map now sit under `.../bundled/`
+  instead. This is the root cause behind the stale-`vendor/` failures 0.9.4 and
+  0.9.5 had to tolerate in code; Composer's root `vendor/` still cannot be
+  renamed, so those guards stay. ADR 62.
 
 ### Fixed
 

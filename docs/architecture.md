@@ -709,7 +709,7 @@ apostrophe in the CSV. Correctness beats tidiness.
 
 ### ADR 41 - Chart.js is vendored, with provenance
 
-**Decision.** `assets/admin/js/vendor/chart.umd.js` is committed, alongside its
+**Decision.** `assets/admin/js/bundled/chart.umd.js` is committed, alongside its
 licence and a `PROVENANCE.md` recording version and SHA-256. `bin/check-budgets.php`
 verifies the hash.
 
@@ -1198,3 +1198,26 @@ recorded here rather than remembered: **before 1.0, decide whether a large-table
 migration needs to be resumable**, and note that the answer probably involves
 `ALGORITHM=INPLACE, LOCK=NONE` and a documented fallback for the storage engines
 that will not take it.
+
+### ADR 62 - Shipped asset directories are never named `vendor`
+
+**Decision.** The bundled third-party assets live under `assets/admin/js/bundled/`
+and `assets/admin/img/bundled/`, not `assets/admin/js/vendor/` and
+`assets/admin/img/vendor/`. Composer's own `vendor/` at the plugin root keeps
+that name because Composer requires it; nothing else this plugin ships may.
+
+**Why.** A git-deployed site commonly ignores Composer's directory with an
+unanchored rule - a bare `vendor/` in `.gitignore` matches at every depth, not
+just the root. On such a site every plugin directory called `vendor` is stripped
+on the way to the server, while its siblings arrive intact. It was reported from
+a Bedrock install where `assets/admin/js/vendor/chart.umd.js` returned 404 and
+the reports drew no charts: `charts.js` beside it loaded, the `vendor/`
+subdirectory did not. The same rule is why that site's root `vendor/` kept
+arriving stale - the failure ADR 41's neighbours (0.9.4, 0.9.5) had to tolerate
+in code because the root directory cannot be renamed away from it.
+
+**Consequence.** Renaming the asset directories removes the collision at its
+source for everything except the one folder that must keep the name, so do not
+rename them back. `bin/check-budgets.php`, `bin/pro-manifest.txt` and the enqueue
+in `src/Admin/Assets.php` all name the new paths; a future tidy toward `vendor`
+would reintroduce a 404 that only appears on someone else's deploy.
