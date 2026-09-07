@@ -7,6 +7,27 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-09-07
+
+### Fixed
+
+- **A package whose halves disagree now keeps working instead of standing
+  down.** 0.9.4 detected the mismatch and declined to load, which was the wrong
+  remedy: a plugin that does not start registers no admin page, and WordPress
+  answers a request for an unregistered page with "Sorry, you are not allowed to
+  access this page" - a 403 raised before `admin_notices` renders, so the notice
+  explaining the problem never reached the person reading it. Reported from the
+  same site, which turned out to have been carrying 0.9.1's `vendor/` under
+  0.9.4's source: whatever had been updating that install had never replaced
+  that directory at all.
+
+  On a mismatch the plugin now registers its own PSR-4 autoloader ahead of the
+  classmap, so its classes come from the source tree that is certainly right
+  while the libraries beside it still load from `vendor/`. The site goes on
+  working and the notice says what to put back in line. Composer registers its
+  own loader with `prepend`, which is why ours has to go in before
+  `vendor/autoload.php` is required to be asked at all.
+
 ## [0.9.4] - 2026-09-07
 
 ### Fixed

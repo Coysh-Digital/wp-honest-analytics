@@ -27,9 +27,18 @@ final class Autoloader {
 
 	/**
 	 * Register the autoloader.
+	 *
+	 * Prepending puts this ahead of Composer's classmap, which matters when
+	 * that map describes a different build of this plugin: an authoritative
+	 * map is the whole truth about the classes it lists, so a stale one both
+	 * fails to find what is there and insists on including what is not. Asked
+	 * first, this answers from the source tree that is actually on disk and the
+	 * map is never consulted about our namespace at all.
+	 *
+	 * @param bool $prepend Whether to run before any autoloader already registered.
 	 */
-	public static function register(): void {
-		spl_autoload_register( [ self::class, 'load' ] );
+	public static function register( bool $prepend = false ): void {
+		spl_autoload_register( [ self::class, 'load' ], true, $prepend );
 	}
 
 	/**

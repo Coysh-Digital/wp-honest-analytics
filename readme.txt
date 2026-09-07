@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.9.4
+Stable tag: 0.9.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -186,6 +186,9 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.9.5 =
+* Fixed: An update that left the plugin's own files and the libraries beside them on different versions made the Analytics screens answer "Sorry, you are not allowed to access this page". The plugin now carries on working from its own files and tells you to reinstall, rather than standing down and leaving you with an error that explains nothing.
 
 = 0.9.4 =
 * Fixed: If an update did not finish - the plugin's own files updated but the libraries beside them left behind, which an upload-over-the-top can do - the plugin could take the admin down with it. It now notices, declines to load, and tells you that reinstalling fixes it and takes nothing with it.

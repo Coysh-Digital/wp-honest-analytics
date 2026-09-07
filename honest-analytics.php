@@ -3,7 +3,7 @@
  * Plugin Name:       Honest Analytics
  * Plugin URI:        https://honest-analytics.com
  * Description:       Privacy-first, cookieless analytics that live inside WordPress. No third-party service, no IP addresses, no per-visitor rows - just aggregate counters you own.
- * Version:           0.9.4
+ * Version:           0.9.5
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Coysh Digital
@@ -39,7 +39,7 @@ if ( defined( 'HONEST_ANALYTICS_FILE' ) ) {
 	return;
 }
 
-const VERSION = '0.9.4';
+const VERSION = '0.9.5';
 
 define( 'HONEST_ANALYTICS_FILE', __FILE__ );
 define( 'HONEST_ANALYTICS_DIR', plugin_dir_path( __FILE__ ) );
@@ -84,27 +84,36 @@ if ( version_compare( PHP_VERSION, '8.1', '<' ) ) {
 }
 
 /**
- * Refuse to run rather than fatal on a half-finished update.
+ * Survive a half-finished update rather than fataling on one.
  *
- * The autoloader is a classmap built at package time with
- * `--classmap-authoritative`, which means it is the whole truth about which
- * classes exist: a class it does not list cannot be found, and one it lists
- * whose file is missing produces two warnings and then is not found either.
- * That is the right trade for an intact install and a bad one for a mixed
- * install, where the first symptom is a fatal on whichever screen names a
- * class the stale map has never heard of.
+ * The bundled autoloader is a classmap built at package time with
+ * `--classmap-authoritative`, which makes it the whole truth about which of
+ * this plugin's classes exist. Pair one build's classmap with another build's
+ * source - by uploading over the top rather than replacing, or by a sync that
+ * skips `vendor/` - and it is authoritatively wrong in both directions: it
+ * cannot find a class that is there, and it insists on including one that is
+ * not. The first screen that names a class the stale map has never heard of
+ * takes the admin down with it.
  *
- * It happens. Updating by uploading over the top rather than replacing, an
- * extraction that stopped half way, a sync that skipped `vendor/` - all leave
- * one build's source beside another's classmap, and the plugin then takes the
- * admin down with it.
+ * It happens, and not once: a site reporting this had been carrying 0.9.1's
+ * `vendor/` under 0.9.4's source, so whatever updates that install had never
+ * replaced that directory at all.
  *
- * `vendor/composer/installed.php` carries this build's version in its root
- * `reference`, stamped by `bin/build.sh`, so the two halves can be compared
- * for the price of one `include`. Mismatched, the plugin declines to load and
- * says what to do about it, which is the same bargain the PHP guard above
- * makes.
+ * `bin/build.sh` stamps this build's version into the root `reference` of
+ * `vendor/composer/installed.php`, so the two halves can be compared for the
+ * price of one `include`. Mismatched, the plugin's own PSR-4 autoloader goes in
+ * *ahead* of the classmap - the source tree on disk is the one thing that is
+ * certainly right - and the site goes on working while the notice explains what
+ * to fix. The libraries beside the map still load from it, and every class that
+ * uses one degrades rather than fatals if it turns out to be missing.
+ *
+ * Refusing to load was the first answer to this and it was the wrong one. A
+ * plugin that declines to start registers no admin page, and WordPress answers
+ * a request for one that was never registered with "Sorry, you are not allowed
+ * to access this page" - a 403 raised before `admin_notices` renders, so the
+ * explanation never reaches the person reading it.
  */
+$honest_analytics_stale  = false;
 $honest_analytics_vendor = HONEST_ANALYTICS_DIR . 'vendor/composer/installed.php';
 
 if ( is_file( $honest_analytics_vendor ) ) {
@@ -113,31 +122,37 @@ if ( is_file( $honest_analytics_vendor ) ) {
 		? (string) ( $honest_analytics_meta['root']['reference'] ?? '' )
 		: '';
 
-	// Only when it looks like one of our stamped builds. A development tree
-	// has a commit SHA here and must go on loading normally.
-	if ( '' !== $honest_analytics_reference
+	// Only when it looks like one of our stamped builds. A development tree has
+	// the commit SHA composer put there and must go on loading normally.
+	$honest_analytics_stale = '' !== $honest_analytics_reference
 		&& 1 === preg_match( '/^\d+\.\d+\.\d+$/', $honest_analytics_reference )
-		&& VERSION !== $honest_analytics_reference
-	) {
-		add_action(
-			'admin_notices',
-			static function () use ( $honest_analytics_reference ): void {
-				printf(
-					'<div class="notice notice-error"><p>%s</p></div>',
-					esc_html(
-						sprintf(
-							/* translators: 1: version of the plugin's own files, 2: version of its bundled libraries. */
-							__( 'Honest Analytics has not loaded, because its update did not finish: the plugin files are version %1$s and the libraries beside them are version %2$s. Deleting the plugin and installing it again fixes this, and takes nothing with it - the analytics tables and settings are untouched by removing the folder.', 'honest-analytics' ),
-							VERSION,
-							$honest_analytics_reference
-						)
-					)
-				);
-			}
-		);
+		&& VERSION !== $honest_analytics_reference;
+}
 
-		return;
-	}
+if ( $honest_analytics_stale ) {
+	require_once HONEST_ANALYTICS_DIR . 'src/Support/Autoloader.php';
+	Support\Autoloader::register( true );
+
+	add_action(
+		'admin_notices',
+		static function () use ( $honest_analytics_reference ): void {
+			if ( ! current_user_can( 'activate_plugins' ) ) {
+				return;
+			}
+
+			printf(
+				'<div class="notice notice-warning"><p>%s</p></div>',
+				esc_html(
+					sprintf(
+						/* translators: 1: version of the plugin's own files, 2: version of the libraries bundled beside them. */
+						__( 'Honest Analytics did not update cleanly: its own files are version %1$s and the libraries bundled beside them are version %2$s. It is running from its own source in the meantime, so nothing is lost, but the two halves should be brought back into line - delete the plugin and install it again. Removing the folder takes nothing with it; the analytics tables and settings are untouched.', 'honest-analytics' ),
+						VERSION,
+						$honest_analytics_reference
+					)
+				)
+			);
+		}
+	);
 }
 
 if ( is_file( HONEST_ANALYTICS_DIR . 'vendor/autoload.php' ) ) {
