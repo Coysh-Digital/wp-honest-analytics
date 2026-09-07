@@ -7,6 +7,25 @@ and this project uses [semantic versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-09-07
+
+### Fixed
+
+- **A half-finished update no longer takes the admin down.** The autoloader is a
+  classmap built at package time with `--classmap-authoritative`, so it is the
+  whole truth about which classes exist. Pair one build's classmap with another
+  build's source - by uploading over the top rather than replacing, or by a sync
+  that skipped `vendor/` - and the first screen naming a class the stale map has
+  never heard of fatals. It happened on a real site the day 0.9.3 went out:
+  0.9.2's `vendor/` beside 0.9.3's `src/`, and wp-admin down with "Class
+  ReportingApiScreen not found".
+
+  The plugin now compares the version it declares against the one `bin/build.sh`
+  stamps into `vendor/composer/installed.php`, before requiring the autoloader.
+  Mismatched, it declines to load and says what to do, which is the bargain the
+  PHP-version guard beside it already made. A development tree has a commit SHA
+  there rather than a version and is left alone.
+
 ## [0.9.3] - 2026-09-06
 
 ### Added

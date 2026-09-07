@@ -4,7 +4,7 @@ Tags: analytics, privacy, statistics, cookieless
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.1
-Stable tag: 0.9.3
+Stable tag: 0.9.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -186,6 +186,9 @@ By default the tables are kept, because the rollups cannot be rebuilt from anyth
 7. Settings - every default is the privacy-preserving option
 
 == Changelog ==
+
+= 0.9.4 =
+* Fixed: If an update did not finish - the plugin's own files updated but the libraries beside them left behind, which an upload-over-the-top can do - the plugin could take the admin down with it. It now notices, declines to load, and tells you that reinstalling fixes it and takes nothing with it.
 
 = 0.9.3 =
 * Changed: The paid reports no longer appear anywhere in this edition. They were listed in the Analytics menu, each leading to a page describing what the report contains, with a matching note where the card would be on the Dashboard and the page detail view. The intent was that people could find out the reports existed; the effect was a menu of features this plugin does not have, which reads as functionality being held back. What the paid edition adds is described above, in the readme, and nowhere else.

@@ -3,7 +3,7 @@
  * Plugin Name:       Honest Analytics
  * Plugin URI:        https://honest-analytics.com
  * Description:       Privacy-first, cookieless analytics that live inside WordPress. No third-party service, no IP addresses, no per-visitor rows - just aggregate counters you own.
- * Version:           0.9.3
+ * Version:           0.9.4
  * Requires at least: 6.4
  * Requires PHP:      8.1
  * Author:            Coysh Digital
@@ -39,7 +39,7 @@ if ( defined( 'HONEST_ANALYTICS_FILE' ) ) {
 	return;
 }
 
-const VERSION = '0.9.3';
+const VERSION = '0.9.4';
 
 define( 'HONEST_ANALYTICS_FILE', __FILE__ );
 define( 'HONEST_ANALYTICS_DIR', plugin_dir_path( __FILE__ ) );
@@ -81,6 +81,63 @@ if ( version_compare( PHP_VERSION, '8.1', '<' ) ) {
 	);
 
 	return;
+}
+
+/**
+ * Refuse to run rather than fatal on a half-finished update.
+ *
+ * The autoloader is a classmap built at package time with
+ * `--classmap-authoritative`, which means it is the whole truth about which
+ * classes exist: a class it does not list cannot be found, and one it lists
+ * whose file is missing produces two warnings and then is not found either.
+ * That is the right trade for an intact install and a bad one for a mixed
+ * install, where the first symptom is a fatal on whichever screen names a
+ * class the stale map has never heard of.
+ *
+ * It happens. Updating by uploading over the top rather than replacing, an
+ * extraction that stopped half way, a sync that skipped `vendor/` - all leave
+ * one build's source beside another's classmap, and the plugin then takes the
+ * admin down with it.
+ *
+ * `vendor/composer/installed.php` carries this build's version in its root
+ * `reference`, stamped by `bin/build.sh`, so the two halves can be compared
+ * for the price of one `include`. Mismatched, the plugin declines to load and
+ * says what to do about it, which is the same bargain the PHP guard above
+ * makes.
+ */
+$honest_analytics_vendor = HONEST_ANALYTICS_DIR . 'vendor/composer/installed.php';
+
+if ( is_file( $honest_analytics_vendor ) ) {
+	$honest_analytics_meta      = include $honest_analytics_vendor;
+	$honest_analytics_reference = is_array( $honest_analytics_meta )
+		? (string) ( $honest_analytics_meta['root']['reference'] ?? '' )
+		: '';
+
+	// Only when it looks like one of our stamped builds. A development tree
+	// has a commit SHA here and must go on loading normally.
+	if ( '' !== $honest_analytics_reference
+		&& 1 === preg_match( '/^\d+\.\d+\.\d+$/', $honest_analytics_reference )
+		&& VERSION !== $honest_analytics_reference
+	) {
+		add_action(
+			'admin_notices',
+			static function () use ( $honest_analytics_reference ): void {
+				printf(
+					'<div class="notice notice-error"><p>%s</p></div>',
+					esc_html(
+						sprintf(
+							/* translators: 1: version of the plugin's own files, 2: version of its bundled libraries. */
+							__( 'Honest Analytics has not loaded, because its update did not finish: the plugin files are version %1$s and the libraries beside them are version %2$s. Deleting the plugin and installing it again fixes this, and takes nothing with it - the analytics tables and settings are untouched by removing the folder.', 'honest-analytics' ),
+							VERSION,
+							$honest_analytics_reference
+						)
+					)
+				);
+			}
+		);
+
+		return;
+	}
 }
 
 if ( is_file( HONEST_ANALYTICS_DIR . 'vendor/autoload.php' ) ) {
